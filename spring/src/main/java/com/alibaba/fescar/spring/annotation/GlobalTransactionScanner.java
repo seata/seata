@@ -19,15 +19,7 @@ package com.alibaba.fescar.spring.annotation;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.HashSet;
-import java.util.LinkedList;
 import java.util.Set;
-
-import com.alibaba.fescar.common.exception.NotSupportYetException;
-import com.alibaba.fescar.config.ConfigurationFactory;
-import com.alibaba.fescar.rm.RMClientAT;
-import com.alibaba.fescar.tm.TMClient;
-import com.alibaba.fescar.tm.api.DefaultFailureHandlerImpl;
-import com.alibaba.fescar.tm.api.FailureHandler;
 
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
@@ -39,6 +31,14 @@ import org.springframework.aop.framework.autoproxy.AbstractAutoProxyCreator;
 import org.springframework.aop.support.AopUtils;
 import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.InitializingBean;
+
+import com.alibaba.fescar.common.exception.NotSupportYetException;
+import com.alibaba.fescar.config.ConfigurationFactory;
+import com.alibaba.fescar.rm.RMClientAT;
+import com.alibaba.fescar.spring.schema.TransationConfigManager;
+import com.alibaba.fescar.tm.TMClient;
+import com.alibaba.fescar.tm.api.DefaultFailureHandlerImpl;
+import com.alibaba.fescar.tm.api.FailureHandler;
 
 /**
  * The type Global transaction scanner.
@@ -184,16 +184,23 @@ public class GlobalTransactionScanner extends AbstractAutoProxyCreator implement
                 }
                 Class<?> serviceInterface = findTargetClass(bean);
                 Method[] methods = serviceInterface.getMethods();
-                LinkedList<MethodDesc> methodDescList = new LinkedList<>();
-                for (Method method : methods) {
-                    GlobalTransactional anno = method.getAnnotation(GlobalTransactional.class);
-                    if (anno != null) {
-                        methodDescList.add(makeMethodDesc(anno, method));
-                    }
+                
+                boolean flag = false;
+                
+                for (Method method : methods)
+                {
+                	if (TransationConfigManager.getInstance().isFixedMethod(beanName, method))
+                	{
+                		TransationConfigManager.getInstance().putBeanNameAndMethodMapping(beanName, method);
+                		flag = true;
+                	}
                 }
-                if (methodDescList.isEmpty()) {
-                    return bean;
+                
+                if (!flag)
+                {
+                	return bean;
                 }
+                
                 if (interceptor == null) {
                     interceptor = new GlobalTransactionalInterceptor(failureHandlerHook);
                 }
@@ -212,10 +219,6 @@ public class GlobalTransactionScanner extends AbstractAutoProxyCreator implement
         } catch (Exception exx) {
             throw new RuntimeException(exx);
         }
-    }
-
-    private MethodDesc makeMethodDesc(GlobalTransactional anno, Method method) {
-        return new MethodDesc(anno, method);
     }
 
     private Class<?> findTargetClass(Object proxy) throws Exception {

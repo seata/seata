@@ -18,17 +18,19 @@ package com.alibaba.fescar.spring.annotation;
 
 import java.lang.reflect.Method;
 
-import com.alibaba.fescar.common.exception.ShouldNeverHappenException;
-import com.alibaba.fescar.common.util.StringUtils;
-import com.alibaba.fescar.tm.api.DefaultFailureHandlerImpl;
-import com.alibaba.fescar.tm.api.FailureHandler;
-import com.alibaba.fescar.tm.api.TransactionalExecutor;
-import com.alibaba.fescar.tm.api.TransactionalTemplate;
-
 import org.aopalliance.intercept.MethodInterceptor;
 import org.aopalliance.intercept.MethodInvocation;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import com.alibaba.fescar.common.exception.ShouldNeverHappenException;
+import com.alibaba.fescar.common.util.StringUtils;
+import com.alibaba.fescar.spring.schema.TransationConfigBean;
+import com.alibaba.fescar.spring.schema.TransationConfigManager;
+import com.alibaba.fescar.tm.api.DefaultFailureHandlerImpl;
+import com.alibaba.fescar.tm.api.FailureHandler;
+import com.alibaba.fescar.tm.api.TransactionalExecutor;
+import com.alibaba.fescar.tm.api.TransactionalTemplate;
 
 /**
  * The type Global transactional interceptor.
@@ -55,8 +57,13 @@ public class GlobalTransactionalInterceptor implements MethodInterceptor {
 
     @Override
     public Object invoke(final MethodInvocation methodInvocation) throws Throwable {
-        final GlobalTransactional anno = getAnnotation(methodInvocation.getMethod());
-        if (anno != null) {
+    	
+    	Method method = methodInvocation.getMethod();
+    	String key = org.apache.commons.lang3.StringUtils.removeStart(method.getDeclaringClass()+ "#" + method.getName(), "class");
+    	
+    	TransationConfigBean configBean = TransationConfigManager.getInstance().getConfig(key);
+    	
+        if (configBean != null) {
             try {
                 return transactionalTemplate.execute(new TransactionalExecutor() {
                     @Override
@@ -66,12 +73,12 @@ public class GlobalTransactionalInterceptor implements MethodInterceptor {
 
                     @Override
                     public int timeout() {
-                        return anno.timeoutMills();
+                        return configBean.getTimeout();
                     }
 
                     @Override
                     public String name() {
-                        String name = anno.name();
+                        String name = configBean.getName();
                         if (!StringUtils.isEmpty(name)) {
                             return name;
                         }
@@ -100,13 +107,6 @@ public class GlobalTransactionalInterceptor implements MethodInterceptor {
 
         }
         return methodInvocation.proceed();
-    }
-
-    private GlobalTransactional getAnnotation(Method method) {
-        if (method == null) {
-            return null;
-        }
-        return method.getAnnotation(GlobalTransactional.class);
     }
 
     private String formatMethod(Method method) {

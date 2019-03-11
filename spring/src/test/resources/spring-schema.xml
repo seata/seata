@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:fescar="http://fescar.org.com/schema/fescar"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-2.5.xsd
+	http://fescar.org.com/schema/fescar http://fescar.org.com/schema/fescar.xsd">
+
+	<fescar:txs id="fescarTest" appId="ddd" txServiceGroup="chen" mode="1" failureHandler="defaultHandler">
+		<!-- <fescar:tx name="tx1" timeout="30000" ref="testBean" method="pay*"/> -->
+		<fescar:tx name="tx2" timeout="30000" 
+		scan-pakeage="com.alibaba.fescar" method="pay"/>
+	</fescar:txs>
+
+    <bean id="defaultHandler" class="com.alibaba.fescar.tm.api.DefaultFailureHandlerImpl"/>
+    <bean id="testBean" class="com.alibaba.fescar.spring.schema.ServiceImpl"/>
+    <!-- <bean id="testBean2" class="com.alibaba.fescar.spring.schema.Service2Impl"/> -->
+</beans>
