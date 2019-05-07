@@ -123,6 +123,12 @@ public enum TransactionExceptionCode {
      * FailedWriteSession
      */
     FailedWriteSession,
+    /**
+     * Failed to change global status .
+     */
+    //
+    FailedToChangeGlobalStatus,
+
     ;
 
     private static final Map<Integer, TransactionExceptionCode> MAP = new HashMap<>(values().length);

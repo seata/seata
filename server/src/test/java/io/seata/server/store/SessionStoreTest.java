@@ -20,6 +20,7 @@ import io.seata.config.ConfigurationFactory;
 import io.seata.core.constants.ConfigurationKeys;
 import io.seata.core.model.BranchStatus;
 import io.seata.core.model.BranchType;
+import io.seata.core.model.GlobalOperation;
 import io.seata.core.model.GlobalStatus;
 import io.seata.server.lock.LockManager;
 import io.seata.server.lock.LockManagerFactory;
@@ -157,7 +158,8 @@ public class SessionStoreTest {
 
         Assertions.assertFalse(lockManager.isLockable(0L, RESOURCE_ID, "ta:1"));
 
-        globalSession.changeStatus(GlobalStatus.AsyncCommitting);
+        globalSession.changeStatus(GlobalOperation.COMMIT,GlobalStatus.Committing);
+        globalSession.changeStatus(GlobalOperation.ASYNC_COMMIT,GlobalStatus.AsyncCommitting);
 
         lockManager.cleanAllLocks();
 
@@ -204,9 +206,9 @@ public class SessionStoreTest {
 
         Assertions.assertFalse(lockManager.isLockable(0L, RESOURCE_ID, "ta:1"));
 
-        globalSession.changeStatus(GlobalStatus.Committing);
+        globalSession.changeStatus(GlobalOperation.COMMIT,GlobalStatus.Committing);
         globalSession.changeBranchStatus(branchSession1, BranchStatus.PhaseTwo_CommitFailed_Retryable);
-        globalSession.changeStatus(GlobalStatus.CommitRetrying);
+        globalSession.changeStatus(GlobalOperation.RETRY_COMMIT,GlobalStatus.CommitRetrying);
 
         lockManager.cleanAllLocks();
 
@@ -256,9 +258,9 @@ public class SessionStoreTest {
 
         Assertions.assertFalse(lockManager.isLockable(0L, RESOURCE_ID, "ta:1"));
 
-        globalSession.changeStatus(GlobalStatus.Rollbacking);
+        globalSession.changeStatus(GlobalOperation.ROLLBACK,GlobalStatus.Rollbacking);
         globalSession.changeBranchStatus(branchSession1, BranchStatus.PhaseTwo_RollbackFailed_Retryable);
-        globalSession.changeStatus(GlobalStatus.RollbackRetrying);
+        globalSession.changeStatus(GlobalOperation.RETRY_ROLLBACK,GlobalStatus.RollbackRetrying);
 
         lockManager.cleanAllLocks();
 
@@ -308,7 +310,7 @@ public class SessionStoreTest {
 
         Assertions.assertFalse(lockManager.isLockable(0L, RESOURCE_ID, "ta:1"));
 
-        globalSession.changeStatus(GlobalStatus.Rollbacking);
+        globalSession.changeStatus(GlobalOperation.ROLLBACK,GlobalStatus.Rollbacking);
         globalSession.changeBranchStatus(branchSession1, BranchStatus.PhaseTwo_CommitFailed_Unretryable);
         SessionHelper.endRollbackFailed(globalSession);
 

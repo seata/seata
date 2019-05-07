@@ -20,6 +20,7 @@ import io.seata.core.exception.TransactionException;
 import io.seata.core.exception.TransactionExceptionCode;
 import io.seata.core.model.BranchStatus;
 import io.seata.core.model.BranchType;
+import io.seata.core.model.GlobalOperation;
 import io.seata.core.model.GlobalStatus;
 import io.seata.core.model.ResourceManagerInbound;
 import io.seata.server.lock.LockManager;
@@ -134,7 +135,7 @@ public class DefaultCore implements Core {
         boolean shouldCommit = globalSession.lockAndExcute(() -> {
             globalSession.closeAndClean(); // Highlight: Firstly, close the session, then no more branch can be registered.
             if (globalSession.getStatus() == GlobalStatus.Begin) {
-                globalSession.changeStatus(GlobalStatus.Committing);
+                globalSession.changeStatus(GlobalOperation.COMMIT,GlobalStatus.Committing);
                 return true;
             }
             return false;
@@ -216,13 +217,13 @@ public class DefaultCore implements Core {
     private void asyncCommit(GlobalSession globalSession) throws TransactionException {
         globalSession.addSessionLifecycleListener(SessionHolder.getAsyncCommittingSessionManager());
         SessionHolder.getAsyncCommittingSessionManager().addGlobalSession(globalSession);
-        globalSession.changeStatus(GlobalStatus.AsyncCommitting);
+        globalSession.changeStatus(GlobalOperation.ASYNC_COMMIT,GlobalStatus.AsyncCommitting);
     }
 
     private void queueToRetryCommit(GlobalSession globalSession) throws TransactionException {
         globalSession.addSessionLifecycleListener(SessionHolder.getRetryCommittingSessionManager());
         SessionHolder.getRetryCommittingSessionManager().addGlobalSession(globalSession);
-        globalSession.changeStatus(GlobalStatus.CommitRetrying);
+        globalSession.changeStatus(GlobalOperation.RETRY_COMMIT,GlobalStatus.CommitRetrying);
     }
 
     private void queueToRetryRollback(GlobalSession globalSession) throws TransactionException {
@@ -230,9 +231,9 @@ public class DefaultCore implements Core {
         SessionHolder.getRetryRollbackingSessionManager().addGlobalSession(globalSession);
         GlobalStatus currentStatus = globalSession.getStatus();
         if (SessionHelper.isTimeoutGlobalStatus(currentStatus)) {
-            globalSession.changeStatus(GlobalStatus.TimeoutRollbackRetrying);
+            globalSession.changeStatus(GlobalOperation.RETRY_ROLLBACK,GlobalStatus.TimeoutRollbackRetrying);
         } else {
-            globalSession.changeStatus(GlobalStatus.RollbackRetrying);
+            globalSession.changeStatus(GlobalOperation.RETRY_ROLLBACK,GlobalStatus.RollbackRetrying);
         }
     }
 
@@ -246,7 +247,7 @@ public class DefaultCore implements Core {
         boolean shouldRollBack = globalSession.lockAndExcute(() -> {
             globalSession.close(); // Highlight: Firstly, close the session, then no more branch can be registered.
             if (globalSession.getStatus() == GlobalStatus.Begin) {
-                globalSession.changeStatus(GlobalStatus.Rollbacking);
+                globalSession.changeStatus(GlobalOperation.ROLLBACK,GlobalStatus.Rollbacking);
                 return true;
             }
             return false;

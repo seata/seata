@@ -17,6 +17,7 @@ package io.seata.server.session;
 
 import io.seata.core.exception.TransactionException;
 import io.seata.core.model.BranchStatus;
+import io.seata.core.model.GlobalOperation;
 import io.seata.core.model.GlobalStatus;
 
 /**
@@ -39,7 +40,7 @@ public interface SessionLifecycle {
      * @param status the status
      * @throws TransactionException the transaction exception
      */
-    void changeStatus(GlobalStatus status) throws TransactionException;
+    void changeStatus(GlobalOperation operation,GlobalStatus status) throws TransactionException;
 
     /**
      * Change branch status.

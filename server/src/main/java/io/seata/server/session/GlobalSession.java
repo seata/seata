@@ -15,21 +15,24 @@
  */
 package io.seata.server.session;
 
-import io.seata.core.exception.TransactionException;
-import io.seata.core.exception.TransactionExceptionCode;
-import io.seata.core.model.BranchStatus;
-import io.seata.core.model.BranchType;
-import io.seata.core.model.GlobalStatus;
-import io.seata.server.UUIDGenerator;
-import io.seata.server.store.SessionStorable;
-import io.seata.server.store.StoreConfig;
-
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.LockSupport;
+
+import io.seata.core.domain.GlobalSessionStatusStateMachine;
+import io.seata.core.domain.StateMachineHelper;
+import io.seata.core.exception.TransactionException;
+import io.seata.core.exception.TransactionExceptionCode;
+import io.seata.core.model.BranchStatus;
+import io.seata.core.model.BranchType;
+import io.seata.core.model.GlobalOperation;
+import io.seata.core.model.GlobalStatus;
+import io.seata.server.UUIDGenerator;
+import io.seata.server.store.SessionStorable;
+import io.seata.server.store.StoreConfig;
 
 /**
  * The type Global session.
@@ -60,6 +63,9 @@ public class GlobalSession implements SessionLifecycle, SessionStorable {
     private boolean active;
 
     private ArrayList<BranchSession> branchSessions = new ArrayList<>();
+
+    private GlobalSessionStatusStateMachine sessionStatusStateMachine = StateMachineHelper.buildGlobalStatusMachine(
+        GlobalStatus.UnKnown);
 
     private GlobalSessionSpinLock globalSessionSpinLock = new GlobalSessionSpinLock();
 
@@ -110,21 +116,29 @@ public class GlobalSession implements SessionLifecycle, SessionStorable {
 
     @Override
     public void begin() throws TransactionException {
-        this.status = GlobalStatus.Begin;
         this.beginTime = System.currentTimeMillis();
         this.active = true;
+        sessionStatusStateMachine.fire(GlobalOperation.BEGIN);
+        this.status = GlobalStatus.Begin;
         for (SessionLifecycleListener lifecycleListener : lifecycleListeners) {
             lifecycleListener.onBegin(this);
         }
     }
 
     @Override
-    public void changeStatus(GlobalStatus status) throws TransactionException {
+    public void changeStatus(GlobalOperation operation, GlobalStatus status) throws TransactionException {
+        sessionStatusStateMachine.fire(operation);
+        if (sessionStatusStateMachine.getCurrentState() != status) {
+            throw new TransactionException(
+                TransactionExceptionCode.FailedToChangeGlobalStatus,
+                "status not can be changed,current status is " + this.status + " ,operation=" + operation
+                    + " , target status="
+                    + status);
+        }
         this.status = status;
         for (SessionLifecycleListener lifecycleListener : lifecycleListeners) {
             lifecycleListener.onStatusChange(this, status);
         }
-
     }
 
     @Override
@@ -272,8 +286,8 @@ public class GlobalSession implements SessionLifecycle, SessionStorable {
      */
     public GlobalSession(String applicationId, String transactionServiceGroup, String transactionName, int timeout) {
         this.transactionId = UUIDGenerator.generateUUID();
+        this.sessionStatusStateMachine.fire(GlobalOperation.BEGIN);
         this.status = GlobalStatus.Begin;
-
         this.applicationId = applicationId;
         this.transactionServiceGroup = transactionServiceGroup;
         this.transactionName = transactionName;
@@ -352,7 +366,6 @@ public class GlobalSession implements SessionLifecycle, SessionStorable {
         return beginTime;
     }
 
-
     /**
      * Create global session global session.
      *
@@ -363,7 +376,7 @@ public class GlobalSession implements SessionLifecycle, SessionStorable {
      * @return the global session
      */
     public static GlobalSession createGlobalSession(String applicationId, String txServiceGroup, String txName,
-                                                    int timeout) {
+        int timeout) {
         GlobalSession session = new GlobalSession(applicationId, txServiceGroup, txName, timeout);
         return session;
     }
@@ -426,15 +439,15 @@ public class GlobalSession implements SessionLifecycle, SessionStorable {
 
     private int calGlobalSessionSize(byte[] byApplicationIdBytes, byte[] byServiceGroupBytes, byte[] byTxNameBytes) {
         final int size = 8 // trascationId
-                + 4 // timeout
-                + 2 // byApplicationIdBytes.length
-                + 2 // byServiceGroupBytes.length
-                + 2 // byTxNameBytes.length
-                + 8 // beginTime
-                + 1 // statusCode
-                + (byApplicationIdBytes == null ? 0 : byApplicationIdBytes.length)
-                + (byServiceGroupBytes == null ? 0 : byServiceGroupBytes.length)
-                + (byTxNameBytes == null ? 0 : byTxNameBytes.length);
+            + 4 // timeout
+            + 2 // byApplicationIdBytes.length
+            + 2 // byServiceGroupBytes.length
+            + 2 // byTxNameBytes.length
+            + 8 // beginTime
+            + 1 // statusCode
+            + (byApplicationIdBytes == null ? 0 : byApplicationIdBytes.length)
+            + (byServiceGroupBytes == null ? 0 : byServiceGroupBytes.length)
+            + (byTxNameBytes == null ? 0 : byTxNameBytes.length);
         return size;
     }
 
@@ -463,6 +476,8 @@ public class GlobalSession implements SessionLifecycle, SessionStorable {
         }
         this.beginTime = byteBuffer.getLong();
         this.status = GlobalStatus.get(byteBuffer.get());
+
+        this.sessionStatusStateMachine = StateMachineHelper.buildGlobalStatusMachine(this.status);
     }
 
     /**
@@ -478,31 +493,32 @@ public class GlobalSession implements SessionLifecycle, SessionStorable {
         globalSessionSpinLock.lock();
     }
 
-    public void unlock(){
+    public void unlock() {
         globalSessionSpinLock.unlock();
     }
 
-    public void lockAndExcute(LockRunnable excuteRunnable) throws TransactionException{
+    public void lockAndExcute(LockRunnable excuteRunnable) throws TransactionException {
         this.lock();
         try {
             excuteRunnable.run();
-        }finally {
+        } finally {
             this.unlock();
         }
     }
 
-    public <T> T lockAndExcute(LockCallable<T> lockCallable) throws TransactionException{
+    public <T> T lockAndExcute(LockCallable<T> lockCallable) throws TransactionException {
         this.lock();
         try {
             return lockCallable.call();
-        }finally {
+        } finally {
             this.unlock();
         }
     }
+
     /**
      * globalsession is low race conditions, so use spinlock
      */
-    private class GlobalSessionSpinLock{
+    private class GlobalSessionSpinLock {
         /**
          * true: Can lock, false : in lock.
          */
@@ -520,13 +536,13 @@ public class GlobalSession implements SessionLifecycle, SessionStorable {
             long beginTime = System.currentTimeMillis();
             do {
                 long restTime = GLOBAL_SESSOION_LOCK_TIME_OUT_MILLS - (System.currentTimeMillis() - beginTime);
-                if (restTime <= 0){
+                if (restTime <= 0) {
                     throw new TransactionException(TransactionExceptionCode.FailedLockGlobalTranscation);
                 }
                 // Pause every PARK_TIMES_BASE times,yield the CPU
-                if (times % PARK_TIMES_BASE == 0){
+                if (times % PARK_TIMES_BASE == 0) {
                     // Exponential Backoff
-                    long backOffTime =  PARK_TIMES_BASE_MILLS << (times/PARK_TIMES_BASE);
+                    long backOffTime = PARK_TIMES_BASE_MILLS << (times / PARK_TIMES_BASE);
                     long parkTime = backOffTime < restTime ? backOffTime : restTime;
                     LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(parkTime));
                 }
@@ -535,7 +551,6 @@ public class GlobalSession implements SessionLifecycle, SessionStorable {
             }
             while (!flag);
         }
-
 
         public void unlock() {
             this.globalSessionSpinLock.compareAndSet(false, true);
@@ -548,9 +563,14 @@ public class GlobalSession implements SessionLifecycle, SessionStorable {
 
         void run() throws TransactionException;
     }
+
     @FunctionalInterface
     public interface LockCallable<V> {
 
         V call() throws TransactionException;
+    }
+
+    public GlobalSessionStatusStateMachine getSessionStatusStateMachine() {
+        return sessionStatusStateMachine;
     }
 }

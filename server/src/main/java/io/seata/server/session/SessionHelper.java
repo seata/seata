@@ -17,6 +17,7 @@ package io.seata.server.session;
 
 import io.seata.core.exception.TransactionException;
 import io.seata.core.model.BranchType;
+import io.seata.core.model.GlobalOperation;
 import io.seata.core.model.GlobalStatus;
 import io.seata.server.UUIDGenerator;
 
@@ -65,7 +66,7 @@ public class SessionHelper {
      * @throws TransactionException the transaction exception
      */
     public static void endCommitted(GlobalSession globalSession) throws TransactionException {
-        globalSession.changeStatus(GlobalStatus.Committed);
+        globalSession.changeStatus(GlobalOperation.END_COMMIT_SUCCESS,GlobalStatus.Committed);
         globalSession.end();
     }
 
@@ -76,7 +77,7 @@ public class SessionHelper {
      * @throws TransactionException the transaction exception
      */
     public static void endCommitFailed(GlobalSession globalSession) throws TransactionException {
-        globalSession.changeStatus(GlobalStatus.CommitFailed);
+        globalSession.changeStatus(GlobalOperation.END_COMMIT_FAIL,GlobalStatus.CommitFailed);
         globalSession.end();
     }
 
@@ -89,9 +90,9 @@ public class SessionHelper {
     public static void endRollbacked(GlobalSession globalSession) throws TransactionException {
         GlobalStatus currentStatus = globalSession.getStatus();
         if (isTimeoutGlobalStatus(currentStatus)) {
-            globalSession.changeStatus(GlobalStatus.TimeoutRollbacked);
+            globalSession.changeStatus(GlobalOperation.END_ROLLBACK_SUCCESS,GlobalStatus.TimeoutRollbacked);
         } else {
-            globalSession.changeStatus(GlobalStatus.Rollbacked);
+            globalSession.changeStatus(GlobalOperation.END_ROLLBACK_SUCCESS,GlobalStatus.Rollbacked);
         }
         globalSession.end();
     }
@@ -105,9 +106,9 @@ public class SessionHelper {
     public static void endRollbackFailed(GlobalSession globalSession) throws TransactionException {
         GlobalStatus currentStatus = globalSession.getStatus();
         if (isTimeoutGlobalStatus(currentStatus)) {
-            globalSession.changeStatus(GlobalStatus.TimeoutRollbackFailed);
+            globalSession.changeStatus(GlobalOperation.END_ROLLBACK_FAIL,GlobalStatus.TimeoutRollbackFailed);
         } else {
-            globalSession.changeStatus(GlobalStatus.RollbackFailed);
+            globalSession.changeStatus(GlobalOperation.END_ROLLBACK_FAIL,GlobalStatus.RollbackFailed);
         }
         globalSession.end();
     }

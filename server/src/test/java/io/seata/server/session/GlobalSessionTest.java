@@ -17,6 +17,7 @@ package io.seata.server.session;
 
 import io.seata.core.model.BranchStatus;
 import io.seata.core.model.BranchType;
+import io.seata.core.model.GlobalOperation;
 import io.seata.core.model.GlobalStatus;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -65,7 +66,7 @@ public class GlobalSessionTest {
     @ParameterizedTest
     @MethodSource("globalSessionProvider")
     public void changeStatusTest(GlobalSession globalSession) throws Exception {
-        globalSession.changeStatus(GlobalStatus.Committed);
+        globalSession.changeStatus(GlobalOperation.COMMIT, GlobalStatus.Committing);
     }
 
     /**
