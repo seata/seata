@@ -28,7 +28,9 @@ import io.seata.core.rpc.netty.TmRpcClient;
 import io.seata.rm.RMClient;
 import io.seata.rm.datasource.DataSourceProxy;
 import io.seata.spring.annotation.datasource.DataSourceProxyHolder;
+import io.seata.spring.saga.SagaActionInterceptor;
 import io.seata.spring.tcc.TccActionInterceptor;
+import io.seata.spring.util.SAGABeanParserUtils;
 import io.seata.spring.util.SpringProxyUtils;
 import io.seata.spring.util.TCCBeanParserUtils;
 import io.seata.tm.TMClient;
@@ -220,7 +222,11 @@ public class GlobalTransactionScanner extends AbstractAutoProxyCreator
                 if (TCCBeanParserUtils.isTccAutoProxy(bean, beanName, applicationContext)) {
                     //TCC interceptor， proxy bean of sofa:reference/dubbo:reference, and LocalTCC
                     interceptor = new TccActionInterceptor(TCCBeanParserUtils.getRemotingDesc(beanName));
-                } else {
+                //check SAGA proxy
+                } else if (SAGABeanParserUtils.isSagaAutoProxy(bean, beanName, applicationContext)) {
+                    //SAGA interceptor， proxy bean of sofa:reference/dubbo:reference, and LocalTCC
+                    interceptor = new SagaActionInterceptor(SAGABeanParserUtils.getRemotingDesc(beanName));
+                }  else {
                     Class<?> serviceInterface = SpringProxyUtils.findTargetClass(bean);
                     Class<?>[] interfacesIfJdk = SpringProxyUtils.findInterfaces(bean);
 

@@ -39,6 +39,7 @@
         <module>server</module>
         <module>spring</module>
         <module>tcc</module>
+        <module>saga</module>
         <module>test</module>
         <module>tm</module>
         <module>metrics</module>

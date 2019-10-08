@@ -17,6 +17,7 @@ package io.seata.core.context;
 
 import io.seata.common.exception.ShouldNeverHappenException;
 
+import io.seata.common.util.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -32,21 +33,32 @@ public class RootContext {
     /**
      * The constant KEY_XID.
      */
-    public static final String KEY_XID = "TX_XID";
-
-    public static final String KEY_GLOBAL_LOCK_FLAG = "TX_LOCK";
-
-    private static ContextCore CONTEXT_HOLDER = ContextCoreLoader.load();
-
+    public static final String  KEY_XID              = "TX_XID";
+    
+    public static final String  KEY_XID_TYPE         = "TX_XID_TYPE";
+    
+    public static final String  KEY_GLOBAL_LOCK_FLAG = "TX_LOCK";
+    
+    private static ContextCore  CONTEXT_HOLDER       = ContextCoreLoader.load();
+    
     /**
      * Gets xid.
      *
      * @return the xid
      */
     public static String getXID() {
-        return CONTEXT_HOLDER.get(KEY_XID);
-    }
+        String xid =  CONTEXT_HOLDER.get(KEY_XID);
+        if(StringUtils.isNotBlank(xid)){
+            return xid;
+        }
 
+        String xidType = CONTEXT_HOLDER.get(KEY_XID_TYPE);
+        if(StringUtils.isNotBlank(xidType)){
+            return xidType.split("_")[0];
+        }
+        return null;
+    }
+    
     /**
      * Bind.
      *
@@ -59,6 +71,18 @@ public class RootContext {
         CONTEXT_HOLDER.put(KEY_XID, xid);
     }
 
+    /**
+     * Bind type
+     *
+     * @param xidType
+     */
+    public static void bindType(String xidType) {
+        if (LOGGER.isDebugEnabled()) {
+            LOGGER.debug("bind type " + xidType);
+        }
+        CONTEXT_HOLDER.put(KEY_XID_TYPE, xidType);
+    }
+    
     /**
      * declare local transactions will use global lock check for update/delete/insert/selectForUpdate SQL
      */
@@ -84,7 +108,20 @@ public class RootContext {
         }
         return xid;
     }
-
+    
+    /**
+     * Unbind temporary string
+     *
+     * @return the string
+     */
+    public static String unbindType() {
+        String xidType = CONTEXT_HOLDER.remove(KEY_XID_TYPE);
+        if (LOGGER.isDebugEnabled()) {
+            LOGGER.debug("unbind type " + xidType);
+        }
+        return xidType;
+    }
+    
     public static void unbindGlobalLockFlag() {
         String lockFlag = CONTEXT_HOLDER.remove(KEY_GLOBAL_LOCK_FLAG);
         if (LOGGER.isDebugEnabled() && lockFlag != null) {

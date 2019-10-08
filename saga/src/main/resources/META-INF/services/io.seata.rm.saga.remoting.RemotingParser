@@ -1,0 +1,3 @@
+io.seata.rm.saga.remoting.parser.DubboRemotingSagaParser
+io.seata.rm.saga.remoting.parser.LocalSAGARemotingParser
+io.seata.rm.saga.remoting.parser.SofaRpcRemotingSagaParser

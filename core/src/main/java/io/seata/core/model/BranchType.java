@@ -27,7 +27,13 @@ public enum BranchType {
      */
     // AT Branch
     AT,
-    
+
+    /**
+     * The At.
+     */
+    // AT Branch
+    SAGA,
+
     /**
      * The TCC.
      */

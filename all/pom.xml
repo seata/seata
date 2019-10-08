@@ -214,6 +214,11 @@
         </dependency>
         <dependency>
             <groupId>io.seata</groupId>
+            <artifactId>seata-saga</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>io.seata</groupId>
             <artifactId>seata-tm</artifactId>
             <version>${project.version}</version>
         </dependency>
@@ -536,6 +541,7 @@
                                     <include>io.seata:seata-sofa-rpc</include>
                                     <include>io.seata:seata-spring</include>
                                     <include>io.seata:seata-tcc</include>
+				    <include>io.seata:seata-saga</include>
                                     <include>io.seata:seata-tm</include>
                                     <include>io.seata:seata-codec-seata</include>
                                     <include>io.seata:seata-codec-protobuf</include>

@@ -185,6 +185,12 @@ public class DefaultCore implements Core {
                 globalSession.removeBranch(branchSession);
                 continue;
             }
+
+            if(branchSession.getBranchType() == BranchType.SAGA){
+                globalSession.removeBranch(branchSession);
+                continue;
+            }
+
             try {
                 BranchStatus branchStatus = resourceManagerInbound.branchCommit(branchSession.getBranchType(),
                     branchSession.getXid(), branchSession.getBranchId(),
