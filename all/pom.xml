@@ -199,6 +199,11 @@
         </dependency>
         <dependency>
             <groupId>io.seata</groupId>
+            <artifactId>seata-java-thread</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>io.seata</groupId>
             <artifactId>seata-rm</artifactId>
             <version>${project.version}</version>
         </dependency>
@@ -454,6 +459,16 @@
         </dependency>
 
         <dependency>
+            <groupId>org.aspectj</groupId>
+            <artifactId>aspectjrt</artifactId>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.aspectj</groupId>
+            <artifactId>aspectjweaver</artifactId>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
             <groupId>mysql</groupId>
             <artifactId>mysql-connector-java</artifactId>
             <scope>provided</scope>
@@ -570,6 +585,7 @@
                                     <include>io.seata:seata-dubbo</include>
                                     <include>io.seata:seata-dubbo-alibaba</include>
                                     <include>io.seata:seata-motan</include>
+                                    <include>io.seata:seata-java-thread</include>
                                     <include>io.seata:seata-rm</include>
                                     <include>io.seata:seata-rm-datasource</include>
                                     <include>io.seata:seata-sofa-rpc</include>

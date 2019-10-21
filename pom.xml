@@ -34,6 +34,7 @@
         <module>integration/dubbo-alibaba</module>
         <module>integration/sofa-rpc</module>
         <module>integration/motan</module>
+        <module>integration/java-thread</module>
         <module>rm</module>
         <module>rm-datasource</module>
         <module>server</module>

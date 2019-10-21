@@ -106,6 +106,7 @@
         <motan.version>1.0.0</motan.version>
         <jackson.version>2.9.9</jackson.version>
         <jcommander.version>1.72</jcommander.version>
+        <aspectj.version>1.8.13</aspectj.version>
 
         <!-- Compiler settings properties -->
         <maven.compiler.source>1.8</maven.compiler.source>
@@ -409,6 +410,16 @@
                 <groupId>com.beust</groupId>
                 <artifactId>jcommander</artifactId>
                 <version>${jcommander.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.aspectj</groupId>
+                <artifactId>aspectjrt</artifactId>
+                <version>${aspectj.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.aspectj</groupId>
+                <artifactId>aspectjweaver</artifactId>
+                <version>${aspectj.version}</version>
             </dependency>
             <dependency>
                 <groupId>com.esotericsoftware</groupId>

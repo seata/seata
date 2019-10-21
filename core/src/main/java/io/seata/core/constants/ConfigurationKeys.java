@@ -87,6 +87,7 @@ public class ConfigurationKeys {
      * The constant CLIENT_LOCK_RETRY_INTERNAL.
      */
     public static final String CLIENT_LOCK_RETRY_INTERNAL = CLIENT_PREFIX + "lock.retry.internal";
+    public static final String CLIENT_THREAD_PROPAGATE = CLIENT_PREFIX + "thread.propagate";
 
     /**
      * The constant SERVICE_SESSION_RELOAD_READ_SIZE
