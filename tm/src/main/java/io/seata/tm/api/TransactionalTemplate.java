@@ -43,7 +43,7 @@ public class TransactionalTemplate {
      * @return the object
      * @throws TransactionalExecutor.ExecutionException the execution exception
      */
-    public Object execute(TransactionalExecutor business) throws Throwable {
+    public static Object execute(TransactionalExecutor business) throws Throwable {
         // 1. get or create a transaction
         GlobalTransaction tx = GlobalTransactionContext.getCurrentOrCreate();
 
@@ -66,7 +66,7 @@ public class TransactionalTemplate {
             } catch (Throwable ex) {
 
                 // 3.the needed business exception to rollback.
-                completeTransactionAfterThrowing(txInfo,tx,ex);
+                completeTransactionAfterThrowing(txInfo, tx, ex);
                 throw ex;
             }
 
@@ -81,7 +81,7 @@ public class TransactionalTemplate {
         }
     }
 
-    private void completeTransactionAfterThrowing(TransactionInfo txInfo, GlobalTransaction tx, Throwable ex) throws TransactionalExecutor.ExecutionException {
+    public static void completeTransactionAfterThrowing(TransactionInfo txInfo, GlobalTransaction tx, Throwable ex) throws TransactionalExecutor.ExecutionException {
         //roll back
         if (txInfo != null && txInfo.rollbackOn(ex)) {
             try {
@@ -97,7 +97,7 @@ public class TransactionalTemplate {
         }
     }
 
-    private void commitTransaction(GlobalTransaction tx) throws TransactionalExecutor.ExecutionException {
+    public static void commitTransaction(GlobalTransaction tx) throws TransactionalExecutor.ExecutionException {
         try {
             triggerBeforeCommit();
             tx.commit();
@@ -105,11 +105,11 @@ public class TransactionalTemplate {
         } catch (TransactionException txe) {
             // 4.1 Failed to commit
             throw new TransactionalExecutor.ExecutionException(tx, txe,
-                TransactionalExecutor.Code.CommitFailure);
+                    TransactionalExecutor.Code.CommitFailure);
         }
     }
 
-    private void rollbackTransaction(GlobalTransaction tx, Throwable ex) throws TransactionException, TransactionalExecutor.ExecutionException {
+    public static void rollbackTransaction(GlobalTransaction tx, Throwable ex) throws TransactionException, TransactionalExecutor.ExecutionException {
         triggerBeforeRollback();
         tx.rollback();
         triggerAfterRollback();
@@ -117,19 +117,19 @@ public class TransactionalTemplate {
         throw new TransactionalExecutor.ExecutionException(tx, TransactionalExecutor.Code.RollbackDone, ex);
     }
 
-    private void beginTransaction(TransactionInfo txInfo, GlobalTransaction tx) throws TransactionalExecutor.ExecutionException {
+    public static void beginTransaction(TransactionInfo txInfo, GlobalTransaction tx) throws TransactionalExecutor.ExecutionException {
         try {
             triggerBeforeBegin();
             tx.begin(txInfo.getTimeOut(), txInfo.getName());
             triggerAfterBegin();
         } catch (TransactionException txe) {
             throw new TransactionalExecutor.ExecutionException(tx, txe,
-                TransactionalExecutor.Code.BeginFailure);
+                    TransactionalExecutor.Code.BeginFailure);
 
         }
     }
 
-    private void triggerBeforeBegin() {
+    public static void triggerBeforeBegin() {
         for (TransactionHook hook : getCurrentHooks()) {
             try {
                 hook.beforeBegin();
@@ -139,7 +139,7 @@ public class TransactionalTemplate {
         }
     }
 
-    private void triggerAfterBegin() {
+    public static void triggerAfterBegin() {
         for (TransactionHook hook : getCurrentHooks()) {
             try {
                 hook.afterBegin();
@@ -149,7 +149,7 @@ public class TransactionalTemplate {
         }
     }
 
-    private void triggerBeforeRollback() {
+    public static void triggerBeforeRollback() {
         for (TransactionHook hook : getCurrentHooks()) {
             try {
                 hook.beforeRollback();
@@ -159,7 +159,7 @@ public class TransactionalTemplate {
         }
     }
 
-    private void triggerAfterRollback() {
+    public static void triggerAfterRollback() {
         for (TransactionHook hook : getCurrentHooks()) {
             try {
                 hook.afterRollback();
@@ -169,7 +169,7 @@ public class TransactionalTemplate {
         }
     }
 
-    private void triggerBeforeCommit() {
+    public static void triggerBeforeCommit() {
         for (TransactionHook hook : getCurrentHooks()) {
             try {
                 hook.beforeCommit();
@@ -179,7 +179,7 @@ public class TransactionalTemplate {
         }
     }
 
-    private void triggerAfterCommit() {
+    public static void triggerAfterCommit() {
         for (TransactionHook hook : getCurrentHooks()) {
             try {
                 hook.afterCommit();
@@ -189,7 +189,7 @@ public class TransactionalTemplate {
         }
     }
 
-    private void triggerAfterCompletion() {
+    public static void triggerAfterCompletion() {
         for (TransactionHook hook : getCurrentHooks()) {
             try {
                 hook.afterCompletion();
@@ -199,11 +199,11 @@ public class TransactionalTemplate {
         }
     }
 
-    private void cleanUp() {
+    public static void cleanUp() {
         TransactionHookManager.clear();
     }
 
-    private List<TransactionHook> getCurrentHooks() {
+    public static List<TransactionHook> getCurrentHooks() {
         return TransactionHookManager.getHooks();
     }
 

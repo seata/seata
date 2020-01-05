@@ -51,7 +51,6 @@ public class BaseTransactionalExecutorTest {
                 return null;
             }
         };
-        GlobalLockTemplate<Object> globalLockLocalTransactionalTemplate = new GlobalLockTemplate<>();
 
         // not in global lock context
         ((Callable<Object>) () -> {
@@ -65,7 +64,7 @@ public class BaseTransactionalExecutorTest {
         }).call();
 
         //in global lock context
-        globalLockLocalTransactionalTemplate.execute(new Callable<Object>() {
+        GlobalLockTemplate.execute(new Callable<Object>() {
 
             @Override
             public Object call() throws Exception {

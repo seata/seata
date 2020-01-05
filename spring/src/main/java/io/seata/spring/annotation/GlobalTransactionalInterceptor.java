@@ -51,9 +51,6 @@ public class GlobalTransactionalInterceptor implements ConfigurationChangeListen
 
     private static final Logger LOGGER = LoggerFactory.getLogger(GlobalTransactionalInterceptor.class);
     private static final FailureHandler DEFAULT_FAIL_HANDLER = new DefaultFailureHandlerImpl();
-
-    private final TransactionalTemplate transactionalTemplate = new TransactionalTemplate();
-    private final GlobalLockTemplate<Object> globalLockTemplate = new GlobalLockTemplate<>();
     private final FailureHandler failureHandler;
     private volatile boolean disable;
 
@@ -87,6 +84,19 @@ public class GlobalTransactionalInterceptor implements ConfigurationChangeListen
     }
 
     private Object handleGlobalLock(final MethodInvocation methodInvocation) throws Exception {
+<<<<<<< HEAD
+        return GlobalLockTemplate.execute(new Callable<Object>() {
+            @Override
+            public Object call() throws Exception {
+                try {
+                    return methodInvocation.proceed();
+                } catch (Throwable e) {
+                    if (e instanceof Exception) {
+                        throw (Exception)e;
+                    } else {
+                        throw new RuntimeException(e);
+                    }
+=======
         return globalLockTemplate.execute(() -> {
             try {
                 return methodInvocation.proceed();
@@ -95,6 +105,7 @@ public class GlobalTransactionalInterceptor implements ConfigurationChangeListen
                     throw (Exception)e;
                 } else {
                     throw new RuntimeException(e);
+>>>>>>> upstream/develop
                 }
             }
         });
@@ -103,7 +114,7 @@ public class GlobalTransactionalInterceptor implements ConfigurationChangeListen
     private Object handleGlobalTransaction(final MethodInvocation methodInvocation,
                                            final GlobalTransactional globalTrxAnno) throws Throwable {
         try {
-            return transactionalTemplate.execute(new TransactionalExecutor() {
+            return TransactionalTemplate.execute(new TransactionalExecutor() {
                 @Override
                 public Object execute() throws Throwable {
                     return methodInvocation.proceed();

@@ -34,9 +34,7 @@ public class GlobalLockLocalTransactionlTemplateTest {
     @Test
     public void testFlag() throws Exception {
 
-        GlobalLockTemplate<Object> template = new GlobalLockTemplate<Object>();
-
-        template.execute(() -> {
+        GlobalLockTemplate.execute(() -> {
             Assertions.assertTrue(RootContext.requireGlobalLock(), "lock flag not set!");
             return null;
         });

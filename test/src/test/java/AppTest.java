@@ -59,9 +59,8 @@ public class AppTest {
         jdbcTemplate.update("insert into user0 (id, name, gmt) values (1, 'user0', '2019-01-01')");
         jdbcTemplate.update("delete from user1");
         final MyBusinessException bizException = new MyBusinessException("mock bizException");
-        TransactionalTemplate transactionalTemplate = new TransactionalTemplate();
         try {
-            transactionalTemplate.execute(new TransactionalExecutor() {
+            TransactionalTemplate.execute(new TransactionalExecutor() {
                 @Override
                 public Object execute() throws Throwable {
                     if (LOGGER.isInfoEnabled()) {
