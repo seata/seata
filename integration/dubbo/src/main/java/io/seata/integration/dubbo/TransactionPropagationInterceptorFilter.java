@@ -34,42 +34,44 @@ import org.slf4j.LoggerFactory;
  * @author sharajava
  */
 @Activate(group = {Constants.PROVIDER, Constants.CONSUMER}, order = 100)
-public class TransactionPropagationFilter implements Filter {
+public class TransactionPropagationInterceptorFilter implements Filter {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(TransactionPropagationFilter.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(TransactionPropagationInterceptorFilter.class);
 
     @Override
     public Result invoke(Invoker<?> invoker, Invocation invocation) throws RpcException {
-        String xid = RootContext.getXID();
-        String rpcXid = RpcContext.getContext().getAttachment(RootContext.KEY_XID);
+        String xidInterceptorType = RootContext.getXIDInterceptorType();
+        String rpcXidInterceptorType = RpcContext.getContext().getAttachment(RootContext.KEY_XID_INTERCEPTOR_TYPE);
         if (LOGGER.isDebugEnabled()) {
-            LOGGER.debug("xid in RootContext[" + xid + "] xid in RpcContext[" + rpcXid + "]");
+            LOGGER.debug("xidInterceptorType in RootContext[{}] rpcXidInterceptorType in RpcContext[{}]",
+                    xidInterceptorType, rpcXidInterceptorType);
         }
         boolean bind = false;
-        if (StringUtils.isNotBlank(xid) && RootContext.inGlobalTransaction()) {
-            RpcContext.getContext().setAttachment(RootContext.KEY_XID, xid);
+        if (StringUtils.isNotBlank(xidInterceptorType)) {
+            RpcContext.getContext().setAttachment(RootContext.KEY_XID_INTERCEPTOR_TYPE, xidInterceptorType);
         } else {
-            if (StringUtils.isNotBlank(rpcXid)) {
-                RootContext.bind(rpcXid);
+            if (StringUtils.isNotBlank(rpcXidInterceptorType)) {
+                RootContext.bindInterceptorType(rpcXidInterceptorType);
                 bind = true;
                 if (LOGGER.isDebugEnabled()) {
-                    LOGGER.debug("bind[" + rpcXid + "] to RootContext");
+                    LOGGER.debug("bind interceptorType[{}] to RootContext", rpcXidInterceptorType);
                 }
             }
         }
+
         try {
             return invoker.invoke(invocation);
         } finally {
             if (bind) {
-                String unbindXid = RootContext.unbind();
+                String unbindInterceptorType = RootContext.unbindInterceptorType();
                 if (LOGGER.isDebugEnabled()) {
-                    LOGGER.debug("unbind[" + unbindXid + "] from RootContext");
+                    LOGGER.debug("unbind interceptorType[{}] from RootContext", unbindInterceptorType);
                 }
-                if (!rpcXid.equalsIgnoreCase(unbindXid)) {
-                    LOGGER.warn("xid in change during RPC from " + rpcXid + " to " + unbindXid);
-                    if (unbindXid != null) {
-                        RootContext.bind(unbindXid);
-                        LOGGER.warn("bind [" + unbindXid + "] back to RootContext");
+                if (!rpcXidInterceptorType.equalsIgnoreCase(unbindInterceptorType)) {
+                    LOGGER.warn("xidInterceptorType in change during RPC from {} to {}", rpcXidInterceptorType, unbindInterceptorType);
+                    if (unbindInterceptorType != null) {
+                        RootContext.bindInterceptorType(unbindInterceptorType);
+                        LOGGER.warn("bind interceptorType [{}] back to RootContext", unbindInterceptorType);
                     }
                 }
             }

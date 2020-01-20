@@ -34,26 +34,27 @@ import org.slf4j.LoggerFactory;
  * @author sharajava
  */
 @Activate(group = {Constants.PROVIDER, Constants.CONSUMER}, order = 100)
-public class TransactionPropagationFilter implements Filter {
+public class TransactionPropagationAnnotationFilter implements Filter {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(TransactionPropagationFilter.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(TransactionPropagationAnnotationFilter.class);
 
     @Override
     public Result invoke(Invoker<?> invoker, Invocation invocation) throws RpcException {
-        String xid = RootContext.getXID();
-        String rpcXid = RpcContext.getContext().getAttachment(RootContext.KEY_XID);
+        String xidAnnotationType = RootContext.getXIDAnnotationType();
+        String rpcXidAnnotationType = RpcContext.getContext().getAttachment(RootContext.KEY_XID_ANNOTATION_TYPE);
         if (LOGGER.isDebugEnabled()) {
-            LOGGER.debug("xid in RootContext[" + xid + "] xid in RpcContext[" + rpcXid + "]");
+            LOGGER.debug("xidAnnotationType in RootContext[{}] rpcXidAnnotationType in RpcContext[{}]",
+                    xidAnnotationType, rpcXidAnnotationType);
         }
         boolean bind = false;
-        if (StringUtils.isNotBlank(xid) && RootContext.inGlobalTransaction()) {
-            RpcContext.getContext().setAttachment(RootContext.KEY_XID, xid);
+        if (StringUtils.isNotBlank(xidAnnotationType)) {
+            RpcContext.getContext().setAttachment(RootContext.KEY_XID_ANNOTATION_TYPE, xidAnnotationType);
         } else {
-            if (StringUtils.isNotBlank(rpcXid)) {
-                RootContext.bind(rpcXid);
+            if (StringUtils.isNotBlank(rpcXidAnnotationType)) {
+                RootContext.bindAnnotationType(rpcXidAnnotationType);
                 bind = true;
                 if (LOGGER.isDebugEnabled()) {
-                    LOGGER.debug("bind[" + rpcXid + "] to RootContext");
+                    LOGGER.debug("bind annotationType[{}] to RootContext", rpcXidAnnotationType);
                 }
             }
         }
@@ -61,15 +62,15 @@ public class TransactionPropagationFilter implements Filter {
             return invoker.invoke(invocation);
         } finally {
             if (bind) {
-                String unbindXid = RootContext.unbind();
+                String unbindAnnotationType = RootContext.unbindAnnotationType();
                 if (LOGGER.isDebugEnabled()) {
-                    LOGGER.debug("unbind[" + unbindXid + "] from RootContext");
+                    LOGGER.debug("unbind annotationType[{}] from RootContext", unbindAnnotationType);
                 }
-                if (!rpcXid.equalsIgnoreCase(unbindXid)) {
-                    LOGGER.warn("xid in change during RPC from " + rpcXid + " to " + unbindXid);
-                    if (unbindXid != null) {
-                        RootContext.bind(unbindXid);
-                        LOGGER.warn("bind [" + unbindXid + "] back to RootContext");
+                if (!rpcXidAnnotationType.equalsIgnoreCase(unbindAnnotationType)) {
+                    LOGGER.warn("xidAnnotationType in change during RPC from {} to {}", rpcXidAnnotationType, unbindAnnotationType);
+                    if (unbindAnnotationType != null) {
+                        RootContext.bindAnnotationType(unbindAnnotationType);
+                        LOGGER.warn("bind annotationType [{}] back to RootContext", unbindAnnotationType);
                     }
                 }
             }

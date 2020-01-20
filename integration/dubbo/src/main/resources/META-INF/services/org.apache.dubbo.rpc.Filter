@@ -1,1 +1,4 @@
 io.seata.integration.dubbo.TransactionPropagationFilter
+io.seata.integration.dubbo.TransactionPropagationInterceptorFilter
+io.seata.integration.dubbo.TransactionPropagationAnnotationFilter
+io.seata.integration.dubbo.TccConsumerAnnotationFilter

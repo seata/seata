@@ -16,8 +16,8 @@
 package io.seata.core.context;
 
 import io.seata.common.exception.ShouldNeverHappenException;
-import io.seata.core.model.BranchType;
 import io.seata.common.util.StringUtils;
+import io.seata.core.model.BranchType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -30,17 +30,14 @@ import java.util.Map;
  */
 public class RootContext {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(RootContext.class);
-
     /**
      * The constant KEY_XID.
      */
     public static final String KEY_XID = "TX_XID";
-
+    public static final String KEY_XID_ANNOTATION_TYPE = "tx-xid-annotation-type";
     public static final String KEY_XID_INTERCEPTOR_TYPE = "tx-xid-interceptor-type";
-
     public static final String KEY_GLOBAL_LOCK_FLAG = "TX_LOCK";
-
+    private static final Logger LOGGER = LoggerFactory.getLogger(RootContext.class);
     private static ContextCore CONTEXT_HOLDER = ContextCoreLoader.load();
 
     /**
@@ -54,12 +51,26 @@ public class RootContext {
             return xid;
         }
 
-        String xidType = CONTEXT_HOLDER.get(KEY_XID_INTERCEPTOR_TYPE);
-        if (StringUtils.isNotBlank(xidType) && xidType.indexOf("_") > -1) {
-            return xidType.split("_")[0];
+        String xidInterceptorType = CONTEXT_HOLDER.get(KEY_XID_INTERCEPTOR_TYPE);
+        if (StringUtils.isNotBlank(xidInterceptorType) && xidInterceptorType.indexOf("_") > -1) {
+            return xidInterceptorType.split("_")[0];
+        }
+
+        String xidAnnotationType = CONTEXT_HOLDER.get(KEY_XID_INTERCEPTOR_TYPE);
+        if (StringUtils.isNotBlank(xidAnnotationType) && xidAnnotationType.indexOf("_") > -1) {
+            return xidAnnotationType.split("_")[0];
         }
 
         return null;
+    }
+
+    /**
+     * Gets xid.
+     *
+     * @return the xid
+     */
+    public static String getXIDAnnotationType() {
+        return CONTEXT_HOLDER.get(KEY_XID_ANNOTATION_TYPE);
     }
 
     /**
@@ -85,19 +96,30 @@ public class RootContext {
 
     /**
      * Bind interceptor type
-     *
-     * @param xidType
      */
     public static void bindInterceptorType(String xidType) {
         if (StringUtils.isNotBlank(xidType)) {
-
             String[] xidTypes = xidType.split("_");
-
             if (xidTypes.length == 2) {
                 bindInterceptorType(xidTypes[0], BranchType.valueOf(xidTypes[1]));
             }
         }
     }
+
+    /**
+     * Bind interceptor type
+     *
+     * @param xidType
+     */
+    public static void bindAnnotationType(String xidType) {
+        if (StringUtils.isNotBlank(xidType)) {
+            String[] xidTypes = xidType.split("_");
+            if (xidTypes.length == 2) {
+                bindAnnotationType(xidTypes[0], BranchType.valueOf(xidTypes[1]));
+            }
+        }
+    }
+
 
     /**
      * Bind interceptor type
@@ -114,7 +136,22 @@ public class RootContext {
     }
 
     /**
-     * declare local transactions will use global lock check for update/delete/insert/selectForUpdate SQL
+     * Bind filter type
+     *
+     * @param xid
+     * @param branchType
+     */
+    public static void bindAnnotationType(String xid, BranchType branchType) {
+        String xidType = String.format("%s_%s", xid, branchType.name());
+        if (LOGGER.isDebugEnabled()) {
+            LOGGER.debug("bind filter type xid={} branchType={}", xid, branchType);
+        }
+        CONTEXT_HOLDER.put(KEY_XID_ANNOTATION_TYPE, xidType);
+    }
+
+    /**
+     * declare local transactions will use global lock check for update/delete/insert/selectForUpdate
+     * SQL
      */
     public static void bindGlobalLockFlag() {
 
@@ -137,6 +174,19 @@ public class RootContext {
             LOGGER.debug("unbind {} ", xid);
         }
         return xid;
+    }
+
+    /**
+     * Unbind temporary string
+     *
+     * @return the string
+     */
+    public static String unbindAnnotationType() {
+        String xidType = CONTEXT_HOLDER.remove(KEY_XID_ANNOTATION_TYPE);
+        if (LOGGER.isDebugEnabled()) {
+            LOGGER.debug("unbind annotation type {}", xidType);
+        }
+        return xidType;
     }
 
     /**
@@ -169,6 +219,15 @@ public class RootContext {
     }
 
     /**
+     * In global transaction boolean.
+     *
+     * @return the boolean
+     */
+    public static boolean inGlobalTransactionSagaTcc() {
+        return CONTEXT_HOLDER.get(KEY_XID_ANNOTATION_TYPE) != null || CONTEXT_HOLDER.get(KEY_XID_INTERCEPTOR_TYPE) != null;
+    }
+
+    /**
      * requires global lock check
      *
      * @return
@@ -188,8 +247,6 @@ public class RootContext {
 
     /**
      * entry map
-     *
-     * @return
      */
     public static Map<String, String> entries() {
         return CONTEXT_HOLDER.entries();

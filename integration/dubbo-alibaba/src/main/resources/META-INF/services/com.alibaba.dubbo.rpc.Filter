@@ -1,1 +1,4 @@
 io.seata.integration.dubbo.alibaba.TransactionPropagationFilter
+io.seata.integration.dubbo.alibaba.TransactionPropagationInterceptorFilter
+io.seata.integration.dubbo.alibaba.TransactionPropagationAnnotationFilter
+io.seata.integration.dubbo.alibaba.TccConsumerAnnotationFilter
