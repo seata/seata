@@ -250,6 +250,7 @@ public class DatabaseTransactionStoreManager extends AbstractTransactionStoreMan
         session.setStatus(GlobalStatus.get(globalTransactionDO.getStatus()));
         session.setApplicationData(globalTransactionDO.getApplicationData());
         session.setBeginTime(globalTransactionDO.getBeginTime());
+        session.setVersion(globalTransactionDO.getVersion());
         return session;
     }
 
@@ -284,6 +285,7 @@ public class DatabaseTransactionStoreManager extends AbstractTransactionStoreMan
         globalTransactionDO.setTransactionName(globalSession.getTransactionName());
         globalTransactionDO.setTransactionServiceGroup(globalSession.getTransactionServiceGroup());
         globalTransactionDO.setApplicationData(globalSession.getApplicationData());
+        globalTransactionDO.setVersion(globalSession.getVersion());
         return globalTransactionDO;
     }
 

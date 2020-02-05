@@ -16,6 +16,7 @@
 package io.seata.server.session.db;
 
 import io.seata.common.XID;
+import io.seata.common.exception.StoreException;
 import io.seata.common.util.IOUtil;
 import io.seata.core.exception.TransactionException;
 import io.seata.core.model.BranchStatus;
@@ -89,7 +90,8 @@ public class DataBaseSessionManagerTest {
                 s.execute("drop table global_table");
             } catch (Exception e) {
             }
-            s.execute("CREATE TABLE global_table ( xid varchar(96),  transaction_id long , STATUS int,  application_id varchar(32), transaction_service_group varchar(32) ,transaction_name varchar(128) ,timeout int,  begin_time long, application_data varchar(500), gmt_create TIMESTAMP(6) ,gmt_modified TIMESTAMP(6) ) ");
+            s.execute("CREATE TABLE global_table ( xid varchar(96),  transaction_id long , STATUS int,  application_id varchar(32), transaction_service_group varchar(32) ,transaction_name varchar(128) ,timeout int,  begin_time long, application_data varchar(500), gmt_create TIMESTAMP(6) ,gmt_modified TIMESTAMP(6), version int ) ");
+
             System.out.println("create table global_table success.");
 
             try {
@@ -594,6 +596,54 @@ public class DataBaseSessionManagerTest {
         }
     }
 
+    @Test
+    public void test_updateGlobalSessionStatusWithOptimisticLocking() throws TransactionException, SQLException {
+        GlobalSession session = GlobalSession.createGlobalSession("test", "test", "test123", 100);
+        String xid = XID.generateXID(session.getTransactionId());
+        session.setXid(xid);
+        session.setTransactionId(146757978);
+        session.setBeginTime(System.currentTimeMillis());
+        session.setApplicationData("abc=878s");
+        session.setStatus(GlobalStatus.Begin);
 
+        sessionManager.addGlobalSession(session);
+
+        GlobalSession sessionShadow = sessionManager.findGlobalSession(xid);
+        Assertions.assertNotNull(sessionShadow);
+
+        sessionManager.updateGlobalSessionStatus(session, GlobalStatus.Committing);
+        Assertions.assertEquals(GlobalStatus.Committing, session.getStatus());
+        Assertions.assertEquals(1, session.getVersion());
+
+        boolean shadowCommittedFailed = false;
+        try {
+            sessionManager.updateGlobalSessionStatus(sessionShadow, GlobalStatus.Committed);
+        } catch(StoreException e) {
+            Assertions.assertEquals("GlobalSession was updated or deleted by another transaction", e.getMessage());
+            shadowCommittedFailed = true;
+        }
+        Assertions.assertTrue(shadowCommittedFailed);
+
+        sessionManager.updateGlobalSessionStatus(session, GlobalStatus.Committed);
+        Assertions.assertEquals(2, session.getVersion());
+
+        session = sessionManager.findGlobalSession(xid);
+        Assertions.assertNotNull(session);
+        Assertions.assertEquals(2, session.getVersion());
+
+        String sql = "select * from global_table where xid= '"+xid+"'";
+        String delSql = "delete from global_table where xid= '"+xid+"'";
+        try(Connection conn = dataSource.getConnection()) {
+            ResultSet rs = conn.createStatement().executeQuery(sql);
+            if(rs.next()){
+                Assertions.assertTrue(true);
+                Assertions.assertEquals(rs.getInt("status"), GlobalStatus.Committed.getCode());
+                Assertions.assertEquals(rs.getInt("version"), 2);
+            }else{
+                Assertions.assertTrue(false);
+            }
+            conn.createStatement().execute(delSql);
+        }
+    }
 
 }

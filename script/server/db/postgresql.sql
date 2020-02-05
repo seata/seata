@@ -13,6 +13,7 @@ CREATE TABLE IF NOT EXISTS public.global_table
     application_data          VARCHAR(2000),
     gmt_create                TIMESTAMP(0),
     gmt_modified              TIMESTAMP(0),
+    version                   INT NOT NULL,
     CONSTRAINT pk_global_table PRIMARY KEY (xid)
 );
 

@@ -78,6 +78,10 @@ public class ServerTableColumnsName {
     public static final String GLOBAL_TABLE_GMT_MODIFIED = "gmt_modified";
 
 
+    /**
+     * The constant global_table column name version
+     */
+    public static final String GLOBAL_TABLE_VERSION = "version";
 
 
 

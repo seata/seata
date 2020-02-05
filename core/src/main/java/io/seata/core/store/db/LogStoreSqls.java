@@ -51,8 +51,7 @@ public class LogStoreSqls {
         + ServerTableColumnsName.GLOBAL_TABLE_TRANSACTION_SERVICE_GROUP + ", " + ServerTableColumnsName.GLOBAL_TABLE_TRANSACTION_NAME + ", "
         + ServerTableColumnsName.GLOBAL_TABLE_TIMEOUT + ", " + ServerTableColumnsName.GLOBAL_TABLE_BEGIN_TIME + ", "
         + ServerTableColumnsName.GLOBAL_TABLE_APPLICATION_DATA + ", " + ServerTableColumnsName.GLOBAL_TABLE_GMT_CREATE + ", "
-        + ServerTableColumnsName.GLOBAL_TABLE_GMT_MODIFIED;
-
+        + ServerTableColumnsName.GLOBAL_TABLE_GMT_MODIFIED + ", " + ServerTableColumnsName.GLOBAL_TABLE_VERSION;
 
     /**
      * The constant ALL_BRANCH_COLUMNS.
@@ -71,26 +70,26 @@ public class LogStoreSqls {
      */
     public static final String INSERT_GLOBAL_TRANSACTION_MYSQL = "insert into " + GLOBAL_TABLE_PLACEHOLD + "("
         + ALL_GLOBAL_COLUMNS + ")" +
-        "values(?, ?, ?, ?, ?, ?, ?, ?, ?, now(), now()) ";
+        "values(?, ?, ?, ?, ?, ?, ?, ?, ?, now(), now(), ?) ";
 
     /**
      * The constant INSERT_GLOBAL_TRANSACTION_ORACLE.
      */
     public static final String INSERT_GLOBAL_TRANSACTION_ORACLE = "insert into " + GLOBAL_TABLE_PLACEHOLD + "("
         + ALL_GLOBAL_COLUMNS + ")" +
-        "values(?, ?, ?, ?, ?, ?, ?, ?, ?, sysdate, sysdate) ";
+        "values(?, ?, ?, ?, ?, ?, ?, ?, ?, sysdate, sysdate, ?) ";
 
     /**
      * The constant UPDATE_GLOBAL_TRANSACTION_STATUS_MYSQL.
      */
     public static final String UPDATE_GLOBAL_TRANSACTION_STATUS_MYSQL = "update " + GLOBAL_TABLE_PLACEHOLD
-        + " set " + ServerTableColumnsName.GLOBAL_TABLE_STATUS + " = ?, " + ServerTableColumnsName.GLOBAL_TABLE_GMT_MODIFIED + " = now() where " + ServerTableColumnsName.GLOBAL_TABLE_XID + " = ?";
+        + " set " + ServerTableColumnsName.GLOBAL_TABLE_STATUS + " = ?, " + ServerTableColumnsName.GLOBAL_TABLE_GMT_MODIFIED + " = now(), " + ServerTableColumnsName.GLOBAL_TABLE_VERSION + " = " + ServerTableColumnsName.GLOBAL_TABLE_VERSION + " + 1 where " + ServerTableColumnsName.GLOBAL_TABLE_XID + " = ? and " + ServerTableColumnsName.GLOBAL_TABLE_VERSION + " = ?";
 
     /**
      * The constant UPDATE_GLOBAL_TRANSACTION_STATUS_ORACLE.
      */
     public static final String UPDATE_GLOBAL_TRANSACTION_STATUS_ORACLE = "update " + GLOBAL_TABLE_PLACEHOLD
-        + " set " + ServerTableColumnsName.GLOBAL_TABLE_STATUS + " = ?, " + ServerTableColumnsName.GLOBAL_TABLE_GMT_MODIFIED + " = sysdate where " + ServerTableColumnsName.GLOBAL_TABLE_XID + " = ?";
+        + " set " + ServerTableColumnsName.GLOBAL_TABLE_STATUS + " = ?, " + ServerTableColumnsName.GLOBAL_TABLE_GMT_MODIFIED + " = sysdate, " + ServerTableColumnsName.GLOBAL_TABLE_VERSION + " = " + ServerTableColumnsName.GLOBAL_TABLE_VERSION + " + 1 where " + ServerTableColumnsName.GLOBAL_TABLE_XID + " = ? and " + ServerTableColumnsName.GLOBAL_TABLE_VERSION + " = ?";
 
     /**
      * The constant DELETE_GLOBAL_TRANSACTION.

@@ -13,6 +13,7 @@ CREATE TABLE global_table
     application_data          VARCHAR2(2000),
     gmt_create                TIMESTAMP(0),
     gmt_modified              TIMESTAMP(0),
+    version                   NUMBER(10) NOT NULL,
     PRIMARY KEY (xid)
 );
 

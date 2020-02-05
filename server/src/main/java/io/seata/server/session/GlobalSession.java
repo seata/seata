@@ -70,6 +70,8 @@ public class GlobalSession implements SessionLifecycle, SessionStorable {
 
     private String applicationData;
 
+    private int version;
+
     private boolean active = true;
 
     private final ArrayList<BranchSession> branchSessions = new ArrayList<>();
@@ -437,6 +439,24 @@ public class GlobalSession implements SessionLifecycle, SessionStorable {
     }
 
     /**
+     * Gets session version
+     *
+     * @return session version
+     */
+    public int getVersion() {
+        return version;
+    }
+
+    /**
+     * Sets session version
+     *
+     * @param version the session version
+     */
+    public void setVersion(int version) {
+        this.version = version;
+    }
+
+    /**
      * Create global session global session.
      *
      * @param applicationId  the application id
@@ -519,6 +539,7 @@ public class GlobalSession implements SessionLifecycle, SessionStorable {
 
         byteBuffer.putLong(beginTime);
         byteBuffer.put((byte)status.getCode());
+        byteBuffer.putInt(version);
         byteBuffer.flip();
         byte[] result = new byte[byteBuffer.limit()];
         byteBuffer.get(result);
@@ -536,6 +557,7 @@ public class GlobalSession implements SessionLifecycle, SessionStorable {
             + 4 // applicationDataBytes.length
             + 8 // beginTime
             + 1 // statusCode
+            + 4 // version
             + (byApplicationIdBytes == null ? 0 : byApplicationIdBytes.length)
             + (byServiceGroupBytes == null ? 0 : byServiceGroupBytes.length)
             + (byTxNameBytes == null ? 0 : byTxNameBytes.length)
@@ -582,6 +604,7 @@ public class GlobalSession implements SessionLifecycle, SessionStorable {
 
         this.beginTime = byteBuffer.getLong();
         this.status = GlobalStatus.get(byteBuffer.get());
+        this.version = byteBuffer.getInt();
     }
 
     /**

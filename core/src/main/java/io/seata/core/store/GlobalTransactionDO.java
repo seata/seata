@@ -48,6 +48,8 @@ public class GlobalTransactionDO {
 
     private Date gmtModified;
 
+    private int version;
+
     /**
      * Gets xid.
      *
@@ -244,6 +246,24 @@ public class GlobalTransactionDO {
      */
     public void setGmtModified(Date gmtModified) {
         this.gmtModified = gmtModified;
+    }
+
+    /**
+     * Gets record version
+     *
+     * @return the record version
+     */
+    public int getVersion() {
+        return version;
+    }
+
+    /**
+     * Sets record version
+     *
+     * @param version the record version
+     */
+    public void setVersion(int version) {
+        this.version = version;
     }
 
     @Override

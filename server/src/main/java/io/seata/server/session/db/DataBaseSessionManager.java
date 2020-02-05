@@ -107,6 +107,7 @@ public class DataBaseSessionManager extends AbstractSessionManager
         if (!ret) {
             throw new StoreException("updateGlobalSessionStatus failed.");
         }
+        session.setVersion(session.getVersion() + 1);
     }
 
     /**

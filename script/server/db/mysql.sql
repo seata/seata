@@ -13,6 +13,7 @@ CREATE TABLE IF NOT EXISTS `global_table`
     `application_data`          VARCHAR(2000),
     `gmt_create`                DATETIME,
     `gmt_modified`              DATETIME,
+    `version`                   INT NOT NULL,
     PRIMARY KEY (`xid`),
     KEY `idx_gmt_modified_status` (`gmt_modified`, `status`),
     KEY `idx_transaction_id` (`transaction_id`)

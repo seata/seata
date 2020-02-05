@@ -149,6 +149,7 @@ public class GlobalSessionTest {
         Assertions.assertEquals(expected.getApplicationId(), globalSession.getApplicationId());
         Assertions.assertEquals(expected.getTransactionServiceGroup(), globalSession.getTransactionServiceGroup());
         Assertions.assertEquals(expected.getTransactionName(), globalSession.getTransactionName());
+        Assertions.assertEquals(expected.getVersion(), globalSession.getVersion());
     }
 
     /**
@@ -159,6 +160,7 @@ public class GlobalSessionTest {
     static Stream<Arguments> globalSessionProvider() {
         GlobalSession globalSession = new GlobalSession("demo-app", "my_test_tx_group", "test", 6000);
         globalSession.setActive(true);
+        globalSession.setVersion(10);
         globalSession.addSessionLifecycleListener(new DefaultSessionManager("default"));
         return Stream.of(
                 Arguments.of(

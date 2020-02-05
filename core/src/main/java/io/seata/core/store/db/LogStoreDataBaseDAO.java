@@ -223,6 +223,7 @@ public class LogStoreDataBaseDAO implements LogStore, Initialize {
             ps.setInt(7, globalTransactionDO.getTimeout());
             ps.setLong(8, globalTransactionDO.getBeginTime());
             ps.setString(9, globalTransactionDO.getApplicationData());
+            ps.setInt(10, globalTransactionDO.getVersion());
             return ps.executeUpdate() > 0;
         } catch (SQLException e) {
             throw new StoreException(e);
@@ -242,7 +243,12 @@ public class LogStoreDataBaseDAO implements LogStore, Initialize {
             ps = conn.prepareStatement(sql);
             ps.setInt(1, globalTransactionDO.getStatus());
             ps.setString(2, globalTransactionDO.getXid());
-            return ps.executeUpdate() > 0;
+            ps.setInt(3, globalTransactionDO.getVersion());
+            int cnt = ps.executeUpdate();
+            if (cnt != 1) {
+                throw new StoreException("GlobalSession was updated or deleted by another transaction");
+            }
+            return true;
         } catch (SQLException e) {
             throw new StoreException(e);
         } finally {
@@ -438,6 +444,7 @@ public class LogStoreDataBaseDAO implements LogStore, Initialize {
         globalTransactionDO.setApplicationData(rs.getString(ServerTableColumnsName.GLOBAL_TABLE_APPLICATION_DATA));
         globalTransactionDO.setGmtCreate(rs.getTimestamp(ServerTableColumnsName.GLOBAL_TABLE_GMT_CREATE));
         globalTransactionDO.setGmtModified(rs.getTimestamp(ServerTableColumnsName.GLOBAL_TABLE_GMT_MODIFIED));
+        globalTransactionDO.setVersion(rs.getInt(ServerTableColumnsName.GLOBAL_TABLE_VERSION));
         return globalTransactionDO;
     }
 
