@@ -38,5 +38,6 @@
         <module>seata-discovery-nacos</module>
         <module>seata-discovery-etcd3</module>
         <module>seata-discovery-sofa</module>
+        <module>seata-discovery-kubernetes</module>
     </modules>
 </project>

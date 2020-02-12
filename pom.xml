@@ -111,13 +111,12 @@
         <protobuf-maven-plugin.version>0.5.0</protobuf-maven-plugin.version>
         <license-maven-plugin.version>3.0</license-maven-plugin.version>
         <maven-checkstyle-plugin.version>3.0.0</maven-checkstyle-plugin.version>
-
         <!-- for test -->
         <junit-jupiter.version>5.4.2</junit-jupiter.version>
         <mockito.version>2.23.4</mockito.version>
         <assertj-core.version>3.12.2</assertj-core.version>
         <junit-platform-launcher.version>1.4.2</junit-platform-launcher.version>
-
+      
         <!-- for docker image-->
         <image.publish.skip>true</image.publish.skip>
         <image.tags>latest</image.tags>
@@ -171,7 +170,6 @@
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
-
         </dependencies>
     </dependencyManagement>
 
