@@ -151,7 +151,6 @@ public final class TmRpcClient extends AbstractRpcRemotingClient {
     @Override
     public void onRegisterMsgSuccess(String serverAddress, Channel channel, Object response,
                                      AbstractMessage requestMessage) {
-        getClientChannelManager().registerChannel(serverAddress, channel);
     }
 
     @Override

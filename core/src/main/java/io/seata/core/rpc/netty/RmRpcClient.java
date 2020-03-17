@@ -166,7 +166,6 @@ public final class RmRpcClient extends AbstractRpcRemotingClient {
         if (LOGGER.isInfoEnabled()) {
             LOGGER.info("register RM success. server version:{},channel:{}", ((RegisterRMResponse)response).getVersion(), channel);
         }
-        getClientChannelManager().registerChannel(serverAddress, channel);
         String dbKey = getMergedResourceKeys();
         RegisterRMRequest message = (RegisterRMRequest)requestMessage;
         if (message.getResourceIds() != null) {
@@ -194,19 +193,17 @@ public final class RmRpcClient extends AbstractRpcRemotingClient {
      * @param resourceId      the db key
      */
     public void registerResource(String resourceGroupId, String resourceId) {
-        if (getClientChannelManager().getChannels().isEmpty()) {
+        if (getClientChannelManager().channelCount() <= 0) {
             getClientChannelManager().reconnect(transactionServiceGroup);
             return;
         }
-        synchronized (getClientChannelManager().getChannels()) {
-            for (Map.Entry<String, Channel> entry : getClientChannelManager().getChannels().entrySet()) {
-                String serverAddress = entry.getKey();
-                Channel rmChannel = entry.getValue();
-                if (LOGGER.isInfoEnabled()) {
-                    LOGGER.info("will register resourceId:{}", resourceId);
-                }
-                sendRegisterMessage(serverAddress, rmChannel, resourceId);
+        for (Map.Entry<String, Channel> entry : getClientChannelManager().getChannels().entrySet()) {
+            String serverAddress = entry.getKey();
+            Channel rmChannel = entry.getValue();
+            if (LOGGER.isInfoEnabled()) {
+                LOGGER.info("register resource, resourceId:{}", resourceId);
             }
+            sendRegisterMessage(serverAddress, rmChannel, resourceId);
         }
     }
 

@@ -26,6 +26,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.lang.reflect.Field;
+import java.util.Map;
 import java.util.concurrent.ConcurrentMap;
 import java.util.function.Function;
 
@@ -68,7 +69,7 @@ class NettyClientChannelManagerTest {
     
     @BeforeEach
     void setUp() {
-        channelManager = new NettyClientChannelManager(poolableFactory, poolKeyFunction, nettyClientConfig);
+        channelManager = new NettyClientChannelManager(poolableFactory, poolKeyFunction, null, nettyClientConfig);
     }
     
     @AfterEach
@@ -91,7 +92,7 @@ class NettyClientChannelManagerTest {
     
     @Test
     void assertAcquireChannelFromCache() {
-        channelManager.getChannels().putIfAbsent("localhost", channel);
+        addChannelToCache(channelManager, "localhost", channel);
         when(channel.isActive()).thenReturn(true);
         Channel actual = channelManager.acquireChannel("localhost");
         verify(poolableFactory, times(0)).makeObject(nettyPoolKey);
@@ -100,7 +101,7 @@ class NettyClientChannelManagerTest {
     
     @Test
     void assertAcquireChannelFromPoolContainsInactiveCache() {
-        channelManager.getChannels().putIfAbsent("localhost", channel);
+        addChannelToCache(channelManager, "localhost", channel);
         when(channel.isActive()).thenReturn(false);
         setupPoolFactory(nettyPoolKey, newChannel);
         Channel actual = channelManager.acquireChannel("localhost");
@@ -110,7 +111,7 @@ class NettyClientChannelManagerTest {
     
     @Test
     void assertReconnect() {
-        channelManager.getChannels().putIfAbsent("127.0.0.1:8091", channel);
+        addChannelToCache(channelManager, "127.0.0.1:8091", channel);
         when(channel.isActive()).thenReturn(true);
         channelManager.reconnect("my_test_tx_group");
         verify(channel).isActive();
@@ -122,7 +123,7 @@ class NettyClientChannelManagerTest {
         setNettyClientKeyPool();
         setUpReleaseChannel();
         channelManager.releaseChannel(channel, "127.0.0.1:8091");
-        verify(keyedObjectPool).returnObject(nettyPoolKey, channel);
+        verify(keyedObjectPool).invalidateObject(nettyPoolKey, channel);
     }
     
     @Test
@@ -130,10 +131,10 @@ class NettyClientChannelManagerTest {
     void assertReleaseCachedChannel() throws Exception {
         setNettyClientKeyPool();
         setUpReleaseChannel();
-        channelManager.getChannels().putIfAbsent("127.0.0.1:8091", channel);
+        addChannelToCache(channelManager, "127.0.0.1:8091", channel);
         channelManager.releaseChannel(channel, "127.0.0.1:8091");
-        assertTrue(channelManager.getChannels().isEmpty());
-        verify(keyedObjectPool).returnObject(nettyPoolKey, channel);
+        assertTrue(channelManager.channelCount() <= 0);
+        verify(keyedObjectPool).invalidateObject(nettyPoolKey, channel);
     }
     
     @Test
@@ -141,10 +142,10 @@ class NettyClientChannelManagerTest {
     void assertReleaseChannelNotEqualToCache() throws Exception {
         setNettyClientKeyPool();
         setUpReleaseChannel();
-        channelManager.getChannels().putIfAbsent("127.0.0.1:8091", newChannel);
+        addChannelToCache(channelManager, "127.0.0.1:8091", newChannel);
         channelManager.releaseChannel(channel, "127.0.0.1:8091");
-        assertEquals(1, channelManager.getChannels().size());
-        verify(keyedObjectPool).returnObject(nettyPoolKey, channel);
+        assertEquals(1, channelManager.channelCount());
+        verify(keyedObjectPool).invalidateObject(nettyPoolKey, channel);
     }
     
     @SuppressWarnings("unchecked")
@@ -175,6 +176,18 @@ class NettyClientChannelManagerTest {
             field.set(channelManager, keyedObjectPool);
         } catch (Exception ex) {
             throw new RuntimeException(ex);
+        }
+    }
+
+    private void addChannelToCache(NettyClientChannelManager channelManager, String serverAddress, Channel channel) {
+        try {
+            Field channelsField = NettyClientChannelManager.class.getDeclaredField("channels");
+            channelsField.setAccessible(true);
+            Map<String, Channel> channels = (Map<String, Channel>) channelsField.get(channelManager);
+            channels.putIfAbsent(serverAddress, channel);
+            channelsField.setAccessible(false);
+        } catch (Exception e) {
+            throw new IllegalStateException(e);
         }
     }
 }

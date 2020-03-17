@@ -16,10 +16,7 @@
 package io.seata.core.rpc.netty;
 
 import io.netty.channel.Channel;
-import io.seata.common.exception.FrameworkException;
 import io.seata.common.util.NetUtil;
-import io.seata.core.protocol.RegisterRMResponse;
-import io.seata.core.protocol.RegisterTMResponse;
 import org.apache.commons.pool.KeyedPoolableObjectFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -35,17 +32,12 @@ public class NettyPoolableFactory implements KeyedPoolableObjectFactory<NettyPoo
 
     private static final Logger LOGGER = LoggerFactory.getLogger(NettyPoolableFactory.class);
 
-    private final AbstractRpcRemotingClient rpcRemotingClient;
-
     private final RpcClientBootstrap clientBootstrap;
 
     /**
      * Instantiates a new Netty key poolable factory.
-     *
-     * @param rpcRemotingClient the rpc remoting client
      */
-    public NettyPoolableFactory(AbstractRpcRemotingClient rpcRemotingClient, RpcClientBootstrap clientBootstrap) {
-        this.rpcRemotingClient = rpcRemotingClient;
+    public NettyPoolableFactory(RpcClientBootstrap clientBootstrap) {
         this.clientBootstrap = clientBootstrap;
     }
 
@@ -55,60 +47,7 @@ public class NettyPoolableFactory implements KeyedPoolableObjectFactory<NettyPoo
         if (LOGGER.isInfoEnabled()) {
             LOGGER.info("NettyPool create channel to " + key);
         }
-        Channel tmpChannel = clientBootstrap.getNewChannel(address);
-        long start = System.currentTimeMillis();
-        Object response;
-        Channel channelToServer = null;
-        if (null == key.getMessage()) {
-            throw new FrameworkException("register msg is null, role:" + key.getTransactionRole().name());
-        }
-        try {
-            response = rpcRemotingClient.sendAsyncRequestWithResponse(tmpChannel, key.getMessage());
-            if (!isResponseSuccess(response, key.getTransactionRole())) {
-                rpcRemotingClient.onRegisterMsgFail(key.getAddress(), tmpChannel, response, key.getMessage());
-            } else {
-                channelToServer = tmpChannel;
-                rpcRemotingClient.onRegisterMsgSuccess(key.getAddress(), tmpChannel, response, key.getMessage());
-            }
-        } catch (Exception exx) {
-            if (tmpChannel != null) {
-                tmpChannel.close();
-            }
-            throw new FrameworkException(
-                "register error,role:" + key.getTransactionRole().name() + ",err:" + exx.getMessage());
-        }
-        if (LOGGER.isInfoEnabled()) {
-            LOGGER.info("register success, cost " + (System.currentTimeMillis() - start) + " ms, version:" + getVersion(
-                response, key.getTransactionRole()) + ",role:" + key.getTransactionRole().name() + ",channel:"
-                + channelToServer);
-        }
-        return channelToServer;
-    }
-
-    private boolean isResponseSuccess(Object response, NettyPoolKey.TransactionRole transactionRole) {
-        if (null == response) {
-            return false;
-        }
-        if (transactionRole.equals(NettyPoolKey.TransactionRole.TMROLE)) {
-            if (!(response instanceof RegisterTMResponse)) {
-                return false;
-            }
-            return ((RegisterTMResponse)response).isIdentified();
-        } else if (transactionRole.equals(NettyPoolKey.TransactionRole.RMROLE)) {
-            if (!(response instanceof RegisterRMResponse)) {
-                return false;
-            }
-            return ((RegisterRMResponse)response).isIdentified();
-        }
-        return false;
-    }
-
-    private String getVersion(Object response, NettyPoolKey.TransactionRole transactionRole) {
-        if (transactionRole.equals(NettyPoolKey.TransactionRole.TMROLE)) {
-            return ((RegisterTMResponse)response).getVersion();
-        } else {
-            return ((RegisterRMResponse)response).getVersion();
-        }
+        return clientBootstrap.getNewChannel(address);
     }
 
     @Override
