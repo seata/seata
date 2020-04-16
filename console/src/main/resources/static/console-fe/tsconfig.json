@@ -1,0 +1,55 @@
+{
+  "compilerOptions": {
+    "lib": ["es2015", "dom"],
+    // Target latest version of ECMAScript.
+    "target": "esnext",
+    // Specify module code generation: 'none', 'commonjs', 'amd', 'system', 'umd', 'es2015', or 'ESNext'.
+    "module": "esnext",
+    // Search under node_modules for non-relative imports.
+    "moduleResolution": "node",
+    // Process & infer types from .js files.
+    "allowJs": true,
+    // Report errors in .js files.
+    "checkJs": false,
+    // Don't emit; allow Babel to transform files.
+    "noEmit": true,
+    // Enable strictest settings like strictNullChecks & noImplicitAny.
+    "strict": true,
+    // Allow default imports from modules with no default export. This does not affect code emit, just typechecking.
+    "allowSyntheticDefaultImports": true,
+    // Enables emit interoperability between CommonJS and ES Modules via creation of namespace objects for all imports. Implies 'allowSyntheticDefaultImports'.
+    "esModuleInterop": true,
+    // Specify JSX code generation: 'preserve', 'react-native', or 'react'.
+    "jsx": "preserve",
+    // Import emit helpers (e.g. __extends, __rest, etc..) from tslib
+    "importHelpers": true,
+    // Enables experimental support for ES7 decorators.
+    "experimentalDecorators": true,
+    // Generates corresponding .map file.
+    "sourceMap": true,
+    // Disallow inconsistently-cased references to the same file.
+    "forceConsistentCasingInFileNames": true,
+    // Allow json import
+    "resolveJsonModule": true,
+    // skip type checking of declaration files
+    "skipLibCheck": true,
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["src/*"],
+      "utils/*": ["src/utils/*"],
+      "components/*": ["src/components/*"],
+      "pages/*": ["src/pages/*"],
+    },
+    "typeRoots": [
+      "node_modules/@types"
+    ],
+  },
+  "include": [
+    "src/**/*"
+  ],
+  "exclude": [
+    "node_modules",
+    "**/*.spec.ts",
+    "src/utils/common.ts"
+  ]
+}

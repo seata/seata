@@ -27,6 +27,7 @@
         <module>bom</module>
         <module>common</module>
         <module>config</module>
+        <module>console</module>
         <module>core</module>
         <module>discovery</module>
         <module>distribution</module>
@@ -470,6 +471,8 @@
                             <failOnViolation>false</failOnViolation>
                             <excludes>**/generated/**/*</excludes>
                             <excludes>io/seata/integration/grpc/interceptor/</excludes>
+                            <excludes>**/console-fe/**/*</excludes>
+                            <includeResources>false</includeResources>
                         </configuration>
                         <goals>
                             <goal>check</goal>
