@@ -15,10 +15,12 @@
  */
 package io.seata.server.coordinator;
 
+import io.netty.util.HashedWheelTimer;
+import io.netty.util.Timeout;
+import io.netty.util.TimerTask;
 import java.time.Duration;
 import java.util.Collection;
 import java.util.Map;
-import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
 import io.netty.channel.Channel;
@@ -119,20 +121,20 @@ public class DefaultCoordinator extends AbstractTCInboundHandler implements Tran
     private static final boolean ROLLBACK_RETRY_TIMEOUT_UNLOCK_ENABLE = ConfigurationFactory.getInstance().getBoolean(
         ConfigurationKeys.ROLLBACK_RETRY_TIMEOUT_UNLOCK_ENABLE, false);
 
-    private ScheduledThreadPoolExecutor retryRollbacking = new ScheduledThreadPoolExecutor(1,
-        new NamedThreadFactory("RetryRollbacking", 1));
+    private HashedWheelTimer retryRollbackingWheelTimer = new HashedWheelTimer(
+        new NamedThreadFactory("RetryRollbacking", 1), ROLLBACKING_RETRY_PERIOD, TimeUnit.MILLISECONDS, 512);
 
-    private ScheduledThreadPoolExecutor retryCommitting = new ScheduledThreadPoolExecutor(1,
-        new NamedThreadFactory("RetryCommitting", 1));
+    private HashedWheelTimer retryCommittingWheelTimer = new HashedWheelTimer(
+        new NamedThreadFactory("RetryCommitting", 1), COMMITTING_RETRY_PERIOD, TimeUnit.MILLISECONDS, 512);
 
-    private ScheduledThreadPoolExecutor asyncCommitting = new ScheduledThreadPoolExecutor(1,
-        new NamedThreadFactory("AsyncCommitting", 1));
+    private HashedWheelTimer asyncCommittingWheelTimer = new HashedWheelTimer(
+        new NamedThreadFactory("AsyncCommitting", 1), ASYNC_COMMITTING_RETRY_PERIOD, TimeUnit.MILLISECONDS, 512);
 
-    private ScheduledThreadPoolExecutor timeoutCheck = new ScheduledThreadPoolExecutor(1,
-        new NamedThreadFactory("TxTimeoutCheck", 1));
+    private HashedWheelTimer timeoutCheckWheelTimer = new HashedWheelTimer(new NamedThreadFactory("TxTimeoutCheck", 1),
+        TIMEOUT_RETRY_PERIOD, TimeUnit.MILLISECONDS, 512);
 
-    private ScheduledThreadPoolExecutor undoLogDelete = new ScheduledThreadPoolExecutor(1,
-        new NamedThreadFactory("UndoLogDelete", 1));
+    private HashedWheelTimer undoLogDeleteWheelTimer = new HashedWheelTimer(new NamedThreadFactory("UndoLogDelete", 1),
+        UNDO_LOG_DELAY_DELETE_PERIOD, TimeUnit.MILLISECONDS, 512);
 
     private ServerMessageSender messageSender;
 
@@ -217,7 +219,7 @@ public class DefaultCoordinator extends AbstractTCInboundHandler implements Tran
         if (CollectionUtils.isEmpty(allSessions)) {
             return;
         }
-        if (allSessions.size() > 0 && LOGGER.isDebugEnabled()) {
+        if (!allSessions.isEmpty() && LOGGER.isDebugEnabled()) {
             LOGGER.debug("Global transaction timeout check begin, size: {}", allSessions.size());
         }
         for (GlobalSession globalSession : allSessions) {
@@ -251,7 +253,7 @@ public class DefaultCoordinator extends AbstractTCInboundHandler implements Tran
             SessionHolder.getRetryRollbackingSessionManager().addGlobalSession(globalSession);
 
         }
-        if (allSessions.size() > 0 && LOGGER.isDebugEnabled()) {
+        if (!allSessions.isEmpty() && LOGGER.isDebugEnabled()) {
             LOGGER.debug("Global transaction timeout check end. ");
         }
 
@@ -375,46 +377,94 @@ public class DefaultCoordinator extends AbstractTCInboundHandler implements Tran
      * Init.
      */
     public void init() {
-        retryRollbacking.scheduleAtFixedRate(() -> {
+        RetryRollbackingTimeTask retryRollbackingTimeTask = new RetryRollbackingTimeTask();
+        retryRollbackingWheelTimer.newTimeout(retryRollbackingTimeTask, 0, TimeUnit.MILLISECONDS);
+
+        RetryCommittingTimeTask retryCommittingTimeTask = new RetryCommittingTimeTask();
+        retryCommittingWheelTimer.newTimeout(retryCommittingTimeTask, 0, TimeUnit.MILLISECONDS);
+
+        AsyncCommittingTimeTask asyncCommittingTimeTask = new AsyncCommittingTimeTask();
+        asyncCommittingWheelTimer.newTimeout(asyncCommittingTimeTask, 0, TimeUnit.MILLISECONDS);
+
+        TimeoutCheckTimeTask timeoutCheckTimeTask = new TimeoutCheckTimeTask();
+        timeoutCheckWheelTimer.newTimeout(timeoutCheckTimeTask, 0, TimeUnit.MILLISECONDS);
+
+        UndoLogDeleteTimeTask undoLogDeleteTimeTask = new UndoLogDeleteTimeTask();
+        undoLogDeleteWheelTimer.newTimeout(undoLogDeleteTimeTask, 0, TimeUnit.MILLISECONDS);
+    }
+    private class RetryRollbackingTimeTask implements TimerTask {
+
+        @Override
+        public void run(Timeout timeout) {
             try {
                 handleRetryRollbacking();
             } catch (Exception e) {
                 LOGGER.info("Exception retry rollbacking ... ", e);
+            } finally {
+                retryRollbackingWheelTimer.newTimeout(this, ROLLBACKING_RETRY_PERIOD >> 1, TimeUnit.MILLISECONDS);
             }
-        }, 0, ROLLBACKING_RETRY_PERIOD, TimeUnit.MILLISECONDS);
+        }
+    }
 
-        retryCommitting.scheduleAtFixedRate(() -> {
+
+    private class RetryCommittingTimeTask implements TimerTask {
+
+        @Override
+        public void run(Timeout timeout) {
             try {
                 handleRetryCommitting();
             } catch (Exception e) {
                 LOGGER.info("Exception retry committing ... ", e);
+            } finally {
+                retryCommittingWheelTimer.newTimeout(this, 0, TimeUnit.MILLISECONDS);
             }
-        }, 0, COMMITTING_RETRY_PERIOD, TimeUnit.MILLISECONDS);
+        }
+    }
 
-        asyncCommitting.scheduleAtFixedRate(() -> {
+
+    private class AsyncCommittingTimeTask implements TimerTask {
+
+        @Override
+        public void run(Timeout timeout) {
             try {
                 handleAsyncCommitting();
             } catch (Exception e) {
                 LOGGER.info("Exception async committing ... ", e);
+            } finally {
+                retryCommittingWheelTimer.newTimeout(this, 0, TimeUnit.MILLISECONDS);
             }
-        }, 0, ASYNC_COMMITTING_RETRY_PERIOD, TimeUnit.MILLISECONDS);
+        }
+    }
 
-        timeoutCheck.scheduleAtFixedRate(() -> {
+    private class TimeoutCheckTimeTask implements TimerTask {
+
+        @Override
+        public void run(Timeout timeout) {
             try {
                 timeoutCheck();
             } catch (Exception e) {
                 LOGGER.info("Exception timeout checking ... ", e);
+            } finally {
+                retryCommittingWheelTimer.newTimeout(this, 0, TimeUnit.MILLISECONDS);
             }
-        }, 0, TIMEOUT_RETRY_PERIOD, TimeUnit.MILLISECONDS);
+        }
+    }
 
-        undoLogDelete.scheduleAtFixedRate(() -> {
+    private class UndoLogDeleteTimeTask implements TimerTask {
+
+        @Override
+        public void run(Timeout timeout) {
             try {
                 undoLogDelete();
             } catch (Exception e) {
                 LOGGER.info("Exception undoLog deleting ... ", e);
+            } finally {
+                retryCommittingWheelTimer.newTimeout(this, 0, TimeUnit.MILLISECONDS);
             }
-        }, UNDO_LOG_DELAY_DELETE_PERIOD, UNDO_LOG_DELETE_PERIOD, TimeUnit.MILLISECONDS);
+        }
     }
+
+
 
     @Override
     public AbstractResultMessage onRequest(AbstractMessage request, RpcContext context) {
@@ -438,18 +488,10 @@ public class DefaultCoordinator extends AbstractTCInboundHandler implements Tran
     @Override
     public void destroy() {
         // 1. first shutdown timed task
-        retryRollbacking.shutdown();
-        retryCommitting.shutdown();
-        asyncCommitting.shutdown();
-        timeoutCheck.shutdown();
-        try {
-            retryRollbacking.awaitTermination(TIMED_TASK_SHUTDOWN_MAX_WAIT_MILLS, TimeUnit.MILLISECONDS);
-            retryCommitting.awaitTermination(TIMED_TASK_SHUTDOWN_MAX_WAIT_MILLS, TimeUnit.MILLISECONDS);
-            asyncCommitting.awaitTermination(TIMED_TASK_SHUTDOWN_MAX_WAIT_MILLS, TimeUnit.MILLISECONDS);
-            timeoutCheck.awaitTermination(TIMED_TASK_SHUTDOWN_MAX_WAIT_MILLS, TimeUnit.MILLISECONDS);
-        } catch (InterruptedException ignore) {
-
-        }
+        retryRollbackingWheelTimer.stop();
+        retryCommittingWheelTimer.stop();
+        asyncCommittingWheelTimer.stop();
+        timeoutCheckWheelTimer.stop();
         // 2. second close netty flow
         if (messageSender instanceof RpcServer) {
             ((RpcServer) messageSender).destroy();
