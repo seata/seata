@@ -17,10 +17,14 @@ package io.seata.spring.boot.autoconfigure.provider;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
+import java.util.Comparator;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import com.google.common.base.CaseFormat;
 import io.seata.common.holder.ObjectHolder;
 import io.seata.config.Configuration;
 import io.seata.config.ExtConfigurationProvider;
@@ -48,7 +52,7 @@ public class SpringBootConfigurationProvider implements ExtConfigurationProvider
         return (Configuration) Enhancer.create(originalConfiguration.getClass(), new MethodInterceptor() {
             @Override
             public Object intercept(Object proxy, Method method, Object[] args, MethodProxy methodProxy)
-                throws Throwable {
+                    throws Throwable {
                 if (method.getName().startsWith(INTERCEPT_METHOD_PREFIX) && args.length > 0) {
                     Object result = null;
                     String rawDataId = (String) args[0];
@@ -92,7 +96,7 @@ public class SpringBootConfigurationProvider implements ExtConfigurationProvider
         if (null != propertyClass) {
             Object propertyObject = ObjectHolder.INSTANCE.getObject(ApplicationContext.class).getBean(propertyClass);
             Optional<Field> fieldOptional = Stream.of(propertyObject.getClass().getDeclaredFields()).filter(
-                f -> f.getName().equalsIgnoreCase(propertySuffix)).findAny();
+                    f -> f.getName().equalsIgnoreCase(propertySuffix)).findAny();
             if (fieldOptional.isPresent()) {
                 Field field = fieldOptional.get();
                 field.setAccessible(true);
@@ -135,6 +139,17 @@ public class SpringBootConfigurationProvider implements ExtConfigurationProvider
         if (dataId.contains(SPECIAL_KEY_GROUPLIST)) {
             return SERVICE_PREFIX;
         }
+
+        int dotCount = StringUtils.countMatches(dataId, String.valueOf(DOT));
+        String posKey = dataId;
+
+        while (dotCount-- > 0) {
+            posKey = dataId.substring(0, StringUtils.lastIndexOf(posKey, String.valueOf(DOT)));
+            if (PROPERTY_MAP.containsKey(posKey)) {
+                return posKey;
+            }
+        }
+
         return StringUtils.substringBeforeLast(dataId, String.valueOf(DOT));
     }
 
@@ -151,8 +166,24 @@ public class SpringBootConfigurationProvider implements ExtConfigurationProvider
         if (dataId.contains(SPECIAL_KEY_GROUPLIST)) {
             return SPECIAL_KEY_GROUPLIST;
         }
+
+        int dotCount = StringUtils.countMatches(dataId, String.valueOf(DOT));
+
+        String posKey = dataId;
+        while (dotCount-- > 0) {
+            posKey = dataId.substring(0, StringUtils.lastIndexOf(posKey, String.valueOf(DOT)));
+            if (PROPERTY_MAP.containsKey(posKey)) {
+                break;
+            }
+        }
+        String result = StringUtils.substringAfterLast(dataId, posKey + DOT);
+        if (result.contains(String.valueOf(DOT))) {
+            return CaseFormat.LOWER_HYPHEN.to(CaseFormat.LOWER_CAMEL, result.replace(String.valueOf(DOT), "-"));
+        }
+
         return StringUtils.substringAfterLast(dataId, String.valueOf(DOT));
     }
+
 
     /**
      * Get property class
