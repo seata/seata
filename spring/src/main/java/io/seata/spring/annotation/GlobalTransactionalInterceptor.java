@@ -20,7 +20,8 @@ import java.lang.reflect.Method;
 import java.util.LinkedHashSet;
 import java.util.Optional;
 import java.util.Set;
-import java.util.concurrent.ScheduledThreadPoolExecutor;
+import java.util.concurrent.SynchronousQueue;
+import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import io.seata.common.exception.ShouldNeverHappenException;
 import io.seata.common.thread.NamedThreadFactory;
@@ -65,14 +66,16 @@ public class GlobalTransactionalInterceptor implements ConfigurationChangeListen
     private final TransactionalTemplate transactionalTemplate = new TransactionalTemplate();
     private final GlobalLockTemplate<Object> globalLockTemplate = new GlobalLockTemplate<>();
     private final FailureHandler failureHandler;
-    private volatile boolean disable;
+    private static volatile boolean disable;
     private static int degradeCheckPeriod;
     private static volatile boolean degradeCheck;
     private static int degradeCheckAllowTimes;
     private static volatile Integer degradeNum = 0;
     private static volatile Integer reachNum = 0;
-    private static ScheduledThreadPoolExecutor executor =
-        new ScheduledThreadPoolExecutor(1, new NamedThreadFactory("degradeCheckWorker", 1, true));
+    private static volatile ThreadPoolExecutor executor = new ThreadPoolExecutor(1, 1, 60L, TimeUnit.SECONDS,
+        new SynchronousQueue<Runnable>(), new NamedThreadFactory("degradeCheckWorker", 1, true));
+    private static volatile ThreadPoolExecutor taskThreadPool = new ThreadPoolExecutor(0, 200, 60L,
+        TimeUnit.SECONDS, new SynchronousQueue<Runnable>(), new NamedThreadFactory("asyncDegradeCheckWorker", 1, true));
 
     /**
      * Instantiates a new Global transactional interceptor.
@@ -82,18 +85,18 @@ public class GlobalTransactionalInterceptor implements ConfigurationChangeListen
      */
     public GlobalTransactionalInterceptor(FailureHandler failureHandler) {
         this.failureHandler = failureHandler == null ? DEFAULT_FAIL_HANDLER : failureHandler;
-        this.disable = ConfigurationFactory.getInstance().getBoolean(ConfigurationKeys.DISABLE_GLOBAL_TRANSACTION,
+        disable = ConfigurationFactory.getInstance().getBoolean(ConfigurationKeys.DISABLE_GLOBAL_TRANSACTION,
             DEFAULT_DISABLE_GLOBAL_TRANSACTION);
-        this.degradeCheck = ConfigurationFactory.getInstance().getBoolean(ConfigurationKeys.CLIENT_DEGRADE_CHECK,
+        degradeCheck = ConfigurationFactory.getInstance().getBoolean(ConfigurationKeys.CLIENT_DEGRADE_CHECK,
             DEFAULT_TM_DEGRADE_CHECK);
         if (degradeCheck) {
-            this.degradeCheckPeriod = ConfigurationFactory.getInstance()
+            degradeCheckPeriod = ConfigurationFactory.getInstance()
                 .getInt(ConfigurationKeys.CLIENT_DEGRADE_CHECK_PERIOD, DEFAULT_TM_DEGRADE_CHECK_PERIOD);
-            this.degradeCheckAllowTimes = ConfigurationFactory.getInstance()
+            degradeCheckAllowTimes = ConfigurationFactory.getInstance()
                 .getInt(ConfigurationKeys.CLIENT_DEGRADE_CHECK_ALLOW_TIMES, DEFAULT_TM_DEGRADE_CHECK_ALLOW_TIMES);
-            if (degradeCheckPeriod > 0 && degradeCheckAllowTimes > 0) {
-                startDegradeCheck();
-            }
+            ConfigurationFactory.getInstance().addConfigListener(ConfigurationKeys.CLIENT_DEGRADE_CHECK,
+                (ConfigurationChangeListener)this);
+            wakingUpThread();
         }
     }
 
@@ -196,7 +199,7 @@ public class GlobalTransactionalInterceptor implements ConfigurationChangeListen
             }
         } finally {
             if (degradeCheck) {
-                onDegradeCheck(succeed);
+                addTaskDegradeCheck(succeed);
             }
         }
     }
@@ -226,9 +229,17 @@ public class GlobalTransactionalInterceptor implements ConfigurationChangeListen
             LOGGER.info("{} config changed, old value:{}, new value:{}", ConfigurationKeys.DISABLE_GLOBAL_TRANSACTION,
                 disable, event.getNewValue());
             disable = Boolean.parseBoolean(event.getNewValue().trim());
+            if (!disable) {
+                wakingUpThread();
+            }
         } else if (ConfigurationKeys.CLIENT_DEGRADE_CHECK.equals(event.getDataId())) {
-            degradeCheck = Boolean.parseBoolean(event.getNewValue());
+            boolean degradeCheckNow = Boolean.parseBoolean(event.getNewValue());
+            if (!degradeCheck && degradeCheckNow != degradeCheck) {
+                wakingUpThread();
+            }
+            degradeCheck = degradeCheckNow;
             if (!degradeCheck) {
+                reachNum = 0;
                 degradeNum = 0;
             }
         }
@@ -237,21 +248,46 @@ public class GlobalTransactionalInterceptor implements ConfigurationChangeListen
     /**
      * auto upgrade service detection
      */
-    private static void startDegradeCheck() {
-        executor.scheduleAtFixedRate(() -> {
-            if (degradeCheck) {
+    private void startDegradeCheck() {
+        executor.execute(() -> {
+            while (true) {
+                synchronized (this) {
+                    if (degradeCheck && !disable) {
+                        try {
+                            String xid = TransactionManagerHolder.get().begin(null, null, "degradeCheck", 60000);
+                            TransactionManagerHolder.get().commit(xid);
+                            addTaskDegradeCheck(true);
+                        } catch (Exception e) {
+                            addTaskDegradeCheck(false);
+                        }
+                    } else {
+                        try {
+                            this.wait();
+                        } catch (InterruptedException e) {
+                            if (LOGGER.isErrorEnabled()) {
+                                LOGGER.error("an unknown error occurred and the self - checking thread could not wait error: {}",
+                                    e.getMessage());
+                            }
+                            break;
+                        }
+                    }
+                }
                 try {
-                    String xid = TransactionManagerHolder.get().begin(null, null, "degradeCheck", 60000);
-                    TransactionManagerHolder.get().commit(xid);
-                    onDegradeCheck(true);
-                } catch (Exception e) {
-                    onDegradeCheck(false);
+                    Thread.sleep(degradeCheckPeriod);
+                } catch (InterruptedException e) {
+                    break;
                 }
             }
-        }, degradeCheckPeriod, degradeCheckPeriod, TimeUnit.MILLISECONDS);
+        });
     }
 
-    private static synchronized void onDegradeCheck(boolean succeed) {
+    private void addTaskDegradeCheck(boolean succeed) {
+        taskThreadPool.execute(() -> {
+            onDegradeCheck(succeed);
+        });
+    }
+
+    private synchronized void onDegradeCheck(boolean succeed) {
         if (succeed) {
             if (degradeNum >= degradeCheckAllowTimes) {
                 reachNum++;
@@ -275,6 +311,18 @@ public class GlobalTransactionalInterceptor implements ConfigurationChangeListen
                 }
             } else if (reachNum != 0) {
                 reachNum = 0;
+            }
+        }
+    }
+
+    private void wakingUpThread() {
+        synchronized (this) {
+            if (degradeCheckPeriod > 0 && degradeCheckAllowTimes > 0) {
+                if (executor.getActiveCount() <= 0) {
+                    startDegradeCheck();
+                } else {
+                    this.notifyAll();
+                }
             }
         }
     }
