@@ -113,6 +113,9 @@ public class RpcContext {
         }
         this.clientIDHolderMap = clientIDHolderMap;
         this.clientIDHolderMap.put(channel, this);
+        if (LOGGER.isDebugEnabled()) {
+            LOGGER.debug("The number of identified channel is: {}", clientIDHolderMap.size());
+        }
     }
 
     /**
