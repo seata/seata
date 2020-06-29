@@ -563,6 +563,11 @@
             <artifactId>lz4-java</artifactId>
             <scope>provided</scope>
         </dependency>
+        <dependency>
+            <groupId>com.alibaba</groupId>
+            <artifactId>transmittable-thread-local</artifactId>
+            <scope>provided</scope>
+        </dependency>
     </dependencies>
 
     <build>

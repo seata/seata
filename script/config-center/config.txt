@@ -16,6 +16,7 @@ service.vgroupMapping.my_test_tx_group=default
 service.default.grouplist=127.0.0.1:8091
 service.enableDegrade=false
 service.disableGlobalTransaction=false
+service.contextType=FastThreadLocalContextCore
 client.rm.asyncCommitBufferLimit=10000
 client.rm.lock.retryInterval=10
 client.rm.lock.retryTimes=30

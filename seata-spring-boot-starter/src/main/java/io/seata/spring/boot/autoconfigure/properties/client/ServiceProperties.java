@@ -51,6 +51,8 @@ public class ServiceProperties implements InitializingBean {
      */
     private boolean disableGlobalTransaction = DEFAULT_DISABLE_GLOBAL_TRANSACTION;
 
+    private String contextType = "FastThreadLocalContextCore";
+
     public Map<String, String> getVgroupMapping() {
         return vgroupMapping;
     }
@@ -83,6 +85,14 @@ public class ServiceProperties implements InitializingBean {
     public ServiceProperties setDisableGlobalTransaction(boolean disableGlobalTransaction) {
         this.disableGlobalTransaction = disableGlobalTransaction;
         return this;
+    }
+
+    public String getContextType() {
+        return contextType;
+    }
+
+    public void setContextType(String contextType) {
+        this.contextType = contextType;
     }
 
     @Override

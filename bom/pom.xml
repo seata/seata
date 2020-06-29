@@ -111,6 +111,7 @@
         <commons-compress.version>1.19</commons-compress.version>
         <ant.version>1.10.6</ant.version>
         <lz4.version>1.7.1</lz4.version>
+        <ttl.version>2.10.2</ttl.version>
 
         <!-- Compiler settings properties -->
         <maven.compiler.source>1.8</maven.compiler.source>
@@ -509,6 +510,11 @@
                 <groupId>org.lz4</groupId>
                 <artifactId>lz4-java</artifactId>
                 <version>${lz4.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.alibaba</groupId>
+                <artifactId>transmittable-thread-local</artifactId>
+                <version>${ttl.version}</version>
             </dependency>
         </dependencies>
     </dependencyManagement>

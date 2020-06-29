@@ -15,9 +15,13 @@
  */
 package io.seata.core.context;
 
+import io.seata.common.loader.EnhancedServiceLoader;
+import io.seata.config.ConfigurationFactory;
+import io.seata.core.constants.ConfigurationKeys;
+
 import java.util.Optional;
 
-import io.seata.common.loader.EnhancedServiceLoader;
+import static io.seata.core.constants.DefaultValues.DEFAULT_CONTEXT_TYPE;
 
 /**
  * The type Context core loader.
@@ -31,7 +35,9 @@ public class ContextCoreLoader {
     }
 
     private static class ContextCoreHolder {
-        private static final ContextCore INSTANCE = Optional.ofNullable(EnhancedServiceLoader.load(ContextCore.class)).orElse(new ThreadLocalContextCore());
+        static String contextType = ConfigurationFactory.getInstance().getConfig(ConfigurationKeys.CONTEXT_TYPE, DEFAULT_CONTEXT_TYPE);
+        private static final ContextCore INSTANCE = Optional.ofNullable(EnhancedServiceLoader.load(ContextCore.class, contextType))
+            .orElse(new ThreadLocalContextCore());
     }
 
     /**

@@ -36,6 +36,7 @@ seata:
       default: 127.0.0.1:8091
     enable-degrade: false
     disable-global-transaction: false
+    contextType: FastThreadLocalContextCore
   transport:
     shutdown:
       wait: 3

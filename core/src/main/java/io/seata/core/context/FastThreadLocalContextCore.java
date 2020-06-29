@@ -32,7 +32,7 @@ public class FastThreadLocalContextCore implements ContextCore {
     private FastThreadLocal<Map<String, String>> fastThreadLocal = new FastThreadLocal<Map<String, String>>() {
         @Override
         protected Map<String, String> initialValue() {
-            return new HashMap<String, String>();
+            return new HashMap<>();
         }
     };
 

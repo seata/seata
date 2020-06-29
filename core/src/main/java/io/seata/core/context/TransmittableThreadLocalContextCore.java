@@ -15,38 +15,45 @@
  */
 package io.seata.core.context;
 
+import com.alibaba.ttl.TransmittableThreadLocal;
+import io.seata.common.loader.LoadLevel;
+
 import java.util.HashMap;
 import java.util.Map;
 
-import io.seata.common.loader.LoadLevel;
-
 /**
- * The type Thread local context core.
+ * The type transmittable Thread local context core.
  *
- * @author slievrly
+ * @author zhangchenghui.dev@gmail.com
+ * @since 1.3.0
  */
-@LoadLevel(name = "ThreadLocalContextCore", order = Integer.MIN_VALUE)
-public class ThreadLocalContextCore implements ContextCore {
+@LoadLevel(name = "TransmittableThreadLocalContextCore", order = Integer.MIN_VALUE + 2)
+public class TransmittableThreadLocalContextCore implements ContextCore {
 
-    private ThreadLocal<Map<String, String>> threadLocal = ThreadLocal.withInitial(HashMap::new);
+    private TransmittableThreadLocal<Map<String, String>> ttlThreadLocal = new TransmittableThreadLocal<Map<String, String>>() {
+        @Override
+        protected Map<String, String> initialValue() {
+            return new HashMap<>();
+        }
+    };
 
     @Override
     public String put(String key, String value) {
-        return threadLocal.get().put(key, value);
+        return ttlThreadLocal.get().put(key, value);
     }
 
     @Override
     public String get(String key) {
-        return threadLocal.get().get(key);
+        return ttlThreadLocal.get().get(key);
     }
 
     @Override
     public String remove(String key) {
-        return threadLocal.get().remove(key);
+        return ttlThreadLocal.get().remove(key);
     }
 
     @Override
     public Map<String, String> entries() {
-        return threadLocal.get();
+        return ttlThreadLocal.get();
     }
 }
