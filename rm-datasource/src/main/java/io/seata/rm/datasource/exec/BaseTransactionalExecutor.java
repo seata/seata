@@ -22,6 +22,7 @@ import io.seata.core.context.RootContext;
 import io.seata.rm.datasource.ColumnUtils;
 import io.seata.rm.datasource.ConnectionProxy;
 import io.seata.rm.datasource.StatementProxy;
+import io.seata.rm.datasource.sql.struct.LockKey;
 import io.seata.rm.datasource.sql.struct.Field;
 import io.seata.rm.datasource.sql.struct.TableMeta;
 import io.seata.rm.datasource.sql.struct.TableMetaCacheFactory;
@@ -37,6 +38,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 import java.util.StringJoiner;
 
@@ -246,10 +248,10 @@ public abstract class BaseTransactionalExecutor<T, S extends Statement> implemen
         }
 
         ConnectionProxy connectionProxy = statementProxy.getConnectionProxy();
-
         TableRecords lockKeyRecords = sqlRecognizer.getSQLType() == SQLType.DELETE ? beforeImage : afterImage;
-        String lockKeys = buildLockKey(lockKeyRecords);
-        connectionProxy.appendLockKey(lockKeys);
+
+        List<LockKey> lockKey = buildLockKey(lockKeyRecords);
+        connectionProxy.appendLockKey(lockKey);
 
         SQLUndoLog sqlUndoLog = buildUndoItem(beforeImage, afterImage);
         connectionProxy.appendUndoLog(sqlUndoLog);
@@ -261,24 +263,36 @@ public abstract class BaseTransactionalExecutor<T, S extends Statement> implemen
      * @param rowsIncludingPK the records
      * @return the string
      */
-    protected String buildLockKey(TableRecords rowsIncludingPK) {
+    protected List<LockKey> buildLockKey(TableRecords rowsIncludingPK) {
         if (rowsIncludingPK.size() == 0) {
             return null;
         }
-
-        StringBuilder sb = new StringBuilder();
-        sb.append(rowsIncludingPK.getTableMeta().getTableName());
-        sb.append(":");
-        int filedSequence = 0;
         List<Field> pkRows = rowsIncludingPK.pkRows();
+        List<LockKey> locks = new ArrayList<>();
         for (Field field : pkRows) {
-            sb.append(field.getValue());
-            filedSequence++;
-            if (filedSequence < pkRows.size()) {
-                sb.append(",");
+            LockKey lockKey = new LockKey();
+            lockKey.setTableName(rowsIncludingPK.getTableMeta().getTableName());
+            lockKey.setPk(field.getValue().toString());
+            locks.add(lockKey);
+        }
+        return locks;
+    }
+
+    public String buildLockKeys(List<LockKey> lockKeys) {
+        if (lockKeys.isEmpty()) {
+            return null;
+        }
+        StringBuilder appender = new StringBuilder();
+        Iterator<LockKey> iterable = lockKeys.iterator();
+        while (iterable.hasNext()) {
+            appender.append(iterable.next().getTableName());
+            appender.append(":");
+            appender.append(iterable.next().getPk());
+            if (iterable.hasNext()) {
+                appender.append(";");
             }
         }
-        return sb.toString();
+        return appender.toString();
     }
 
     /**

@@ -22,6 +22,7 @@ import java.util.List;
 import java.util.Set;
 
 import io.seata.common.exception.ShouldNeverHappenException;
+import io.seata.rm.datasource.sql.struct.LockKey;
 import io.seata.rm.datasource.undo.SQLUndoLog;
 
 /**
@@ -37,7 +38,7 @@ public class ConnectionContext {
     /**
      * Table and primary key should not be duplicated.
      */
-    private Set<String> lockKeysBuffer = new HashSet<>();
+    private Set<LockKey> lockKeysBuffer = new HashSet<>();
     private List<SQLUndoLog> sqlUndoItemsBuffer = new ArrayList<>();
 
     /**
@@ -63,8 +64,8 @@ public class ConnectionContext {
      *
      * @param lockKey the lock key
      */
-    void appendLockKey(String lockKey) {
-        lockKeysBuffer.add(lockKey);
+    void appendLockKey(List<LockKey> lockKey) {
+        lockKeysBuffer.addAll(lockKey);
     }
 
     /**
@@ -188,9 +189,12 @@ public class ConnectionContext {
             return null;
         }
         StringBuilder appender = new StringBuilder();
-        Iterator<String> iterable = lockKeysBuffer.iterator();
+        Iterator<LockKey> iterable = lockKeysBuffer.iterator();
         while (iterable.hasNext()) {
-            appender.append(iterable.next());
+            LockKey lockKey = iterable.next();
+            appender.append(lockKey.getTableName());
+            appender.append(":");
+            appender.append(lockKey.getPk());
             if (iterable.hasNext()) {
                 appender.append(";");
             }
@@ -212,7 +216,7 @@ public class ConnectionContext {
      *
      * @return the lock keys buffer
      */
-    public Set<String> getLockKeysBuffer() {
+    public Set<LockKey> getLockKeysBuffer() {
         return lockKeysBuffer;
     }
 

@@ -22,6 +22,7 @@ import io.seata.core.model.ResourceManager;
 import io.seata.rm.DefaultResourceManager;
 import io.seata.rm.datasource.exec.LockConflictException;
 import io.seata.rm.datasource.exec.LockWaitTimeoutException;
+import io.seata.rm.datasource.sql.struct.LockKey;
 import io.seata.rm.datasource.undo.SQLUndoLog;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
@@ -30,6 +31,8 @@ import org.mockito.Mockito;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * ConnectionProxy test
@@ -43,7 +46,7 @@ public class ConnectionProxyTest {
 
     private final static String TEST_XID = "testXid";
 
-    private final static String lockKey = "order:123";
+    private final static List<LockKey> lockKeys = new ArrayList<>();
 
     private Field branchRollbackFlagField;
 
@@ -61,7 +64,7 @@ public class ConnectionProxyTest {
         Mockito.when(dataSourceProxy.getResourceId())
                 .thenReturn(TEST_RESOURCE_ID);
         ResourceManager rm = Mockito.mock(ResourceManager.class);
-        Mockito.when(rm.branchRegister(BranchType.AT, dataSourceProxy.getResourceId(), null, TEST_XID, null, lockKey))
+        Mockito.when(rm.branchRegister(BranchType.AT, dataSourceProxy.getResourceId(), null, TEST_XID, null, "order:123"))
                 .thenThrow(new TransactionException(TransactionExceptionCode.LockKeyConflict));
         DefaultResourceManager defaultResourceManager = DefaultResourceManager.get();
         Assertions.assertNotNull(defaultResourceManager);
@@ -75,7 +78,11 @@ public class ConnectionProxyTest {
         ConnectionProxy connectionProxy = new ConnectionProxy(dataSourceProxy, null);
         connectionProxy.bind(TEST_XID);
         connectionProxy.appendUndoLog(new SQLUndoLog());
-        connectionProxy.appendLockKey(lockKey);
+        LockKey lockKey = new LockKey();
+        lockKey.setTableName("order");
+        lockKey.setPk("123");
+        lockKeys.add(lockKey);
+        connectionProxy.appendLockKey(lockKeys);
         Assertions.assertThrows(LockConflictException.class, connectionProxy::commit);
         branchRollbackFlagField.set(null, oldBranchRollbackFlag);
     }
@@ -87,7 +94,11 @@ public class ConnectionProxyTest {
         ConnectionProxy connectionProxy = new ConnectionProxy(dataSourceProxy, null);
         connectionProxy.bind(TEST_XID);
         connectionProxy.appendUndoLog(new SQLUndoLog());
-        connectionProxy.appendLockKey(lockKey);
+        LockKey lockKey = new LockKey();
+        lockKey.setTableName("order");
+        lockKey.setPk("123");
+        lockKeys.add(lockKey);
+        connectionProxy.appendLockKey(lockKeys);
         Assertions.assertThrows(LockWaitTimeoutException.class, connectionProxy::commit);
         branchRollbackFlagField.set(null, oldBranchRollbackFlag);
     }

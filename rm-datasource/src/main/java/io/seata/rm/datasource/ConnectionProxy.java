@@ -17,6 +17,7 @@ package io.seata.rm.datasource;
 
 import java.sql.Connection;
 import java.sql.SQLException;
+import java.util.List;
 import java.util.concurrent.Callable;
 
 import io.seata.common.util.StringUtils;
@@ -29,6 +30,7 @@ import io.seata.core.model.BranchType;
 import io.seata.rm.DefaultResourceManager;
 import io.seata.rm.datasource.exec.LockConflictException;
 import io.seata.rm.datasource.exec.LockRetryController;
+import io.seata.rm.datasource.sql.struct.LockKey;
 import io.seata.rm.datasource.undo.SQLUndoLog;
 import io.seata.rm.datasource.undo.UndoLogManagerFactory;
 import org.slf4j.Logger;
@@ -173,7 +175,7 @@ public class ConnectionProxy extends AbstractConnectionProxy {
      *
      * @param lockKey the lock key
      */
-    public void appendLockKey(String lockKey) {
+    public void appendLockKey(List<LockKey> lockKey) {
         context.appendLockKey(lockKey);
     }
 

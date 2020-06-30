@@ -26,6 +26,7 @@ import java.util.List;
 import io.seata.common.util.StringUtils;
 import io.seata.core.context.RootContext;
 import io.seata.rm.datasource.StatementProxy;
+import io.seata.rm.datasource.sql.struct.LockKey;
 import io.seata.sqlparser.SQLRecognizer;
 import io.seata.sqlparser.SQLSelectRecognizer;
 import io.seata.rm.datasource.sql.struct.TableRecords;
@@ -91,7 +92,8 @@ public class SelectForUpdateExecutor<T, S extends Statement> extends BaseTransac
 
                     // Try to get global lock of those rows selected
                     TableRecords selectPKRows = buildTableRecords(getTableMeta(), selectPKSQL, paramAppenderList);
-                    String lockKeys = buildLockKey(selectPKRows);
+                    List<LockKey> lockKey = buildLockKey(selectPKRows);
+                    String lockKeys = buildLockKeys(lockKey);
                     if (StringUtils.isNullOrEmpty(lockKeys)) {
                         break;
                     }
@@ -102,7 +104,7 @@ public class SelectForUpdateExecutor<T, S extends Statement> extends BaseTransac
                     } else if (RootContext.requireGlobalLock()) {
                         //check lock key before commit just like DML to avoid reentrant lock problem(no xid thus can
                         // not reentrant)
-                        statementProxy.getConnectionProxy().appendLockKey(lockKeys);
+                        statementProxy.getConnectionProxy().appendLockKey(lockKey);
                     } else {
                         throw new RuntimeException("Unknown situation!");
                     }
