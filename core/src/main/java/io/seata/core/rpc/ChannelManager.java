@@ -197,8 +197,26 @@ public class ChannelManager {
         if (StringUtils.isNullOrEmpty(dbkey)) {
             return null;
         }
+
+        dbkey = replaceMultipleDbUrl(dbkey, "dbkey_1 = {}", "dbkey_2 = {}");
+
         return new HashSet<String>(Arrays.asList(dbkey.split(Constants.DBKEYS_SPLIT_CHAR)));
     }
+
+    /**
+     * Replace the comma in the multi-database connection address string with an underscore
+     * @param dbkey
+     * @param s2
+     * @param s3
+     * @return
+     */
+    private static String replaceMultipleDbUrl(String dbkey, String s2, String s3) {
+        LOGGER.info(s2, dbkey);
+        dbkey = dbkey.replaceAll("(\\d+),(\\d+)", "$1_$2");
+        LOGGER.info(s3, dbkey);
+        return dbkey;
+    }
+
 
     /**
      * Release rpc context.
@@ -287,6 +305,8 @@ public class ChannelManager {
         String targetApplicationId = clientIdInfo[0];
         String targetIP = clientIdInfo[1];
         int targetPort = Integer.parseInt(clientIdInfo[2]);
+
+        resourceId = replaceMultipleDbUrl(resourceId, "resourceId_1 = {}", "resourceId_2 = {}");
 
         ConcurrentMap<String, ConcurrentMap<String, ConcurrentMap<Integer,
             RpcContext>>> applicationIdMap = RM_CHANNELS.get(resourceId);
