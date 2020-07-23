@@ -15,10 +15,6 @@
  */
 package io.seata.rm.datasource.undo.parser;
 
-import java.io.IOException;
-import java.nio.ByteBuffer;
-import java.sql.Timestamp;
-
 import io.protostuff.Input;
 import io.protostuff.LinkedBuffer;
 import io.protostuff.Output;
@@ -35,6 +31,10 @@ import io.seata.common.loader.LoadLevel;
 import io.seata.rm.datasource.undo.BranchUndoLog;
 import io.seata.rm.datasource.undo.UndoLogParser;
 
+import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.sql.Timestamp;
+
 /**
  * The type protostuff based undo log parser.
  *
@@ -46,15 +46,16 @@ public class ProtostuffUndoLogParser implements UndoLogParser, Initialize {
     public static final String NAME = "protostuff";
 
     private final DefaultIdStrategy idStrategy = (DefaultIdStrategy) RuntimeEnv.ID_STRATEGY;
-
-    private final Schema<BranchUndoLog> schema = RuntimeSchema.getSchema(BranchUndoLog.class, idStrategy);
+    private Schema<BranchUndoLog> schema;
 
     @Override
     public void init() {
-        idStrategy.registerDelegate(new DateDelegate());
-        idStrategy.registerDelegate(new TimestampDelegate());
-        idStrategy.registerDelegate(new SqlDateDelegate());
-        idStrategy.registerDelegate(new TimeDelegate());
+        ProtostuffConfigurerAdapter adapter = (ProtostuffConfigurerAdapter) CustomSerializerConfigurerAdapter.getConfig(NAME);
+        if (null == adapter) {
+            adapter = new ProtostuffConfigurerAdapter();
+        }
+        adapter.config(idStrategy);
+        schema = RuntimeSchema.getSchema(BranchUndoLog.class, idStrategy);
     }
 
     @Override

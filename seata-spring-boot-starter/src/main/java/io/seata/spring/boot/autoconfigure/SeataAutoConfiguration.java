@@ -17,6 +17,7 @@ package io.seata.spring.boot.autoconfigure;
 
 import io.seata.spring.annotation.GlobalTransactionScanner;
 import io.seata.spring.annotation.datasource.SeataAutoDataSourceProxyCreator;
+import io.seata.spring.boot.autoconfigure.loader.CustomSerializerConfigurerAdapterLoader;
 import io.seata.spring.boot.autoconfigure.properties.SeataProperties;
 import io.seata.spring.boot.autoconfigure.provider.SpringApplicationContextProvider;
 import io.seata.tm.api.DefaultFailureHandlerImpl;
@@ -43,6 +44,7 @@ import static io.seata.spring.annotation.datasource.AutoDataSourceProxyRegistrar
 @Configuration
 @EnableConfigurationProperties({SeataProperties.class})
 public class SeataAutoConfiguration {
+
     private static final Logger LOGGER = LoggerFactory.getLogger(SeataAutoConfiguration.class);
 
     @Bean(BEAN_NAME_SPRING_APPLICATION_CONTEXT_PROVIDER)
@@ -71,6 +73,11 @@ public class SeataAutoConfiguration {
     @ConditionalOnProperty(prefix = StarterConstants.SEATA_PREFIX, name = {"enableAutoDataSourceProxy", "enable-auto-data-source-proxy"}, havingValue = "true", matchIfMissing = true)
     @ConditionalOnMissingBean(SeataAutoDataSourceProxyCreator.class)
     public SeataAutoDataSourceProxyCreator seataAutoDataSourceProxyCreator(SeataProperties seataProperties) {
-        return new SeataAutoDataSourceProxyCreator(seataProperties.isUseJdkProxy(),seataProperties.getExcludesForAutoProxying());
+        return new SeataAutoDataSourceProxyCreator(seataProperties.isUseJdkProxy(), seataProperties.getExcludesForAutoProxying());
+    }
+
+    @Bean
+    public CustomSerializerConfigurerAdapterLoader customSerializerConfigurerAdapterLoader() {
+        return new CustomSerializerConfigurerAdapterLoader();
     }
 }
