@@ -19,6 +19,7 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import io.seata.common.exception.FrameworkException;
 import io.seata.core.context.RootContext;
+import io.seata.spring.interceptor.GlobalTransactionalInterceptor;
 import io.seata.tm.api.transaction.TransactionInfo;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;

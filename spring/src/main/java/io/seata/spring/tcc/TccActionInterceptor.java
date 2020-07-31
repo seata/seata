@@ -15,6 +15,8 @@
  */
 package io.seata.spring.tcc;
 
+import java.lang.reflect.Method;
+import java.util.Map;
 import io.seata.common.Constants;
 import io.seata.common.util.StringUtils;
 import io.seata.core.context.RootContext;
@@ -28,9 +30,6 @@ import org.aopalliance.intercept.MethodInterceptor;
 import org.aopalliance.intercept.MethodInvocation;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.lang.reflect.Method;
-import java.util.Map;
 
 /**
  * TCC Interceptor

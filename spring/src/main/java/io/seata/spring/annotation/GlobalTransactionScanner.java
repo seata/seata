@@ -20,15 +20,16 @@ import java.util.HashSet;
 import java.util.Set;
 import io.seata.common.util.CollectionUtils;
 import io.seata.common.util.StringUtils;
-import io.seata.config.ConfigurationChangeListener;
-import io.seata.config.ConfigurationFactory;
 import io.seata.config.ConfigurationCache;
+import io.seata.config.ConfigurationFactory;
 import io.seata.core.constants.ConfigurationKeys;
 import io.seata.core.rpc.netty.RmNettyRemotingClient;
 import io.seata.core.rpc.ShutdownHook;
 import io.seata.core.rpc.netty.TmNettyRemotingClient;
 import io.seata.rm.RMClient;
+import io.seata.spring.interceptor.GlobalTransactionalInterceptor;
 import io.seata.spring.tcc.TccActionInterceptor;
+import io.seata.spring.util.GlobalTransactionalCheck;
 import io.seata.spring.util.SpringProxyUtils;
 import io.seata.spring.util.TCCBeanParserUtils;
 import io.seata.tm.TMClient;
@@ -220,9 +221,8 @@ public class GlobalTransactionScanner extends AbstractAutoProxyCreator
                     if (interceptor == null) {
                         if (globalTransactionalInterceptor == null) {
                             globalTransactionalInterceptor = new GlobalTransactionalInterceptor(failureHandlerHook);
-                            ConfigurationCache.addConfigListener(
-                                ConfigurationKeys.DISABLE_GLOBAL_TRANSACTION,
-                                (ConfigurationChangeListener)globalTransactionalInterceptor);
+                            ConfigurationCache.addConfigListener(ConfigurationKeys.DISABLE_GLOBAL_TRANSACTION,
+                                new GlobalTransactionalCheck());
                         }
                         interceptor = globalTransactionalInterceptor;
                     }
