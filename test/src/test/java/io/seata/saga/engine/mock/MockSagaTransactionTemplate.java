@@ -19,7 +19,7 @@ import io.seata.core.exception.TransactionException;
 import io.seata.core.model.BranchStatus;
 import io.seata.core.model.GlobalStatus;
 import io.seata.saga.tm.SagaTransactionalTemplate;
-import io.seata.server.UUIDGenerator;
+import io.seata.tc.UUIDGenerator;
 import io.seata.tm.api.GlobalTransaction;
 import io.seata.tm.api.TransactionalExecutor.ExecutionException;
 import io.seata.tm.api.transaction.TransactionInfo;

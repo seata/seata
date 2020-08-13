@@ -15,7 +15,14 @@
  */
 package io.seata.rm;
 
+import io.seata.common.Constants;
 import io.seata.common.exception.NotSupportYetException;
+import io.seata.common.loader.EnhancedServiceLoader;
+import io.seata.common.util.NetUtil;
+import io.seata.common.util.StringUtils;
+import io.seata.config.Configuration;
+import io.seata.config.ConfigurationFactory;
+import io.seata.core.constants.ConfigurationKeys;
 import io.seata.core.exception.RmTransactionException;
 import io.seata.core.exception.TransactionException;
 import io.seata.core.exception.TransactionExceptionCode;
@@ -23,16 +30,20 @@ import io.seata.core.model.BranchStatus;
 import io.seata.core.model.BranchType;
 import io.seata.core.model.Resource;
 import io.seata.core.model.ResourceManager;
+import io.seata.core.model.ResourceManagerOutbound;
 import io.seata.core.protocol.ResultCode;
 import io.seata.core.protocol.transaction.BranchRegisterRequest;
 import io.seata.core.protocol.transaction.BranchRegisterResponse;
 import io.seata.core.protocol.transaction.BranchReportRequest;
 import io.seata.core.protocol.transaction.BranchReportResponse;
+import io.seata.core.rpc.RemotingServer;
 import io.seata.core.rpc.netty.RmNettyRemotingClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.concurrent.TimeoutException;
+
+import static io.seata.core.constants.ConfigurationKeys.STORE_MODE;
 
 /**
  * abstract ResourceManager
@@ -42,6 +53,23 @@ import java.util.concurrent.TimeoutException;
 public abstract class AbstractResourceManager implements ResourceManager {
 
     protected static final Logger LOGGER = LoggerFactory.getLogger(AbstractResourceManager.class);
+
+    protected static final ResourceManagerOutbound DIRECT_CONNECT_TC_STORE_RM;
+    private static final String APPLICATION_ID;
+    private static final String CLIENT_SUFFIX = Constants.CLIENT_ID_SPLIT_CHAR + "0.0.0.0" + Constants.CLIENT_ID_SPLIT_CHAR + "0";
+
+    static {
+        Configuration config = ConfigurationFactory.getInstance();
+        String storeMode = config.getConfig(STORE_MODE);
+        if (StringUtils.isNotBlank(storeMode) && !"none".equalsIgnoreCase(storeMode) && !"file".equalsIgnoreCase(storeMode)) {
+            DIRECT_CONNECT_TC_STORE_RM = EnhancedServiceLoader.load(ResourceManagerOutbound.class, "defaultCore",
+                    new Class[]{RemotingServer.class}, new Object[]{null});
+            APPLICATION_ID = config.getConfig(ConfigurationKeys.APPLICATION_ID);
+        } else {
+            DIRECT_CONNECT_TC_STORE_RM = null;
+            APPLICATION_ID = null;
+        }
+    }
 
     /**
      * registry branch record
@@ -57,6 +85,13 @@ public abstract class AbstractResourceManager implements ResourceManager {
     @Override
     public Long branchRegister(BranchType branchType, String resourceId, String clientId, String xid, String applicationData, String lockKeys) throws TransactionException {
         try {
+            if (DIRECT_CONNECT_TC_STORE_RM != null) {
+                if (StringUtils.isBlank(clientId)) {
+                    clientId = APPLICATION_ID + CLIENT_SUFFIX;
+                }
+                return DIRECT_CONNECT_TC_STORE_RM.branchRegister(branchType, resourceId, clientId, xid, applicationData, lockKeys);
+            }
+
             BranchRegisterRequest request = new BranchRegisterRequest();
             request.setXid(xid);
             request.setLockKey(lockKeys);
@@ -89,6 +124,11 @@ public abstract class AbstractResourceManager implements ResourceManager {
     @Override
     public void branchReport(BranchType branchType, String xid, long branchId, BranchStatus status, String applicationData) throws TransactionException {
         try {
+            if (DIRECT_CONNECT_TC_STORE_RM != null) {
+                DIRECT_CONNECT_TC_STORE_RM.branchReport(branchType, xid, branchId, status, applicationData);
+                return;
+            }
+
             BranchReportRequest request = new BranchReportRequest();
             request.setXid(xid);
             request.setBranchId(branchId);

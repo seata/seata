@@ -7,6 +7,79 @@
       "description": "data source proxy mode.",
       "sourceType": "io.seata.spring.boot.autoconfigure.properties.SeataProperties",
       "defaultValue": "AT"
+    },
+    {
+      "name": "seata.store.db.datasource",
+      "type": "java.lang.String",
+      "description": "the datasource type.",
+      "sourceType": "io.seata.spring.boot.autoconfigure.properties.client.DbStoreProperties",
+      "defaultValue": "druid"
+    },
+    {
+      "name": "seata.store.db.min-conn",
+      "type": "java.lang.Integer",
+      "sourceType": "io.seata.spring.boot.autoconfigure.properties.client.DbStoreProperties",
+      "defaultValue": 1
+    },
+    {
+      "name": "seata.store.db.max-conn",
+      "type": "java.lang.Integer",
+      "sourceType": "io.seata.spring.boot.autoconfigure.properties.client.DbStoreProperties",
+      "defaultValue": 20
+    },
+    {
+      "name": "seata.store.db.max-wait",
+      "type": "java.lang.Long",
+      "sourceType": "io.seata.spring.boot.autoconfigure.properties.client.DbStoreProperties",
+      "defaultValue": 5000
+    },
+    {
+      "name": "seata.store.db.global-table",
+      "type": "java.lang.String",
+      "sourceType": "io.seata.spring.boot.autoconfigure.properties.client.DbStoreProperties",
+      "defaultValue": "global_table"
+    },
+    {
+      "name": "seata.store.db.branch-table",
+      "type": "java.lang.String",
+      "sourceType": "io.seata.spring.boot.autoconfigure.properties.client.DbStoreProperties",
+      "defaultValue": "branch_table"
+    },
+    {
+      "name": "seata.store.db.lock-table",
+      "type": "java.lang.String",
+      "sourceType": "io.seata.spring.boot.autoconfigure.properties.client.DbStoreProperties",
+      "defaultValue": "lock_table"
+    },
+    {
+      "name": "seata.store.redis.host",
+      "type": "java.lang.String",
+      "sourceType": "io.seata.spring.boot.autoconfigure.properties.client.RedisStoreProperties",
+      "defaultValue": "127.0.0.1"
+    },
+    {
+      "name": "seata.store.redis.port",
+      "type": "java.lang.Integer",
+      "sourceType": "io.seata.spring.boot.autoconfigure.properties.client.RedisStoreProperties",
+      "defaultValue": 6379
+    },
+    {
+      "name": "seata.store.redis.database",
+      "type": "java.lang.Integer",
+      "sourceType": "io.seata.spring.boot.autoconfigure.properties.client.RedisStoreProperties",
+      "defaultValue": 0
+    },
+    {
+      "name": "seata.store.redis.min-conn",
+      "type": "java.lang.Integer",
+      "sourceType": "io.seata.spring.boot.autoconfigure.properties.client.RedisStoreProperties",
+      "defaultValue": 1
+    },
+    {
+      "name": "seata.store.redis.max-conn",
+      "type": "java.lang.Integer",
+      "sourceType": "io.seata.spring.boot.autoconfigure.properties.client.RedisStoreProperties",
+      "defaultValue": 10
     }
   ],
   "hints": [
@@ -108,6 +181,57 @@
           "name": "handle-as",
           "parameters": {
             "target": "io.seata.core.compressor.CompressorType"
+          }
+        }
+      ]
+    },
+    {
+      "name": "seata.store.mode",
+      "values": [
+        {
+          "value": "none"
+        },
+        {
+          "value": "db"
+        },
+        {
+          "value": "redis"
+        }
+      ]
+    },
+    {
+      "name": "seata.store.db.datasource",
+      "values": [
+        {
+          "value": "druid"
+        },
+        {
+          "value": "hikari"
+        },
+        {
+          "value": "dbcp"
+        }
+      ]
+    },
+    {
+      "name": "seata.store.db.db-type",
+      "providers": [
+        {
+          "name": "handle-as",
+          "parameters": {
+            "target": "io.seata.core.constants.DBType"
+          }
+        }
+      ]
+    },
+    {
+      "name": "seata.store.db.driver-class-name",
+      "providers": [
+        {
+          "name": "class-reference",
+          "parameters": {
+            "target": "java.sql.Driver",
+            "concrete": true
           }
         }
       ]

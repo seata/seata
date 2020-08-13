@@ -15,10 +15,17 @@
  */
 package io.seata.spring.boot.autoconfigure;
 
+import io.seata.common.XID;
+import io.seata.common.util.IdWorker;
+import io.seata.common.util.NetUtil;
+import io.seata.common.util.StringUtils;
 import io.seata.spring.annotation.GlobalTransactionScanner;
 import io.seata.spring.annotation.datasource.SeataAutoDataSourceProxyCreator;
 import io.seata.spring.boot.autoconfigure.properties.SeataProperties;
+import io.seata.spring.boot.autoconfigure.properties.client.StoreProperties;
 import io.seata.spring.boot.autoconfigure.provider.SpringApplicationContextProvider;
+import io.seata.tc.UUIDGenerator;
+import io.seata.tc.session.SessionHolder;
 import io.seata.tm.api.DefaultFailureHandlerImpl;
 import io.seata.tm.api.FailureHandler;
 import org.slf4j.Logger;
@@ -30,6 +37,8 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.DependsOn;
+
+import java.io.IOException;
 
 import static io.seata.common.Constants.BEAN_NAME_FAILURE_HANDLER;
 import static io.seata.common.Constants.BEAN_NAME_SPRING_APPLICATION_CONTEXT_PROVIDER;
@@ -44,6 +53,20 @@ import static io.seata.spring.annotation.datasource.AutoDataSourceProxyRegistrar
 @EnableConfigurationProperties({SeataProperties.class})
 public class SeataAutoConfiguration {
     private static final Logger LOGGER = LoggerFactory.getLogger(SeataAutoConfiguration.class);
+
+    public SeataAutoConfiguration(SeataProperties seataProperties,
+            StoreProperties storeProperties) throws IOException {
+
+        String storeMode = storeProperties.getMode();
+        if (StringUtils.isNotBlank(storeMode) && !"none".equalsIgnoreCase(storeMode) && !"file".equalsIgnoreCase(storeMode)) {
+            UUIDGenerator.init(seataProperties.getServerNode() >= 0 ? seataProperties.getServerNode() : IdWorker.initWorkerId());
+
+            XID.setIpAddress(NetUtil.getLocalIp());
+            XID.setPort(seataProperties.getServerPort());
+
+            SessionHolder.init(storeProperties.getMode());
+        }
+    }
 
     @Bean(BEAN_NAME_SPRING_APPLICATION_CONTEXT_PROVIDER)
     @ConditionalOnMissingBean(name = {BEAN_NAME_SPRING_APPLICATION_CONTEXT_PROVIDER})

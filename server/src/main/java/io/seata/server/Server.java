@@ -19,6 +19,7 @@ import java.io.IOException;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
+
 import io.seata.common.XID;
 import io.seata.common.thread.NamedThreadFactory;
 import io.seata.common.util.NetUtil;
@@ -29,7 +30,8 @@ import io.seata.server.coordinator.DefaultCoordinator;
 import io.seata.server.env.ContainerHelper;
 import io.seata.server.env.PortHelper;
 import io.seata.server.metrics.MetricsManager;
-import io.seata.server.session.SessionHolder;
+import io.seata.tc.UUIDGenerator;
+import io.seata.tc.session.SessionHolder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

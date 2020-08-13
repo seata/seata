@@ -15,6 +15,12 @@
  */
 package io.seata.tm;
 
+import io.seata.common.loader.EnhancedServiceLoader;
+import io.seata.common.loader.LoadLevel;
+import io.seata.common.util.StringUtils;
+import io.seata.config.Configuration;
+import io.seata.config.ConfigurationFactory;
+import io.seata.core.constants.ConfigurationKeys;
 import io.seata.core.exception.TmTransactionException;
 import io.seata.core.exception.TransactionException;
 import io.seata.core.exception.TransactionExceptionCode;
@@ -33,20 +39,55 @@ import io.seata.core.protocol.transaction.GlobalRollbackRequest;
 import io.seata.core.protocol.transaction.GlobalRollbackResponse;
 import io.seata.core.protocol.transaction.GlobalStatusRequest;
 import io.seata.core.protocol.transaction.GlobalStatusResponse;
+import io.seata.core.rpc.RemotingServer;
 import io.seata.core.rpc.netty.TmNettyRemotingClient;
 
 import java.util.concurrent.TimeoutException;
+
+import static io.seata.core.constants.ConfigurationKeys.STORE_MODE;
+import static io.seata.core.constants.ConfigurationKeys.TX_SERVICE_GROUP;
 
 /**
  * The type Default transaction manager.
  *
  * @author sharajava
  */
+@LoadLevel(name = "defaultTM")
 public class DefaultTransactionManager implements TransactionManager {
+
+    private static final TransactionManager DIRECT_CONNECT_TC_STORE_TM;
+    private static final String APPLICATION_ID;
+    private static final String TRANSACTION_SERVICE_GROUP;
+
+    static {
+        Configuration config = ConfigurationFactory.getInstance();
+        String storeMode = config.getConfig(STORE_MODE);
+        if (StringUtils.isNotBlank(storeMode) && !"none".equalsIgnoreCase(storeMode) && !"file".equalsIgnoreCase(storeMode)) {
+            DIRECT_CONNECT_TC_STORE_TM = EnhancedServiceLoader.load(TransactionManager.class, "defaultCore",
+                    new Class[]{RemotingServer.class}, new Object[]{null});
+            APPLICATION_ID = config.getConfig(ConfigurationKeys.APPLICATION_ID);
+            TRANSACTION_SERVICE_GROUP = config.getConfig(TX_SERVICE_GROUP);
+        } else {
+            DIRECT_CONNECT_TC_STORE_TM = null;
+            APPLICATION_ID = null;
+            TRANSACTION_SERVICE_GROUP = null;
+        }
+    }
+
 
     @Override
     public String begin(String applicationId, String transactionServiceGroup, String name, int timeout)
         throws TransactionException {
+        if (DIRECT_CONNECT_TC_STORE_TM != null) {
+            if (StringUtils.isBlank(applicationId)) {
+                applicationId = APPLICATION_ID;
+            }
+            if (StringUtils.isBlank(transactionServiceGroup)) {
+                transactionServiceGroup = TRANSACTION_SERVICE_GROUP;
+            }
+            return DIRECT_CONNECT_TC_STORE_TM.begin(applicationId, transactionServiceGroup, name, timeout);
+        }
+
         GlobalBeginRequest request = new GlobalBeginRequest();
         request.setTransactionName(name);
         request.setTimeout(timeout);
@@ -75,6 +116,10 @@ public class DefaultTransactionManager implements TransactionManager {
 
     @Override
     public GlobalStatus getStatus(String xid) throws TransactionException {
+        if (DIRECT_CONNECT_TC_STORE_TM != null) {
+            return DIRECT_CONNECT_TC_STORE_TM.getStatus(xid);
+        }
+
         GlobalStatusRequest queryGlobalStatus = new GlobalStatusRequest();
         queryGlobalStatus.setXid(xid);
         GlobalStatusResponse response = (GlobalStatusResponse) syncCall(queryGlobalStatus);
@@ -83,6 +128,10 @@ public class DefaultTransactionManager implements TransactionManager {
 
     @Override
     public GlobalStatus globalReport(String xid, GlobalStatus globalStatus) throws TransactionException {
+        if (DIRECT_CONNECT_TC_STORE_TM != null) {
+            return DIRECT_CONNECT_TC_STORE_TM.globalReport(xid, globalStatus);
+        }
+
         GlobalReportRequest globalReport = new GlobalReportRequest();
         globalReport.setXid(xid);
         globalReport.setGlobalStatus(globalStatus);

@@ -1,0 +1,3 @@
+io.seata.tc.store.DbcpDataSourceProvider
+io.seata.tc.store.DruidDataSourceProvider
+io.seata.tc.store.HikariDataSourceProvider

@@ -33,9 +33,11 @@ public class SpringCloudAlibabaConfiguration implements ApplicationContextAware 
 
     private static final Logger LOGGER = LoggerFactory.getLogger(SpringCloudAlibabaConfiguration.class);
     private static final String SPRING_APPLICATION_NAME_KEY = "spring.application.name";
+    private static final String SERVER_PORT_KEY = "server.port";
     private static final String DEFAULT_SPRING_CLOUD_SERVICE_GROUP_POSTFIX = "-seata-service-group";
     private String applicationId;
     private String txServiceGroup;
+    private int serverPort = -1;
     private ApplicationContext applicationContext;
 
     /**
@@ -73,6 +75,13 @@ public class SpringCloudAlibabaConfiguration implements ApplicationContextAware 
      */
     public void setTxServiceGroup(String txServiceGroup) {
         this.txServiceGroup = txServiceGroup;
+    }
+
+    public int getServerPort() {
+        if (serverPort < 0) {
+            serverPort = applicationContext.getEnvironment().getProperty(SERVER_PORT_KEY, Integer.class, 0);
+        }
+        return serverPort;
     }
 
     @Override

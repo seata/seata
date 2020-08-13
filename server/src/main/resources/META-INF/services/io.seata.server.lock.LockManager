@@ -1,3 +1,0 @@
-io.seata.server.storage.db.lock.DataBaseLockManager
-io.seata.server.storage.file.lock.FileLockManager
-io.seata.server.storage.redis.lock.RedisLockManager

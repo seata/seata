@@ -33,6 +33,10 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Stream;
 
+import static io.seata.core.constants.DefaultValues.DEFAULT_DB_MAX_CONN;
+import static io.seata.core.constants.DefaultValues.DEFAULT_DB_MAX_WAIT;
+import static io.seata.core.constants.DefaultValues.DEFAULT_DB_MIN_CONN;
+
 /**
  * The abstract datasource provider
  * 
@@ -55,12 +59,6 @@ public abstract class AbstractDataSourceProvider implements DataSourceProvider, 
     private final static String MYSQL_DRIVER_FILE_PREFIX = "mysql-connector-java-";
 
     private final static Map<String, ClassLoader> MYSQL_DRIVER_LOADERS;
-
-    private static final int DEFAULT_DB_MAX_CONN = 20;
-
-    private static final int DEFAULT_DB_MIN_CONN = 1;
-
-    private static final long DEFAULT_DB_MAX_WAIT = 5000;
 
     static {
         MYSQL_DRIVER_LOADERS = createMysqlDriverClassLoaders();

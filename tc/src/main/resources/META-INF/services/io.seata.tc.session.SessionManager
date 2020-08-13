@@ -1,0 +1,2 @@
+io.seata.tc.storage.db.session.DataBaseSessionManager
+io.seata.tc.storage.redis.session.RedisSessionManager

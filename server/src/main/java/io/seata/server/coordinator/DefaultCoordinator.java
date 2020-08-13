@@ -53,9 +53,10 @@ import io.seata.core.rpc.RpcContext;
 import io.seata.core.rpc.TransactionMessageHandler;
 import io.seata.core.rpc.netty.NettyRemotingServer;
 import io.seata.server.AbstractTCInboundHandler;
-import io.seata.server.event.EventBusManager;
-import io.seata.server.session.GlobalSession;
-import io.seata.server.session.SessionHolder;
+import io.seata.tc.coordinator.DefaultCore;
+import io.seata.tc.event.EventBusManager;
+import io.seata.tc.session.GlobalSession;
+import io.seata.tc.session.SessionHolder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

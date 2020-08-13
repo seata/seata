@@ -29,7 +29,7 @@ import io.seata.core.protocol.transaction.GlobalRollbackResponse;
 import io.seata.core.rpc.RpcContext;
 import io.seata.metrics.Measurement;
 import io.seata.server.metrics.MetricsManager;
-import io.seata.server.session.SessionHolder;
+import io.seata.tc.session.SessionHolder;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 

@@ -226,6 +226,11 @@
         </dependency>
         <dependency>
             <groupId>io.seata</groupId>
+            <artifactId>seata-tc</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>io.seata</groupId>
             <artifactId>seata-tcc</artifactId>
             <version>${project.version}</version>
         </dependency>
@@ -667,6 +672,7 @@
                                     <include>io.seata:seata-sqlparser-druid</include>
                                     <include>io.seata:seata-sofa-rpc</include>
                                     <include>io.seata:seata-spring</include>
+                                    <include>io.seata:seata-tc</include>
                                     <include>io.seata:seata-tcc</include>
                                     <include>io.seata:seata-tm</include>
                                     <include>io.seata:seata-serializer-seata</include>

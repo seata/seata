@@ -17,11 +17,15 @@ package io.seata.spring.boot.autoconfigure;
 
 import java.util.HashMap;
 
+import io.seata.spring.boot.autoconfigure.properties.client.DbStoreProperties;
+import io.seata.spring.boot.autoconfigure.properties.client.FileStoreProperties;
 import io.seata.spring.boot.autoconfigure.properties.client.LockProperties;
 import io.seata.spring.boot.autoconfigure.properties.client.LogProperties;
+import io.seata.spring.boot.autoconfigure.properties.client.RedisStoreProperties;
 import io.seata.spring.boot.autoconfigure.properties.client.RmProperties;
 import io.seata.spring.boot.autoconfigure.properties.client.ServiceProperties;
 import io.seata.spring.boot.autoconfigure.properties.client.ShutdownProperties;
+import io.seata.spring.boot.autoconfigure.properties.client.StoreProperties;
 import io.seata.spring.boot.autoconfigure.properties.client.ThreadFactoryProperties;
 import io.seata.spring.boot.autoconfigure.properties.client.TmProperties;
 import io.seata.spring.boot.autoconfigure.properties.client.TransportProperties;
@@ -78,6 +82,11 @@ public class StarterConstants {
     public static final String CONFIG_ZK_PREFIX = CONFIG_PREFIX + ".zk";
     public static final String CONFIG_FILE_PREFIX = CONFIG_PREFIX + ".file";
 
+    public static final String STORE_PREFIX = SEATA_PREFIX + ".store";
+    public static final String FILE_STORE_PREFIX = STORE_PREFIX + ".file";
+    public static final String DB_STORE_PREFIX = STORE_PREFIX + ".db";
+    public static final String REDIS_STORE_PREFIX = STORE_PREFIX + ".redis";
+
     public static final HashMap<String, Class> PROPERTY_MAP = new HashMap<String, Class>(MAP_CAPACITY) {
         private static final long serialVersionUID = -8902807645596274597L;
 
@@ -108,6 +117,11 @@ public class StarterConstants {
             put(REGISTRY_REDIS_PREFIX, RegistryRedisProperties.class);
             put(REGISTRY_SOFA_PREFIX, RegistrySofaProperties.class);
             put(REGISTRY_ZK_PREFIX, RegistryZooKeeperProperties.class);
+
+            put(STORE_PREFIX, StoreProperties.class);
+            put(FILE_STORE_PREFIX, FileStoreProperties.class);
+            put(DB_STORE_PREFIX, DbStoreProperties.class);
+            put(REDIS_STORE_PREFIX, RedisStoreProperties.class);
         }
 
     };

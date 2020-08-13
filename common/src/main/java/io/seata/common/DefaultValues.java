@@ -69,6 +69,23 @@ public class DefaultValues {
     public static final String DEFAULT_STORE_DB_BRANCH_TABLE = "branch_table";
 
     /**
+     * The constant DEFAULT_DB_*
+     */
+    public static final String DEFAULT_DB_DATASOURCE = "druid";
+    public static final int DEFAULT_DB_MIN_CONN = 1;
+    public static final int DEFAULT_DB_MAX_CONN = 20;
+    public static final long DEFAULT_DB_MAX_WAIT = 5000;
+
+    /**
+     * The constant DEFAULT_REDIS_*
+     */
+    public static final String DEFAULT_REDIS_HOST = "127.0.0.1";
+    public static final int DEFAULT_REDIS_PORT = 6379;
+    public static final int DEFAULT_REDIS_DATABASE = 0;
+    public static final int DEFAULT_REDIS_MINCONN = 1;
+    public static final int DEFAULT_REDIS_MAXCONN = 10;
+
+    /**
      * The constant DEFAULT_LOCK_DB_TABLE.
      */
     public static final String DEFAULT_LOCK_DB_TABLE = "lock_table";

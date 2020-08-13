@@ -41,6 +41,14 @@ public class SeataProperties {
      */
     private String txServiceGroup;
     /**
+     * server port
+     */
+    private int serverPort = -1;
+    /**
+     * server node
+     */
+    private int serverNode = -1;
+    /**
      * Whether enable auto proxying of datasource bean
      */
     private boolean enableAutoDataSourceProxy = true;
@@ -90,6 +98,27 @@ public class SeataProperties {
 
     public SeataProperties setTxServiceGroup(String txServiceGroup) {
         this.txServiceGroup = txServiceGroup;
+        return this;
+    }
+
+    public int getServerPort() {
+        if (serverPort < 0) {
+            serverPort = springCloudAlibabaConfiguration.getServerPort();
+        }
+        return serverPort;
+    }
+
+    public SeataProperties setServerPort(int serverPort) {
+        this.serverPort = serverPort;
+        return this;
+    }
+
+    public int getServerNode() {
+        return serverNode;
+    }
+
+    public SeataProperties setServerNode(int serverNode) {
+        this.serverNode = serverNode;
         return this;
     }
 

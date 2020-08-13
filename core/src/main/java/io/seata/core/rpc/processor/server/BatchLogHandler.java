@@ -13,7 +13,6 @@
  *  See the License for the specific language governing permissions and
  *  limitations under the License.
  */
-
 package io.seata.core.rpc.processor.server;
 
 import io.seata.common.thread.NamedThreadFactory;

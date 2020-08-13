@@ -118,3 +118,25 @@ seata:
       connect-timeout: 2000
       username: ""
       password: ""
+  store:
+    mode: db #db|redis
+    db:
+      datasource: druid #druid|dbcp|hikari
+      dbType: mysql
+      driverClassName: com.mysql.jdbc.Driver
+      url: jdbc:mysql://127.0.0.1:3306/seata?useUnicode=true
+      user: username
+      password: password
+      minConn: 1
+      maxConn: 20
+      maxWait: 5000
+      globalTable: global_table
+      branchTable: branch_table
+      lockTable: lock_table
+    redis:
+      host: 127.0.0.1
+      port: 6379
+      database: 0
+      password: null
+      minConn: 1
+      maxConn: 10

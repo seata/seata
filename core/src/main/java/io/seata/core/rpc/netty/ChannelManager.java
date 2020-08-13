@@ -98,7 +98,7 @@ public class ChannelManager {
     }
 
     private static String[] readClientId(String clientId) {
-        return clientId.split(Constants.CLIENT_ID_SPLIT_CHAR);
+        return clientId != null ? clientId.split(Constants.CLIENT_ID_SPLIT_CHAR) : null;
     }
 
     private static RpcContext buildChannelHolder(NettyPoolKey.TransactionRole clientRole, String version, String applicationId,

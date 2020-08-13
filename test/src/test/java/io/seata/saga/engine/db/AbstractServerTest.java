@@ -21,10 +21,10 @@ import io.seata.core.constants.ConfigurationKeys;
 import io.seata.core.rpc.ShutdownHook;
 import io.seata.core.rpc.netty.NettyRemotingServer;
 import io.seata.server.ParameterParser;
-import io.seata.server.UUIDGenerator;
+import io.seata.tc.UUIDGenerator;
 import io.seata.server.coordinator.DefaultCoordinator;
 import io.seata.server.metrics.MetricsManager;
-import io.seata.server.session.SessionHolder;
+import io.seata.tc.session.SessionHolder;
 
 import java.io.File;
 import java.io.IOException;
