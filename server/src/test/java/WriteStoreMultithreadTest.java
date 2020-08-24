@@ -16,12 +16,12 @@
 import io.seata.core.exception.TransactionException;
 import io.seata.core.model.BranchStatus;
 import io.seata.core.model.GlobalStatus;
-import io.seata.server.session.BranchSession;
-import io.seata.server.session.GlobalSession;
-import io.seata.server.session.SessionCondition;
-import io.seata.server.session.SessionManager;
-import io.seata.server.store.TransactionStoreManager;
-import io.seata.server.storage.file.store.FileTransactionStoreManager;
+import io.seata.tc.session.BranchSession;
+import io.seata.tc.session.GlobalSession;
+import io.seata.tc.session.SessionCondition;
+import io.seata.tc.session.SessionManager;
+import io.seata.tc.store.TransactionStoreManager;
+import io.seata.tc.storage.file.store.FileTransactionStoreManager;
 
 import java.util.ArrayList;
 import java.util.Collection;

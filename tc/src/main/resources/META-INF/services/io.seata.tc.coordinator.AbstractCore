@@ -1,0 +1,4 @@
+io.seata.tc.transaction.at.ATCore
+io.seata.tc.transaction.tcc.TccCore
+io.seata.tc.transaction.saga.SagaCore
+io.seata.tc.transaction.xa.XACore

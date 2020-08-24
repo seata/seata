@@ -26,8 +26,9 @@ import io.seata.core.exception.TransactionException;
 import io.seata.core.model.GlobalStatus;
 import io.seata.server.coordinator.DefaultCoordinator;
 import io.seata.server.coordinator.DefaultCoordinatorTest;
-import io.seata.server.coordinator.DefaultCore;
-import io.seata.server.session.SessionHolder;
+import io.seata.tc.coordinator.DefaultCore;
+import io.seata.tc.event.EventBusManager;
+import io.seata.tc.session.SessionHolder;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 

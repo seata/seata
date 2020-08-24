@@ -40,8 +40,8 @@ import io.seata.core.protocol.transaction.GlobalStatusRequest;
 import io.seata.core.protocol.transaction.GlobalStatusResponse;
 import io.seata.core.protocol.transaction.TCInboundHandler;
 import io.seata.core.rpc.RpcContext;
-import io.seata.server.session.GlobalSession;
-import io.seata.server.session.SessionHolder;
+import io.seata.tc.session.GlobalSession;
+import io.seata.tc.session.SessionHolder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

@@ -34,8 +34,9 @@ import io.seata.core.protocol.transaction.BranchRollbackResponse;
 import io.seata.core.rpc.RemotingServer;
 import io.seata.core.rpc.processor.RemotingProcessor;
 import io.seata.core.store.StoreMode;
-import io.seata.server.session.GlobalSession;
-import io.seata.server.session.SessionHolder;
+import io.seata.tc.coordinator.DefaultCore;
+import io.seata.tc.session.GlobalSession;
+import io.seata.tc.session.SessionHolder;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -57,7 +58,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
-import static io.seata.server.session.SessionHolder.DEFAULT_SESSION_STORE_FILE_DIR;
+import static io.seata.tc.session.SessionHolder.DEFAULT_SESSION_STORE_FILE_DIR;
 
 /**
  * The type DefaultCoordinator test.
