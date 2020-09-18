@@ -73,7 +73,7 @@ public class MockSagaTransactionTemplate implements SagaTransactionalTemplate {
     }
 
     @Override
-    public void triggerAfterCompletion() {
+    public void triggerAfterCompletion(GlobalTransaction tx) {
 
     }
 

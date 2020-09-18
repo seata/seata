@@ -23,35 +23,42 @@ public interface TransactionHook {
     /**
      * before tx begin
      */
-    void beforeBegin();
+    default void beforeBegin() {
+    }
 
     /**
      * after tx begin
      */
-    void afterBegin();
+    default void afterBegin() {
+    }
 
     /**
      * before tx commit
      */
-    void beforeCommit();
+    default void beforeCommit() {
+    }
 
     /**
      * after tx commit
      */
-    void afterCommit();
+    default void afterCommit() {
+    }
 
     /**
      * before tx rollback
      */
-    void beforeRollback();
+    default void beforeRollback() {
+    }
 
     /**
      * after tx rollback
      */
-    void afterRollback();
+    default void afterRollback() {
+    }
 
     /**
      * after tx all Completed
      */
-    void afterCompletion();
+    default void afterCompletion() {
+    }
 }

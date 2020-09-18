@@ -15,6 +15,7 @@
  */
 package io.seata.tm.api.transaction;
 
+import io.seata.core.context.RootContext;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -28,37 +29,71 @@ import static org.assertj.core.api.Assertions.assertThat;
  */
 public class TransactionHookManagerTest {
 
+    private final String DEFAULT_XID = "default_xid";
+
     @AfterEach
     public void clear() {
         TransactionHookManager.clear();
+        TransactionHookManager.getGlobalHooks().clear();
     }
 
     @Test
     public void testRegisterHook() {
-        TransactionHookAdapter transactionHookAdapter = new TransactionHookAdapter();
-        TransactionHookManager.registerHook(transactionHookAdapter);
+        TransactionHook transactionHook = new TransactionHook() {};
+        TransactionHook transactionHook2 = new TransactionHook() {};
+        TransactionHookManager.registerLocalHook(transactionHook);
+        TransactionHookManager.registerGlobalHook(transactionHook2);
         List<TransactionHook> hooks = TransactionHookManager.getHooks();
         assertThat(hooks).isNotEmpty();
-        assertThat(hooks.get(0)).isEqualTo(transactionHookAdapter);
+        assertThat(hooks.get(0)).isEqualTo(transactionHook2);
+        assertThat(hooks.get(1)).isEqualTo(transactionHook);
+    }
+
+    @Test
+    public void test_registerLocalHook_getGlobalHooks() {
+        assertThat(TransactionHookManager.getGlobalHooks()).isEmpty();
+        TransactionHookManager.registerGlobalHook(new TransactionHook() {});
+        assertThat(TransactionHookManager.getGlobalHooks()).isNotEmpty();
     }
 
     @Test
     public void testGetHooks() {
         assertThat(TransactionHookManager.getHooks()).isEmpty();
-        TransactionHookManager.registerHook(new TransactionHookAdapter());
+        TransactionHookManager.registerLocalHook(new TransactionHook() {});
         assertThat(TransactionHookManager.getHooks()).isNotEmpty();
+    }
+
+    @Test
+    public void testTriggerHooks() {
+        TransactionHook transactionHook = new TransactionHook() {};
+        TransactionHookManager.registerLocalHook(transactionHook);
+
+        RootContext.bind(DEFAULT_XID);
+        TransactionHookManager.triggerHooks(DEFAULT_XID, (hooks) -> {
+            assertThat(RootContext.getXID()).isEqualTo(DEFAULT_XID);
+            assertThat(hooks.get(0)).isEqualTo(transactionHook);
+        });
+        assertThat(RootContext.getXID()).isEqualTo(DEFAULT_XID);
+
+        RootContext.unbind();
+        TransactionHookManager.triggerHooks(DEFAULT_XID, (hooks) -> {
+            assertThat(RootContext.getXID()).isEqualTo(DEFAULT_XID);
+            assertThat(hooks.get(0)).isEqualTo(transactionHook);
+        });
+        assertThat(RootContext.getXID()).isNull();
     }
 
     @Test
     public void testClear() {
         assertThat(TransactionHookManager.getHooks()).isEmpty();
-        TransactionHookManager.registerHook(new TransactionHookAdapter());
+        TransactionHookManager.registerLocalHook(new TransactionHook() {});
         assertThat(TransactionHookManager.getHooks()).isNotEmpty();
         TransactionHookManager.clear();
         assertThat(TransactionHookManager.getHooks()).isEmpty();
     }
+
     @Test
     public void testNPE() {
-        Assertions.assertThrows(NullPointerException.class, () -> TransactionHookManager.registerHook(null));
+        Assertions.assertThrows(NullPointerException.class, () -> TransactionHookManager.registerLocalHook(null));
     }
 }

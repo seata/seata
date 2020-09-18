@@ -184,8 +184,9 @@ public class DbAndReportTcStateLogStore extends AbstractStore implements StateLo
 
         if (sagaTransactionalTemplate != null) {
 
+            GlobalTransaction globalTransaction = null;
             try {
-                GlobalTransaction globalTransaction = getGlobalTransaction(machineInstance, context);
+                globalTransaction = getGlobalTransaction(machineInstance, context);
                 if (globalTransaction == null) {
 
                     throw new EngineExecutionException("Global transaction is not exists",
@@ -223,7 +224,9 @@ public class DbAndReportTcStateLogStore extends AbstractStore implements StateLo
             } finally {
                 // clear
                 RootContext.unbind();
-                sagaTransactionalTemplate.triggerAfterCompletion();
+                if (globalTransaction != null) {
+                    sagaTransactionalTemplate.triggerAfterCompletion(globalTransaction);
+                }
                 sagaTransactionalTemplate.cleanUp();
             }
         }
