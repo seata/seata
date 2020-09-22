@@ -71,6 +71,8 @@
         <config.version>1.2.1</config.version>
         <slf4j-api.version>1.7.22</slf4j-api.version>
         <logback-classic.version>1.2.0</logback-classic.version>
+        <mongo-db.version>3.6.0</mongo-db.version>
+        <mongo-db-test.version>2.2.0-RC2</mongo-db-test.version>
         <commons-lang.version>2.6</commons-lang.version>
         <commons-pool2.version>2.4.2</commons-pool2.version>
         <commons-pool.version>1.6</commons-pool.version>
@@ -510,6 +512,16 @@
                 <groupId>org.lz4</groupId>
                 <artifactId>lz4-java</artifactId>
                 <version>${lz4.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.mongodb</groupId>
+                <artifactId>mongo-java-driver</artifactId>
+                <version>${mongo-db.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.github.fakemongo</groupId>
+                <artifactId>fongo</artifactId>
+                <version>${mongo-db-test.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.codehaus.groovy</groupId>

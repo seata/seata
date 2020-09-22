@@ -33,6 +33,11 @@ public enum StoreMode {
     DB("db"),
 
     /**
+     * mongo store
+     */
+    MONGO("mongo"),
+
+    /**
      * redis store
      */
     REDIS("redis");
