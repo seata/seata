@@ -15,8 +15,9 @@
  */
 package io.seata.server.store;
 
+import io.seata.core.store.GlobalCondition;
+import io.seata.core.store.LogStore;
 import io.seata.server.session.GlobalSession;
-import io.seata.server.session.SessionCondition;
 
 import java.util.List;
 
@@ -38,15 +39,17 @@ public interface TransactionStoreManager {
 
 
     /**
-     * Read global session global session.
+     * Read global session.
      *
      * @param xid the xid
      * @return the global session
      */
-    GlobalSession readSession(String xid);
+    default GlobalSession readSession(String xid) {
+        return readSession(xid, true);
+    }
 
     /**
-     * Read session global session.
+     * Read global session.
      *
      * @param xid the xid
      * @param withBranchSessions the withBranchSessions
@@ -55,18 +58,54 @@ public interface TransactionStoreManager {
     GlobalSession readSession(String xid, boolean withBranchSessions);
 
     /**
-     * Read session by status list.
+     * Read global session.
+     *
+     * @param transactionId the transaction id
+     * @return the global session
+     */
+    default GlobalSession readSession(long transactionId) {
+        return readSession(transactionId, true);
+    }
+
+    /**
+     * Read global session.
+     *
+     * @param transactionId      the transaction id
+     * @param withBranchSessions the withBranchSessions
+     * @return the global session
+     */
+    GlobalSession readSession(long transactionId, boolean withBranchSessions);
+
+    /**
+     * Read session by condition.
      *
      * @param sessionCondition the session condition
      * @return the list
      */
-    List<GlobalSession> readSession(SessionCondition sessionCondition);
+    default List<GlobalSession> readSession(GlobalCondition sessionCondition) {
+        return readSession(sessionCondition, true);
+    }
+
+    /**
+     * Read session by condition.
+     *
+     * @param sessionCondition   the session condition
+     * @param withBranchSessions the withBranchSessions
+     * @return the list
+     */
+    List<GlobalSession> readSession(GlobalCondition sessionCondition, boolean withBranchSessions);
 
     /**
      * Shutdown.
      */
     void shutdown();
 
+    /**
+     * Sets log store.
+     *
+     * @param logStore the log store
+     */
+    void setLogStore(LogStore logStore);
 
     /**
      * The enum Log operation.

@@ -17,6 +17,12 @@ package io.seata.core.store.db.sql.log;
 
 import io.seata.common.loader.LoadLevel;
 import io.seata.core.constants.ServerTableColumnsName;
+import io.seata.core.store.Pageable;
+
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
+
+import static io.seata.common.DefaultValues.FIRST_PAGE_INDEX;
 
 /**
  * Database log store oracle sql
@@ -33,34 +39,35 @@ public class OracleLogStoreSqls extends AbstractLogStoreSqls {
             + " values (?, ?, ?, ?, ?, ?, ?, ?, ?, sysdate, sysdate)";
 
     /**
-     * The constant UPDATE_GLOBAL_TRANSACTION_STATUS_ORACLE.
+     * The constant UPDATE_GLOBAL_TRANSACTION_ORACLE.
      */
-    public static final String UPDATE_GLOBAL_TRANSACTION_STATUS_ORACLE = "update " + GLOBAL_TABLE_PLACEHOLD
-            + "   set " + ServerTableColumnsName.GLOBAL_TABLE_STATUS + " = ?,"
+    public static final String UPDATE_GLOBAL_TRANSACTION_ORACLE = "update " + GLOBAL_TABLE_PLACEHOLD
+            + "   set " + SETS_PLACEHOLD
             + "       " + ServerTableColumnsName.GLOBAL_TABLE_GMT_MODIFIED + " = sysdate"
             + " where " + ServerTableColumnsName.GLOBAL_TABLE_XID + " = ?";
 
     /**
-     * The constant QUERY_GLOBAL_TRANSACTION_BY_STATUS_ORACLE.
+     * The constant QUERY_GLOBAL_TRANSACTION_BY_CONDITION_ORACLE.
      */
-    public static final String QUERY_GLOBAL_TRANSACTION_BY_STATUS_ORACLE = "select A.* from ("
+    public static final String QUERY_GLOBAL_TRANSACTION_BY_CONDITION_ORACLE = ""
             + " select " + ALL_GLOBAL_COLUMNS
             + "   from " + GLOBAL_TABLE_PLACEHOLD
-            + "  where " + ServerTableColumnsName.GLOBAL_TABLE_STATUS + " in (" + PRAMETER_PLACEHOLD + ")"
-            + "  order by " + ServerTableColumnsName.GLOBAL_TABLE_GMT_MODIFIED
-            + " ) A"
-            + " where ROWNUM <= ?";
+            + WHERE_PLACEHOLD
+            + ORDERBY_PLACEHOLD;
 
     /**
-     * The constant QUERY_GLOBAL_TRANSACTION_FOR_RECOVERY_ORACLE.
+     * The constant QUERY_GLOBAL_TRANSACTION_ORACLE_PAGING_1.
      */
-    public static final String QUERY_GLOBAL_TRANSACTION_FOR_RECOVERY_ORACLE = "select A.* from ("
-            + " select " + ALL_GLOBAL_COLUMNS
-            + "   from " + GLOBAL_TABLE_PLACEHOLD
-            + "  where " + ServerTableColumnsName.GLOBAL_TABLE_STATUS + " in (0, 2, 3, 4, 5, 6, 7, 8, 10 ,12, 14)"
-            + "  order by " + ServerTableColumnsName.GLOBAL_TABLE_GMT_MODIFIED
-            + " ) A"
-            + " where ROWNUM <= ?";
+    public static final String QUERY_GLOBAL_TRANSACTION_ORACLE_PAGING_1 =
+            "select A.* from ( " + SQL_PLACEHOLD + " ) A" + " where ROWNUM <= ?";
+
+    /**
+     * The constant QUERY_GLOBAL_TRANSACTION_ORACLE_PAGING_2.
+     */
+    public static final String QUERY_GLOBAL_TRANSACTION_ORACLE_PAGING_2 = ""
+            + "select B.* from ("
+            + "  select ROWNUM AS RNUM, A.* from ( " + SQL_PLACEHOLD + " ) A" + " where ROWNUM <= ? "
+            + ") B where B.RNUM > ?";
 
     /**
      * The constant INSERT_BRANCH_TRANSACTION_ORACLE.
@@ -70,10 +77,10 @@ public class OracleLogStoreSqls extends AbstractLogStoreSqls {
             + " values (?, ?, ?, ?, ?, ?, ?, ?, ?, systimestamp, systimestamp)";
 
     /**
-     * The constant UPDATE_BRANCH_TRANSACTION_STATUS_ORACLE.
+     * The constant UPDATE_BRANCH_TRANSACTION_ORACLE.
      */
-    public static final String UPDATE_BRANCH_TRANSACTION_STATUS_ORACLE = "update " + BRANCH_TABLE_PLACEHOLD
-            + "   set " + ServerTableColumnsName.BRANCH_TABLE_STATUS + " = ?,"
+    public static final String UPDATE_BRANCH_TRANSACTION_ORACLE = "update " + BRANCH_TABLE_PLACEHOLD
+            + "   set " + SETS_PLACEHOLD
             + "       " + ServerTableColumnsName.BRANCH_TABLE_GMT_MODIFIED + " = systimestamp"
             + " where " + ServerTableColumnsName.BRANCH_TABLE_XID + " = ?"
             + "   and " + ServerTableColumnsName.BRANCH_TABLE_BRANCH_ID + " = ?";
@@ -84,19 +91,42 @@ public class OracleLogStoreSqls extends AbstractLogStoreSqls {
     }
 
     @Override
-    public String getUpdateGlobalTransactionStatusSQL(String globalTable) {
-        return UPDATE_GLOBAL_TRANSACTION_STATUS_ORACLE.replace(GLOBAL_TABLE_PLACEHOLD, globalTable);
+    public String getUpdateGlobalTransactionSQL(String globalTable, String setsPlaceHolder) {
+        return UPDATE_GLOBAL_TRANSACTION_ORACLE.replace(GLOBAL_TABLE_PLACEHOLD, globalTable)
+            .replace(SETS_PLACEHOLD, setsPlaceHolder);
     }
 
     @Override
-    public String getQueryGlobalTransactionSQLByStatus(String globalTable, String paramsPlaceHolder) {
-        return QUERY_GLOBAL_TRANSACTION_BY_STATUS_ORACLE.replace(GLOBAL_TABLE_PLACEHOLD, globalTable)
-            .replace(PRAMETER_PLACEHOLD, paramsPlaceHolder);
+    public String getQueryGlobalTransactionSQLByCondition(String globalTable, String wherePlaceHolder,
+                                                          String orderByPlaceHolder, Pageable pageable) {
+        String sql = QUERY_GLOBAL_TRANSACTION_BY_CONDITION_ORACLE.replace(GLOBAL_TABLE_PLACEHOLD, globalTable)
+            .replace(WHERE_PLACEHOLD, wherePlaceHolder)
+            .replace(ORDERBY_PLACEHOLD, wherePlaceHolder);
+
+        if (pageable != null && pageable.getPageSize() > 0) {
+            if (pageable.getPageIndex() > FIRST_PAGE_INDEX) {
+                sql = QUERY_GLOBAL_TRANSACTION_ORACLE_PAGING_2.replace(SQL_PLACEHOLD, sql);
+            } else {
+                sql = QUERY_GLOBAL_TRANSACTION_ORACLE_PAGING_1.replace(SQL_PLACEHOLD, sql);
+            }
+        }
+
+        return sql;
     }
 
     @Override
-    public String getQueryGlobalTransactionForRecoverySQL(String globalTable) {
-        return QUERY_GLOBAL_TRANSACTION_FOR_RECOVERY_ORACLE.replace(GLOBAL_TABLE_PLACEHOLD, globalTable);
+    public void setQueryGlobalTransactionSQLPagingParameters(PreparedStatement ps, Pageable pageable, int currentParamIndex) throws SQLException {
+        if (pageable.getPageSize() > 0) {
+            if (pageable.getPageIndex() > FIRST_PAGE_INDEX) {
+                int fromIndex = (pageable.getPageIndex() - FIRST_PAGE_INDEX) * pageable.getPageSize();
+                int toIndex = fromIndex + pageable.getPageSize();
+                // Different from other databases, first is toIndex, second is fromIndex
+                ps.setInt(++currentParamIndex, toIndex);
+                ps.setInt(++currentParamIndex, fromIndex);
+            } else {
+                ps.setInt(++currentParamIndex, pageable.getPageSize());
+            }
+        }
     }
 
     @Override
@@ -105,7 +135,8 @@ public class OracleLogStoreSqls extends AbstractLogStoreSqls {
     }
 
     @Override
-    public String getUpdateBranchTransactionStatusSQL(String branchTable) {
-        return UPDATE_BRANCH_TRANSACTION_STATUS_ORACLE.replace(BRANCH_TABLE_PLACEHOLD, branchTable);
+    public String getUpdateBranchTransactionSQL(String branchTable, String setsPlaceHolder) {
+        return UPDATE_BRANCH_TRANSACTION_ORACLE.replace(BRANCH_TABLE_PLACEHOLD, branchTable)
+            .replace(SETS_PLACEHOLD, setsPlaceHolder);
     }
 }

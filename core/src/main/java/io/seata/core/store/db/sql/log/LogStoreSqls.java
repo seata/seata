@@ -15,6 +15,11 @@
  */
 package io.seata.core.store.db.sql.log;
 
+import io.seata.core.store.Pageable;
+
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
+
 /**
  * Database log store sql
  * @author will
@@ -30,12 +35,13 @@ public interface LogStoreSqls {
     String getInsertGlobalTransactionSQL(String globalTable);
 
     /**
-     * Get update global transaction status sql string.
+     * Get update global transaction sql string.
      *
-     * @param globalTable the global table
+     * @param globalTable     the global table
+     * @param setsPlaceHolder the sets place holder
      * @return the string
      */
-    String getUpdateGlobalTransactionStatusSQL(String globalTable);
+    String getUpdateGlobalTransactionSQL(String globalTable, String setsPlaceHolder);
 
     /**
      * Get delete global transaction sql string.
@@ -62,21 +68,34 @@ public interface LogStoreSqls {
     String getQueryGlobalTransactionSQLByTransactionId(String globalTable);
 
     /**
-     * Get query global transaction sql by status string.
+     * Get query global transaction sql by condition string.
      *
-     * @param globalTable       the global table
-     * @param paramsPlaceHolder the params place holder
+     * @param globalTable        the global table
+     * @param wherePlaceHolder   the params place holder
+     * @param orderByPlaceHolder the order by  place holder
+     * @param pageable           the pageable
      * @return the string
      */
-    String getQueryGlobalTransactionSQLByStatus(String globalTable, String paramsPlaceHolder);
+    String getQueryGlobalTransactionSQLByCondition(String globalTable, String wherePlaceHolder,
+                                                   String orderByPlaceHolder, Pageable pageable);
 
     /**
-     * Get query global transaction for recovery sql string.
+     * Set query global transaction sql paging parameters.
      *
-     * @param globalTable the global table
+     * @param ps                the prepared statement
+     * @param pageable          the pageable
+     * @param currentParamIndex the current param index
+     */
+    void setQueryGlobalTransactionSQLPagingParameters(PreparedStatement ps, Pageable pageable, int currentParamIndex) throws SQLException;
+
+    /**
+     * Get count global transaction sql by condition string.
+     *
+     * @param globalTable      the global table
+     * @param wherePlaceHolder the params place holder
      * @return the string
      */
-    String getQueryGlobalTransactionForRecoverySQL(String globalTable);
+    String getCountGlobalTransactionSQLByCondition(String globalTable, String wherePlaceHolder);
 
     /**
      * Get insert branch transaction sql string.
@@ -87,12 +106,13 @@ public interface LogStoreSqls {
     String getInsertBranchTransactionSQL(String branchTable);
 
     /**
-     * Get update branch transaction status sql string.
+     * Get update branch transaction sql string.
      *
-     * @param branchTable the branch table
+     * @param branchTable     the branch table
+     * @param setsPlaceHolder the sets place holder
      * @return the string
      */
-    String getUpdateBranchTransactionStatusSQL(String branchTable);
+    String getUpdateBranchTransactionSQL(String branchTable, String setsPlaceHolder);
 
     /**
      * Get delete branch transaction by branch id sql string.

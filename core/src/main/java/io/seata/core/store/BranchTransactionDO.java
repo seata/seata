@@ -25,29 +25,29 @@ import io.seata.core.model.BranchStatus;
  *
  * @author zhangsen
  */
-public class BranchTransactionDO {
+public class BranchTransactionDO implements BranchTransactionModel {
 
-    private String xid;
+    protected String xid;
 
-    private Long transactionId;
+    protected long transactionId;
 
-    private Long branchId;
+    protected long branchId;
 
-    private String resourceGroupId;
+    protected String resourceGroupId;
 
-    private String resourceId;
+    protected String resourceId;
 
-    private String branchType;
+    protected String branchType;
 
-    private Integer status = BranchStatus.Unknown.getCode();
+    protected int status = BranchStatus.Unknown.getCode();
 
-    private String clientId;
+    protected String clientId;
 
-    private String applicationData;
+    protected String applicationData;
 
-    private Date gmtCreate;
+    protected Date gmtCreate;
 
-    private Date gmtModified;
+    protected Date gmtModified;
 
     /**
      * Gets xid.
