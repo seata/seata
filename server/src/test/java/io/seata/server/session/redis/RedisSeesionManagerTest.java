@@ -70,7 +70,7 @@ public class RedisSeesionManagerTest {
     }
 
     @Test
-    public void test_updateGlobalSessionStatus() throws TransactionException {
+    public void test_updateGlobalSession() throws TransactionException {
         GlobalSession session = GlobalSession.createGlobalSession("test", "test", "test123", 100);
         String xid = XID.generateXID(session.getTransactionId());
         session.setXid(xid);
@@ -79,8 +79,7 @@ public class RedisSeesionManagerTest {
         session.setApplicationData("abc=878s");
         session.setStatus(GlobalStatus.Begin);
         sessionManager.addGlobalSession(session);
-        session.setStatus(GlobalStatus.Committing);
-        sessionManager.updateGlobalSessionStatus(session,GlobalStatus.Committing);
+        sessionManager.updateGlobalSession(session, GlobalStatus.Committing);
     }
 
     @Test
@@ -133,7 +132,7 @@ public class RedisSeesionManagerTest {
     }
 
     @Test
-    public void test_updateBranchSessionStatus() throws Exception {
+    public void test_updateBranchSession() throws Exception {
         GlobalSession globalSession = GlobalSession.createGlobalSession("test", "test", "test123", 100);
         String xid = XID.generateXID(globalSession.getTransactionId());
         globalSession.setXid(xid);
@@ -154,8 +153,7 @@ public class RedisSeesionManagerTest {
         branchSession.setApplicationData("{\"data\":\"test\"}");
         branchSession.setStatus(BranchStatus.PhaseOne_Done);
         sessionManager.addBranchSession(globalSession, branchSession);
-        branchSession.setStatus(BranchStatus.PhaseOne_Timeout);
-        sessionManager.updateBranchSessionStatus(branchSession, BranchStatus.PhaseOne_Timeout);
+        sessionManager.updateBranchSession(branchSession, BranchStatus.PhaseOne_Timeout, "{\"data\":\"test2\"}");
     }
 
     @AfterAll

@@ -16,6 +16,8 @@
 package io.seata.core.store;
 
 
+import io.seata.core.model.GlobalStatus;
+
 import java.util.List;
 
 /**
@@ -23,32 +25,62 @@ import java.util.List;
  *
  * @author zhangsen
  */
-public interface LogStore {
+public interface LogStore<G extends GlobalTransactionModel, B extends BranchTransactionModel> {
 
     /**
-     * Query global transaction do global transaction do.
+     * Get global transaction do global transaction do.
      *
      * @param xid the xid
      * @return the global transaction do
      */
-    GlobalTransactionDO queryGlobalTransactionDO(String xid);
-
-    /**
-     * Query global transaction do global transaction do.
-     *
-     * @param transactionId the transaction id
-     * @return the global transaction do
-     */
-    GlobalTransactionDO queryGlobalTransactionDO(long transactionId);
+    G getGlobalTransactionDO(String xid);
 
     /**
      * Query global transaction do list.
      *
-     * @param status the status
-     * @param limit  the limit
+     * @param condition the condition
      * @return the list
      */
-    List<GlobalTransactionDO> queryGlobalTransactionDO(int[] status, int limit);
+    List<G> queryGlobalTransactionDO(GlobalCondition condition);
+
+    /**
+     * Query global transaction do list.
+     *
+     * @param statuses the statuses
+     * @return the list
+     */
+    default List<G> queryGlobalTransactionDO(GlobalStatus... statuses) {
+        return this.queryGlobalTransactionDO(new GlobalCondition(statuses));
+    }
+
+    /**
+     * Query global transaction do list.
+     *
+     * @param statuses the statuses
+     * @param limit    the limit
+     * @return the list
+     */
+    default List<G> queryGlobalTransactionDO(GlobalStatus[] statuses, int limit) {
+        return this.queryGlobalTransactionDO(new GlobalCondition(statuses, limit));
+    }
+
+    /**
+     * Count global transaction do.
+     *
+     * @param condition the condition
+     * @return the count
+     */
+    int countGlobalTransactionDO(GlobalCondition condition);
+
+    /**
+     * Count global transaction do.
+     *
+     * @param statuses the statuses
+     * @return the list
+     */
+    default int countGlobalTransactionDO(GlobalStatus... statuses) {
+        return this.countGlobalTransactionDO(new GlobalCondition(statuses));
+    }
 
     /**
      * Insert global transaction do boolean.
@@ -56,7 +88,7 @@ public interface LogStore {
      * @param globalTransactionDO the global transaction do
      * @return the boolean
      */
-    boolean insertGlobalTransactionDO(GlobalTransactionDO globalTransactionDO);
+    boolean insertGlobalTransactionDO(G globalTransactionDO);
 
     /**
      * Update global transaction do boolean.
@@ -64,7 +96,7 @@ public interface LogStore {
      * @param globalTransactionDO the global transaction do
      * @return the boolean
      */
-    boolean updateGlobalTransactionDO(GlobalTransactionDO globalTransactionDO);
+    boolean updateGlobalTransactionDO(G globalTransactionDO);
 
     /**
      * Delete global transaction do boolean.
@@ -72,7 +104,7 @@ public interface LogStore {
      * @param globalTransactionDO the global transaction do
      * @return the boolean
      */
-    boolean deleteGlobalTransactionDO(GlobalTransactionDO globalTransactionDO);
+    boolean deleteGlobalTransactionDO(G globalTransactionDO);
 
     /**
      * Query branch transaction do list.
@@ -80,7 +112,7 @@ public interface LogStore {
      * @param xid the xid
      * @return the BranchTransactionDO list
      */
-    List<BranchTransactionDO> queryBranchTransactionDO(String xid);
+    List<B> queryBranchTransactionDO(String xid);
 
     /**
      * Query branch transaction do list.
@@ -88,7 +120,7 @@ public interface LogStore {
      * @param xids the xid list
      * @return the BranchTransactionDO list
      */
-    List<BranchTransactionDO> queryBranchTransactionDO(List<String> xids);
+    List<B> queryBranchTransactionDO(List<String> xids);
 
     /**
      * Insert branch transaction do boolean.
@@ -96,7 +128,7 @@ public interface LogStore {
      * @param branchTransactionDO the branch transaction do
      * @return the boolean
      */
-    boolean insertBranchTransactionDO(BranchTransactionDO branchTransactionDO);
+    boolean insertBranchTransactionDO(B branchTransactionDO);
 
     /**
      * Update branch transaction do boolean.
@@ -104,7 +136,7 @@ public interface LogStore {
      * @param branchTransactionDO the branch transaction do
      * @return the boolean
      */
-    boolean updateBranchTransactionDO(BranchTransactionDO branchTransactionDO);
+    boolean updateBranchTransactionDO(B branchTransactionDO);
 
     /**
      * Delete branch transaction do boolean.
@@ -112,7 +144,7 @@ public interface LogStore {
      * @param branchTransactionDO the branch transaction do
      * @return the boolean
      */
-    boolean deleteBranchTransactionDO(BranchTransactionDO branchTransactionDO);
+    boolean deleteBranchTransactionDO(B branchTransactionDO);
 
     /**
      * Gets current max session id.

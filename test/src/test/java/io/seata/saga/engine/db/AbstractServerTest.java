@@ -27,7 +27,6 @@ import io.seata.server.metrics.MetricsManager;
 import io.seata.server.session.SessionHolder;
 
 import java.io.File;
-import java.io.IOException;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
@@ -83,7 +82,7 @@ public abstract class AbstractServerTest {
                     XID.setPort(nettyServer.getListenPort());
 
                     nettyServer.init();
-                } catch (IOException e) {
+                } catch (Exception e) {
                     throw new RuntimeException(e);
                 }
             }

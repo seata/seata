@@ -125,7 +125,7 @@ public class DefaultCore implements Core {
         throws TransactionException {
         GlobalSession session = GlobalSession.createGlobalSession(applicationId, transactionServiceGroup, name,
             timeout);
-        session.addSessionLifecycleListener(SessionHolder.getRootSessionManager());
+        session.addSessionLifecycleListener(SessionHolder.getSessionManager());
 
         session.begin();
 
@@ -138,11 +138,11 @@ public class DefaultCore implements Core {
 
     @Override
     public GlobalStatus commit(String xid) throws TransactionException {
-        GlobalSession globalSession = SessionHolder.findGlobalSession(xid);
+        GlobalSession globalSession = SessionHolder.getGlobalSession(xid);
         if (globalSession == null) {
             return GlobalStatus.Finished;
         }
-        globalSession.addSessionLifecycleListener(SessionHolder.getRootSessionManager());
+        globalSession.addSessionLifecycleListener(SessionHolder.getSessionManager());
         // just lock changeStatus
 
         boolean shouldCommit = SessionHolder.lockAndExecute(globalSession, () -> {
@@ -175,6 +175,10 @@ public class DefaultCore implements Core {
 
     @Override
     public boolean doGlobalCommit(GlobalSession globalSession, boolean retrying) throws TransactionException {
+        if (globalSession.getStatus() == GlobalStatus.Committed) {
+            return true;
+        }
+
         boolean success = true;
         // start committing event
         eventBus.post(new GlobalTransactionEvent(globalSession.getTransactionId(), GlobalTransactionEvent.ROLE_TC,
@@ -255,11 +259,11 @@ public class DefaultCore implements Core {
 
     @Override
     public GlobalStatus rollback(String xid) throws TransactionException {
-        GlobalSession globalSession = SessionHolder.findGlobalSession(xid);
+        GlobalSession globalSession = SessionHolder.getGlobalSession(xid);
         if (globalSession == null) {
             return GlobalStatus.Finished;
         }
-        globalSession.addSessionLifecycleListener(SessionHolder.getRootSessionManager());
+        globalSession.addSessionLifecycleListener(SessionHolder.getSessionManager());
         // just lock changeStatus
         boolean shouldRollBack = SessionHolder.lockAndExecute(globalSession, () -> {
             globalSession.close(); // Highlight: Firstly, close the session, then no more branch can be registered.
@@ -279,6 +283,10 @@ public class DefaultCore implements Core {
 
     @Override
     public boolean doGlobalRollback(GlobalSession globalSession, boolean retrying) throws TransactionException {
+        if (globalSession.getStatus() == GlobalStatus.Rollbacked || globalSession.getStatus() == GlobalStatus.TimeoutRollbacked) {
+            return true;
+        }
+
         boolean success = true;
         // start rollback event
         eventBus.post(new GlobalTransactionEvent(globalSession.getTransactionId(), GlobalTransactionEvent.ROLE_TC,
@@ -328,7 +336,7 @@ public class DefaultCore implements Core {
             // 2. New branch transaction has data association with rollback branch transaction
             // The second query can solve the first problem, and if it is the second problem, it may cause a rollback
             // failure due to data changes.
-            GlobalSession globalSessionTwice = SessionHolder.findGlobalSession(globalSession.getXid());
+            GlobalSession globalSessionTwice = SessionHolder.getGlobalSession(globalSession.getXid());
             if (globalSessionTwice != null && globalSessionTwice.hasBranch()) {
                 LOGGER.info("Rollbacking global transaction is NOT done, xid = {}.", globalSession.getXid());
                 return false;
@@ -349,7 +357,7 @@ public class DefaultCore implements Core {
 
     @Override
     public GlobalStatus getStatus(String xid) throws TransactionException {
-        GlobalSession globalSession = SessionHolder.findGlobalSession(xid, false);
+        GlobalSession globalSession = SessionHolder.getGlobalSession(xid, false);
         if (globalSession == null) {
             return GlobalStatus.Finished;
         } else {
@@ -359,11 +367,11 @@ public class DefaultCore implements Core {
 
     @Override
     public GlobalStatus globalReport(String xid, GlobalStatus globalStatus) throws TransactionException {
-        GlobalSession globalSession = SessionHolder.findGlobalSession(xid);
+        GlobalSession globalSession = SessionHolder.getGlobalSession(xid);
         if (globalSession == null) {
             return globalStatus;
         }
-        globalSession.addSessionLifecycleListener(SessionHolder.getRootSessionManager());
+        globalSession.addSessionLifecycleListener(SessionHolder.getSessionManager());
         doGlobalReport(globalSession, xid, globalStatus);
         return globalSession.getStatus();
     }

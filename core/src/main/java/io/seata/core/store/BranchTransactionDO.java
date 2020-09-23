@@ -19,35 +19,36 @@ import java.util.Date;
 
 import io.seata.common.util.StringUtils;
 import io.seata.core.model.BranchStatus;
+import io.seata.core.model.BranchType;
 
 /**
  * branch transaction data object
  *
  * @author zhangsen
  */
-public class BranchTransactionDO {
+public class BranchTransactionDO implements BranchTransactionModel {
 
-    private String xid;
+    protected String xid;
 
-    private Long transactionId;
+    protected long transactionId;
 
-    private Long branchId;
+    protected long branchId;
 
-    private String resourceGroupId;
+    protected String resourceGroupId;
 
-    private String resourceId;
+    protected String resourceId;
 
-    private String branchType;
+    protected BranchType branchType;
 
-    private Integer status = BranchStatus.Unknown.getCode();
+    protected BranchStatus status = BranchStatus.Unknown;
 
-    private String clientId;
+    protected String clientId;
 
-    private String applicationData;
+    protected String applicationData;
 
-    private Date gmtCreate;
+    protected Date gmtCreate;
 
-    private Date gmtModified;
+    protected Date gmtModified;
 
     /**
      * Gets xid.
@@ -144,7 +145,7 @@ public class BranchTransactionDO {
      *
      * @return the branch type
      */
-    public String getBranchType() {
+    public BranchType getBranchType() {
         return branchType;
     }
 
@@ -153,7 +154,7 @@ public class BranchTransactionDO {
      *
      * @param branchType the branch type
      */
-    public void setBranchType(String branchType) {
+    public void setBranchType(BranchType branchType) {
         this.branchType = branchType;
     }
 
@@ -162,7 +163,7 @@ public class BranchTransactionDO {
      *
      * @return the status
      */
-    public int getStatus() {
+    public BranchStatus getStatus() {
         return status;
     }
 
@@ -171,7 +172,7 @@ public class BranchTransactionDO {
      *
      * @param status the status
      */
-    public void setStatus(int status) {
+    public void setStatus(BranchStatus status) {
         this.status = status;
     }
 

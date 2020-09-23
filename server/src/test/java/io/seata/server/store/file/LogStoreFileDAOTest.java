@@ -15,15 +15,15 @@
  */
 package io.seata.server.store.file;
 
+import io.seata.core.store.BaseModel;
 import io.seata.server.UUIDGenerator;
 import io.seata.server.session.BranchSession;
 import io.seata.server.session.GlobalSession;
-import io.seata.server.session.SessionManager;
+import io.seata.server.storage.file.TransactionWriteStore;
 import io.seata.server.storage.file.session.FileSessionManager;
+import io.seata.server.storage.file.store.LogStoreFileDAO;
 import io.seata.server.store.StoreConfig;
 import io.seata.server.store.TransactionStoreManager;
-import io.seata.server.storage.file.TransactionWriteStore;
-import io.seata.server.storage.file.store.FileTransactionStoreManager;
 import org.assertj.core.util.Files;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -39,13 +39,17 @@ import java.util.List;
 /**
  * @author ggndnn
  */
-public class FileTransactionStoreManagerTest {
+public class LogStoreFileDAOTest {
     @Test
     public void testBigDataWrite() throws Exception {
         File seataFile = Files.newTemporaryFile();
-        FileTransactionStoreManager fileTransactionStoreManager = null;
+        LogStoreFileDAO fileDAO = null;
         try {
-            fileTransactionStoreManager = new FileTransactionStoreManager(seataFile.getAbsolutePath(), null);
+            Method writeSessionMethod = LogStoreFileDAO.class.getDeclaredMethod("writeSession",
+                    TransactionStoreManager.LogOperation.class, BaseModel.class);
+            writeSessionMethod.setAccessible(true);
+
+            fileDAO = new LogStoreFileDAO(seataFile.getAbsolutePath());
             BranchSession branchSessionA = Mockito.mock(BranchSession.class);
             GlobalSession global = new GlobalSession();
             Mockito.when(branchSessionA.encode())
@@ -57,9 +61,9 @@ public class FileTransactionStoreManagerTest {
                     .thenReturn(createBigBranchSessionData(global, (byte) 'B'));
             Mockito.when(branchSessionB.getApplicationData())
                     .thenReturn(new String(createBigApplicationData((byte) 'B')));
-            Assertions.assertTrue(fileTransactionStoreManager.writeSession(TransactionStoreManager.LogOperation.BRANCH_ADD, branchSessionA));
-            Assertions.assertTrue(fileTransactionStoreManager.writeSession(TransactionStoreManager.LogOperation.BRANCH_ADD, branchSessionB));
-            List<TransactionWriteStore> list = fileTransactionStoreManager.readWriteStore(2000, false);
+            Assertions.assertTrue((boolean) writeSessionMethod.invoke(fileDAO, TransactionStoreManager.LogOperation.BRANCH_ADD, branchSessionA));
+            Assertions.assertTrue((boolean) writeSessionMethod.invoke(fileDAO, TransactionStoreManager.LogOperation.BRANCH_ADD, branchSessionB));
+            List<TransactionWriteStore> list = fileDAO.readWriteStore(2000, false);
             Assertions.assertNotNull(list);
             Assertions.assertEquals(2, list.size());
             BranchSession loadedBranchSessionA = (BranchSession) list.get(0).getSessionRequest();
@@ -67,8 +71,8 @@ public class FileTransactionStoreManagerTest {
             BranchSession loadedBranchSessionB = (BranchSession) list.get(1).getSessionRequest();
             Assertions.assertEquals(branchSessionB.getApplicationData(), loadedBranchSessionB.getApplicationData());
         } finally {
-            if (fileTransactionStoreManager != null) {
-                fileTransactionStoreManager.shutdown();
+            if (fileDAO != null) {
+                fileDAO.shutdown();
             }
             Assertions.assertTrue(seataFile.delete());
         }
@@ -77,10 +81,10 @@ public class FileTransactionStoreManagerTest {
     @Test
     public void testFindTimeoutAndSave() throws Exception {
         File seataFile = Files.newTemporaryFile();
-        Method findTimeoutAndSaveMethod = FileTransactionStoreManager.class.getDeclaredMethod("findTimeoutAndSave");
+        Method findTimeoutAndSaveMethod = LogStoreFileDAO.class.getDeclaredMethod("findTimeoutAndSave");
         findTimeoutAndSaveMethod.setAccessible(true);
         FileSessionManager sessionManager = null;
-        FileTransactionStoreManager fileTransactionStoreManager = null;
+        LogStoreFileDAO fileDAO = null;
         try {
             List<GlobalSession> timeoutSessions = new ArrayList<>();
             for (int i = 0; i < 100; i++) {
@@ -99,12 +103,8 @@ public class FileTransactionStoreManagerTest {
                 globalSession.addBranch(branchSessionB);
                 timeoutSessions.add(globalSession);
             }
-            SessionManager sessionManagerMock = Mockito.mock(SessionManager.class);
-            Mockito.when(sessionManagerMock.findGlobalSessions(Mockito.any()))
-                    .thenReturn(timeoutSessions);
-            fileTransactionStoreManager = new FileTransactionStoreManager(
-                seataFile.getAbsolutePath(), sessionManagerMock);
-            Assertions.assertTrue((boolean) findTimeoutAndSaveMethod.invoke(fileTransactionStoreManager));
+            fileDAO = new LogStoreFileDAO(seataFile.getAbsolutePath());
+            Assertions.assertTrue((boolean) findTimeoutAndSaveMethod.invoke(fileDAO));
 
             sessionManager = new FileSessionManager(seataFile.getName(), seataFile.getParent());
             sessionManager.reload();
@@ -119,8 +119,8 @@ public class FileTransactionStoreManagerTest {
             });
         } finally {
             findTimeoutAndSaveMethod.setAccessible(false);
-            if (fileTransactionStoreManager != null) {
-                fileTransactionStoreManager.shutdown();
+            if (fileDAO != null) {
+                fileDAO.shutdown();
             }
             if (sessionManager != null) {
                 sessionManager.destroy();
@@ -130,16 +130,16 @@ public class FileTransactionStoreManagerTest {
     }
 
     private byte[] createBigBranchSessionData(GlobalSession global, byte c) {
-        int bufferSize = StoreConfig.getFileWriteBufferCacheSize() // applicationDataBytes
+        int bufferSize = StoreConfig.getFileWriteBufferCacheSize()
                 + 8 // trascationId
                 + 8 // branchId
-                + 4 // resourceIdBytes.length
-                + 4 // lockKeyBytes.length
+                + 2 // resourceIdBytes.length
+                + 2 // lockKeyBytes.length
                 + 2 // clientIdBytes.length
                 + 4 // applicationDataBytes.length
-                + 4 // xidBytes.size
+                + 2 // xidBytes.length
                 + 1 // statusCode
-                + 1; //branchType
+                + 1;// branchType
         String xid = global.getXid();
         byte[] xidBytes = null;
         if (xid != null) {
@@ -147,22 +147,22 @@ public class FileTransactionStoreManagerTest {
             bufferSize += xidBytes.length;
         }
         ByteBuffer byteBuffer = ByteBuffer.allocate(bufferSize);
-        byteBuffer.putLong(global.getTransactionId());
-        byteBuffer.putLong(UUIDGenerator.generateUUID());
-        byteBuffer.putInt(0);
-        byteBuffer.putInt(0);
-        byteBuffer.putShort((short) 0);
+        byteBuffer.putLong(global.getTransactionId()); // trascationId 8
+        byteBuffer.putLong(UUIDGenerator.generateUUID()); // branchId 8
+        byteBuffer.putShort((short) 0); // resourceIdBytes.length 2
+        byteBuffer.putShort((short) 0); // lockKeyBytes.length 2
+        byteBuffer.putShort((short) 0); // clientIdBytes.length 2
         byte[] applicationDataBytes = createBigApplicationData(c);
-        byteBuffer.putInt(applicationDataBytes.length);
-        byteBuffer.put(applicationDataBytes);
+        byteBuffer.putInt(applicationDataBytes.length); // applicationDataBytes.length 4
+        byteBuffer.put(applicationDataBytes); // applicationDataBytes
         if (xidBytes != null) {
-            byteBuffer.putInt(xidBytes.length);
-            byteBuffer.put(xidBytes);
+            byteBuffer.putShort((short) xidBytes.length); // xidBytes.length 2
+            byteBuffer.put(xidBytes); // xidBytes
         } else {
-            byteBuffer.putInt(0);
+            byteBuffer.putShort((short) 0); // xidBytes.length 2
         }
-        byteBuffer.put((byte) 0);
-        byteBuffer.put((byte) 0);
+        byteBuffer.put((byte) 0); // statusCode 1
+        byteBuffer.put((byte) 0); // branchType 1
         byteBuffer.flip();
         byte[] bytes = new byte[byteBuffer.limit()];
         byteBuffer.get(bytes);

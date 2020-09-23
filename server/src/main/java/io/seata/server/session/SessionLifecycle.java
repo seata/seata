@@ -34,12 +34,34 @@ public interface SessionLifecycle {
     void begin() throws TransactionException;
 
     /**
+     * Update.
+     * It's not recommended to use this method directly. Please use other update methods for the specified properties.
+     *
+     * @param status           the status
+     * @throws TransactionException the transaction exception
+     */
+    void update(GlobalStatus status) throws TransactionException;
+
+    /**
      * Change status.
      *
      * @param status the status
      * @throws TransactionException the transaction exception
      */
-    void changeStatus(GlobalStatus status) throws TransactionException;
+    default void changeStatus(GlobalStatus status) throws TransactionException {
+        this.update(status);
+    }
+
+    /**
+     * Update branch.
+     * It's not recommended to use this method directly. Please use other update methods for the specified properties.
+     *
+     * @param branchSession   the branch session
+     * @param status          the status
+     * @param applicationData the application data
+     * @throws TransactionException the transaction exception
+     */
+    void updateBranch(BranchSession branchSession, BranchStatus status, String applicationData) throws TransactionException;
 
     /**
      * Change branch status.
@@ -48,7 +70,9 @@ public interface SessionLifecycle {
      * @param status        the status
      * @throws TransactionException the transaction exception
      */
-    void changeBranchStatus(BranchSession branchSession, BranchStatus status) throws TransactionException;
+    default void changeBranchStatus(BranchSession branchSession, BranchStatus status) throws TransactionException {
+        updateBranch(branchSession, status, null);
+    }
 
     /**
      * Add branch.

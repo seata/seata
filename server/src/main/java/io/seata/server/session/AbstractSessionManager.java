@@ -15,22 +15,28 @@
  */
 package io.seata.server.session;
 
+import io.seata.common.util.StringUtils;
 import io.seata.core.exception.BranchTransactionException;
 import io.seata.core.exception.GlobalTransactionException;
 import io.seata.core.exception.TransactionException;
 import io.seata.core.exception.TransactionExceptionCode;
 import io.seata.core.model.BranchStatus;
 import io.seata.core.model.GlobalStatus;
+import io.seata.core.store.GlobalCondition;
 import io.seata.server.store.SessionStorable;
 import io.seata.server.store.TransactionStoreManager;
 import io.seata.server.store.TransactionStoreManager.LogOperation;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.List;
+
 /**
  * The type Abstract session manager.
  */
 public abstract class AbstractSessionManager implements SessionManager, SessionLifecycleListener {
+
+    //region Logger and Fields
 
     /**
      * The constant LOGGER.
@@ -42,38 +48,54 @@ public abstract class AbstractSessionManager implements SessionManager, SessionL
      */
     protected TransactionStoreManager transactionStoreManager;
 
-    /**
-     * The Name.
-     */
-    protected String name;
+    //endregion
+
+    //region Constructor
 
     /**
-     * Instantiates a new Abstract session manager.
+     * Instantiates a new Session manager.
      */
     public AbstractSessionManager() {
     }
 
     /**
-     * Instantiates a new Abstract session manager.
+     * Instantiates a new Session manager.
      *
-     * @param name the name
+     * @param transactionStoreManager the transaction store manager
      */
-    public AbstractSessionManager(String name) {
-        this.name = name;
+    public AbstractSessionManager(TransactionStoreManager transactionStoreManager) {
+        this.transactionStoreManager = transactionStoreManager;
+    }
+
+    //endregion
+
+    //region Override SessionManager
+
+    @Override
+    public GlobalSession getGlobalSession(String xid, boolean withBranchSessions) {
+        return this.transactionStoreManager.readSession(xid, withBranchSessions);
+    }
+
+    @Override
+    public List<GlobalSession> findGlobalSessions(GlobalCondition condition, boolean withBranchSessions) {
+        return this.transactionStoreManager.readSession(condition, withBranchSessions);
     }
 
     @Override
     public void addGlobalSession(GlobalSession session) throws TransactionException {
         if (LOGGER.isDebugEnabled()) {
-            LOGGER.debug("MANAGER[" + name + "] SESSION[" + session + "] " + LogOperation.GLOBAL_ADD);
+            LOGGER.debug("MANAGER[" + this.getClass().getSimpleName() + "] SESSION[" + session + "] " + LogOperation.GLOBAL_ADD);
         }
         writeSession(LogOperation.GLOBAL_ADD, session);
     }
 
     @Override
-    public void updateGlobalSessionStatus(GlobalSession session, GlobalStatus status) throws TransactionException {
+    public void updateGlobalSession(GlobalSession session, GlobalStatus status) throws TransactionException {
         if (LOGGER.isDebugEnabled()) {
-            LOGGER.debug("MANAGER[" + name + "] SESSION[" + session + "] " + LogOperation.GLOBAL_UPDATE);
+            LOGGER.debug("MANAGER[" + this.getClass().getSimpleName() + "] SESSION[" + session + "] " + LogOperation.GLOBAL_UPDATE);
+        }
+        if (status != null) {
+            session.setStatus(status);
         }
         writeSession(LogOperation.GLOBAL_UPDATE, session);
     }
@@ -81,7 +103,7 @@ public abstract class AbstractSessionManager implements SessionManager, SessionL
     @Override
     public void removeGlobalSession(GlobalSession session) throws TransactionException {
         if (LOGGER.isDebugEnabled()) {
-            LOGGER.debug("MANAGER[" + name + "] SESSION[" + session + "] " + LogOperation.GLOBAL_REMOVE);
+            LOGGER.debug("MANAGER[" + this.getClass().getSimpleName() + "] SESSION[" + session + "] " + LogOperation.GLOBAL_REMOVE);
         }
         writeSession(LogOperation.GLOBAL_REMOVE, session);
     }
@@ -89,16 +111,22 @@ public abstract class AbstractSessionManager implements SessionManager, SessionL
     @Override
     public void addBranchSession(GlobalSession session, BranchSession branchSession) throws TransactionException {
         if (LOGGER.isDebugEnabled()) {
-            LOGGER.debug("MANAGER[" + name + "] SESSION[" + branchSession + "] " + LogOperation.BRANCH_ADD);
+            LOGGER.debug("MANAGER[" + this.getClass().getSimpleName() + "] SESSION[" + branchSession + "] " + LogOperation.BRANCH_ADD);
         }
         writeSession(LogOperation.BRANCH_ADD, branchSession);
     }
 
     @Override
-    public void updateBranchSessionStatus(BranchSession branchSession, BranchStatus status)
+    public void updateBranchSession(BranchSession branchSession, BranchStatus status, String applicationData)
         throws TransactionException {
         if (LOGGER.isDebugEnabled()) {
-            LOGGER.debug("MANAGER[" + name + "] SESSION[" + branchSession + "] " + LogOperation.BRANCH_UPDATE);
+            LOGGER.debug("MANAGER[" + this.getClass().getSimpleName() + "] SESSION[" + branchSession + "] " + LogOperation.BRANCH_UPDATE);
+        }
+        if (status != null) {
+            branchSession.setStatus(status);
+        }
+        if (StringUtils.isNotBlank(applicationData)) {
+            branchSession.setApplicationData(applicationData);
         }
         writeSession(LogOperation.BRANCH_UPDATE, branchSession);
     }
@@ -107,10 +135,20 @@ public abstract class AbstractSessionManager implements SessionManager, SessionL
     public void removeBranchSession(GlobalSession globalSession, BranchSession branchSession)
         throws TransactionException {
         if (LOGGER.isDebugEnabled()) {
-            LOGGER.debug("MANAGER[" + name + "] SESSION[" + branchSession + "] " + LogOperation.BRANCH_REMOVE);
+            LOGGER.debug("MANAGER[" + this.getClass().getSimpleName() + "] SESSION[" + branchSession + "] " + LogOperation.BRANCH_REMOVE);
         }
         writeSession(LogOperation.BRANCH_REMOVE, branchSession);
     }
+
+    @Override
+    public <T> T lockAndExecute(GlobalSession globalSession, GlobalSession.LockCallable<T> lockCallable)
+            throws TransactionException {
+        return lockCallable.call();
+    }
+
+    //endregion
+
+    //region Override SessionLifecycleListener
 
     @Override
     public void onBegin(GlobalSession globalSession) throws TransactionException {
@@ -118,19 +156,19 @@ public abstract class AbstractSessionManager implements SessionManager, SessionL
     }
 
     @Override
-    public void onStatusChange(GlobalSession globalSession, GlobalStatus status) throws TransactionException {
-        updateGlobalSessionStatus(globalSession, status);
-    }
-
-    @Override
-    public void onBranchStatusChange(GlobalSession globalSession, BranchSession branchSession, BranchStatus status)
-        throws TransactionException {
-        updateBranchSessionStatus(branchSession, status);
+    public void onUpdate(GlobalSession globalSession, GlobalStatus status) throws TransactionException {
+        updateGlobalSession(globalSession, status);
     }
 
     @Override
     public void onAddBranch(GlobalSession globalSession, BranchSession branchSession) throws TransactionException {
         addBranchSession(globalSession, branchSession);
+    }
+
+    @Override
+    public void onUpdateBranch(GlobalSession globalSession, BranchSession branchSession, BranchStatus status,
+                               String applicationData) throws TransactionException {
+        updateBranchSession(branchSession, status, applicationData);
     }
 
     @Override
@@ -147,6 +185,10 @@ public abstract class AbstractSessionManager implements SessionManager, SessionL
     public void onEnd(GlobalSession globalSession) throws TransactionException {
         removeGlobalSession(globalSession);
     }
+
+    //endregion
+
+    //region Private
 
     private void writeSession(LogOperation logOperation, SessionStorable sessionStorable) throws TransactionException {
         if (!transactionStoreManager.writeSession(logOperation, sessionStorable)) {
@@ -175,9 +217,17 @@ public abstract class AbstractSessionManager implements SessionManager, SessionL
         }
     }
 
+    //endregion
+
+    //region Override Disposable
+
     @Override
     public void destroy() {
     }
+
+    //endregion
+
+    //region Gets and Sets
 
     /**
      * Sets transaction store manager.
@@ -187,4 +237,6 @@ public abstract class AbstractSessionManager implements SessionManager, SessionL
     public void setTransactionStoreManager(TransactionStoreManager transactionStoreManager) {
         this.transactionStoreManager = transactionStoreManager;
     }
+
+    //endregion
 }

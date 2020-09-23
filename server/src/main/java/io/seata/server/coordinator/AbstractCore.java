@@ -71,7 +71,7 @@ public abstract class AbstractCore implements Core {
         GlobalSession globalSession = assertGlobalSessionNotNull(xid, false);
         return SessionHolder.lockAndExecute(globalSession, () -> {
             globalSessionStatusCheck(globalSession);
-            globalSession.addSessionLifecycleListener(SessionHolder.getRootSessionManager());
+            globalSession.addSessionLifecycleListener(SessionHolder.getSessionManager());
             BranchSession branchSession = SessionHelper.newBranchByGlobal(globalSession, branchType, resourceId,
                     applicationData, lockKeys, clientId);
             branchSessionLock(globalSession, branchSession);
@@ -114,7 +114,7 @@ public abstract class AbstractCore implements Core {
 
     private GlobalSession assertGlobalSessionNotNull(String xid, boolean withBranchSessions)
             throws TransactionException {
-        GlobalSession globalSession = SessionHolder.findGlobalSession(xid, withBranchSessions);
+        GlobalSession globalSession = SessionHolder.getGlobalSession(xid, withBranchSessions);
         if (globalSession == null) {
             throw new GlobalTransactionException(TransactionExceptionCode.GlobalTransactionNotExist,
                     String.format("Could not found global transaction xid = %s, may be has finished.", xid));
@@ -131,7 +131,7 @@ public abstract class AbstractCore implements Core {
             throw new BranchTransactionException(BranchTransactionNotExist,
                     String.format("Could not found branch session xid = %s branchId = %s", xid, branchId));
         }
-        globalSession.addSessionLifecycleListener(SessionHolder.getRootSessionManager());
+        globalSession.addSessionLifecycleListener(SessionHolder.getSessionManager());
         globalSession.changeBranchStatus(branchSession, status);
 
         if (LOGGER.isInfoEnabled()) {

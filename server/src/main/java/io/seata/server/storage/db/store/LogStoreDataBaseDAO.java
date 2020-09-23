@@ -17,6 +17,7 @@ package io.seata.server.storage.db.store;
 
 import java.sql.Connection;
 import java.sql.DatabaseMetaData;
+import java.sql.Date;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -28,13 +29,17 @@ import io.seata.common.exception.DataAccessException;
 import io.seata.common.exception.StoreException;
 import io.seata.common.util.IOUtil;
 import io.seata.common.util.StringUtils;
-import io.seata.config.Configuration;
-import io.seata.config.ConfigurationFactory;
 import io.seata.core.constants.ConfigurationKeys;
 import io.seata.core.constants.ServerTableColumnsName;
+import io.seata.core.model.BranchStatus;
+import io.seata.core.model.BranchType;
+import io.seata.core.model.GlobalStatus;
+import io.seata.core.store.AbstractLogStore;
 import io.seata.core.store.BranchTransactionDO;
+import io.seata.core.store.GlobalCondition;
 import io.seata.core.store.GlobalTransactionDO;
-import io.seata.core.store.LogStore;
+import io.seata.core.store.SortOrder;
+import io.seata.core.store.SortParam;
 import io.seata.core.store.db.sql.log.LogStoreSqlsFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -47,7 +52,9 @@ import static io.seata.common.DefaultValues.DEFAULT_STORE_DB_GLOBAL_TABLE;
  *
  * @author zhangsen
  */
-public class LogStoreDataBaseDAO implements LogStore {
+public class LogStoreDataBaseDAO extends AbstractLogStore<GlobalTransactionDO, BranchTransactionDO> {
+
+    //region Constants
 
     private static final Logger LOGGER = LoggerFactory.getLogger(LogStoreDataBaseDAO.class);
 
@@ -60,15 +67,14 @@ public class LogStoreDataBaseDAO implements LogStore {
      */
     private static final int TRANSACTION_NAME_DEFAULT_SIZE = 128;
 
-    /**
-     * The constant CONFIG.
-     */
-    protected static final Configuration CONFIG = ConfigurationFactory.getInstance();
+    //endregion
+
+    //region Fields
 
     /**
      * The Log store data source.
      */
-    protected DataSource logStoreDataSource = null;
+    protected DataSource logStoreDataSource;
 
     /**
      * The Global table.
@@ -80,9 +86,19 @@ public class LogStoreDataBaseDAO implements LogStore {
      */
     protected String branchTable;
 
+    /**
+     * The db type.
+     */
     private String dbType;
 
+    /**
+     * The transaction name column size.
+     */
     private int transactionNameColumnSize = TRANSACTION_NAME_DEFAULT_SIZE;
+
+    //endregion
+
+    //region Constructor
 
     /**
      * Instantiates a new Log store data base dao.
@@ -106,8 +122,12 @@ public class LogStoreDataBaseDAO implements LogStore {
         initTransactionNameSize();
     }
 
+    //endregion
+
+    //region Override LogStore
+
     @Override
-    public GlobalTransactionDO queryGlobalTransactionDO(String xid) {
+    public GlobalTransactionDO getGlobalTransactionDO(String xid) {
         String sql = LogStoreSqlsFactory.getLogStoreSqls(dbType).getQueryGlobalTransactionSQL(globalTable);
         Connection conn = null;
         PreparedStatement ps = null;
@@ -131,31 +151,7 @@ public class LogStoreDataBaseDAO implements LogStore {
     }
 
     @Override
-    public GlobalTransactionDO queryGlobalTransactionDO(long transactionId) {
-        String sql = LogStoreSqlsFactory.getLogStoreSqls(dbType).getQueryGlobalTransactionSQLByTransactionId(globalTable);
-        Connection conn = null;
-        PreparedStatement ps = null;
-        ResultSet rs = null;
-        try {
-            conn = logStoreDataSource.getConnection();
-            conn.setAutoCommit(true);
-            ps = conn.prepareStatement(sql);
-            ps.setLong(1, transactionId);
-            rs = ps.executeQuery();
-            if (rs.next()) {
-                return convertGlobalTransactionDO(rs);
-            } else {
-                return null;
-            }
-        } catch (SQLException e) {
-            throw new DataAccessException(e);
-        } finally {
-            IOUtil.close(rs, ps, conn);
-        }
-    }
-
-    @Override
-    public List<GlobalTransactionDO> queryGlobalTransactionDO(int[] statuses, int limit) {
+    public List<GlobalTransactionDO> queryGlobalTransactionDO(GlobalCondition condition) {
         List<GlobalTransactionDO> ret = new ArrayList<>();
         Connection conn = null;
         PreparedStatement ps = null;
@@ -164,18 +160,59 @@ public class LogStoreDataBaseDAO implements LogStore {
             conn = logStoreDataSource.getConnection();
             conn.setAutoCommit(true);
 
-            String paramsPlaceHolder = org.apache.commons.lang.StringUtils.repeat("?", ",", statuses.length);
+            // where place holder
+            String wherePlaceHolder = this.buildWherePlaceHolder(condition);
+            // order by place holder
+            String orderByPlaceHolder = this.buildOrderByPlaceHolder(condition);
 
-            String sql = LogStoreSqlsFactory.getLogStoreSqls(dbType).getQueryGlobalTransactionSQLByStatus(globalTable, paramsPlaceHolder);
+            // build sql
+            String sql = LogStoreSqlsFactory.getLogStoreSqls(dbType).getQueryGlobalTransactionSQLByCondition(globalTable,
+                    wherePlaceHolder, orderByPlaceHolder, condition);
+
             ps = conn.prepareStatement(sql);
-            for (int i = 0; i < statuses.length; i++) {
-                int status = statuses[i];
-                ps.setInt(i + 1, status);
-            }
-            ps.setInt(statuses.length + 1, limit);
+
+            // set condition parameters
+            int i = this.setConditionParameters(ps, condition);
+            // set paging parameters
+            LogStoreSqlsFactory.getLogStoreSqls(dbType).setQueryGlobalTransactionSQLPagingParameters(ps, condition, i);
+
             rs = ps.executeQuery();
             while (rs.next()) {
                 ret.add(convertGlobalTransactionDO(rs));
+            }
+            return ret;
+        } catch (SQLException e) {
+            throw new DataAccessException(e);
+        } finally {
+            IOUtil.close(rs, ps, conn);
+        }
+    }
+
+    @Override
+    public int countGlobalTransactionDO(GlobalCondition condition) {
+        Connection conn = null;
+        PreparedStatement ps = null;
+        ResultSet rs = null;
+        try {
+            conn = logStoreDataSource.getConnection();
+            conn.setAutoCommit(true);
+
+            // where place holder
+            String wherePlaceHolder = this.buildWherePlaceHolder(condition);
+
+            // build sql
+            String sql = LogStoreSqlsFactory.getLogStoreSqls(dbType).getCountGlobalTransactionSQLByCondition(globalTable,
+                    wherePlaceHolder);
+
+            ps = conn.prepareStatement(sql);
+
+            // set condition parameters
+            this.setConditionParameters(ps, condition);
+
+            rs = ps.executeQuery();
+            int ret = 0;
+            if (rs.next()) {
+                ret = rs.getInt(1);
             }
             return ret;
         } catch (SQLException e) {
@@ -196,7 +233,7 @@ public class LogStoreDataBaseDAO implements LogStore {
             ps = conn.prepareStatement(sql);
             ps.setString(1, globalTransactionDO.getXid());
             ps.setLong(2, globalTransactionDO.getTransactionId());
-            ps.setInt(3, globalTransactionDO.getStatus());
+            ps.setInt(3, globalTransactionDO.getStatus().getCode());
             ps.setString(4, globalTransactionDO.getApplicationId());
             ps.setString(5, globalTransactionDO.getTransactionServiceGroup());
             String transactionName = globalTransactionDO.getTransactionName();
@@ -216,15 +253,24 @@ public class LogStoreDataBaseDAO implements LogStore {
 
     @Override
     public boolean updateGlobalTransactionDO(GlobalTransactionDO globalTransactionDO) {
-        String sql = LogStoreSqlsFactory.getLogStoreSqls(dbType).getUpdateGlobalTransactionStatusSQL(globalTable);
+        // sets place holder
+        StringBuilder setsPlaceHolder = new StringBuilder();
+        setsPlaceHolder.append(ServerTableColumnsName.GLOBAL_TABLE_STATUS).append(" = ?, ");
+
+        // build update sql
+        String updateSql = LogStoreSqlsFactory.getLogStoreSqls(dbType).getUpdateGlobalTransactionSQL(globalTable, setsPlaceHolder.toString());
+
         Connection conn = null;
         PreparedStatement ps = null;
         try {
             conn = logStoreDataSource.getConnection();
             conn.setAutoCommit(true);
-            ps = conn.prepareStatement(sql);
-            ps.setInt(1, globalTransactionDO.getStatus());
+
+            //sets
+            ps = conn.prepareStatement(updateSql);
+            ps.setInt(1, globalTransactionDO.getStatus().getCode());
             ps.setString(2, globalTransactionDO.getXid());
+
             return ps.executeUpdate() > 0;
         } catch (SQLException e) {
             throw new StoreException(e);
@@ -320,8 +366,8 @@ public class LogStoreDataBaseDAO implements LogStore {
             ps.setLong(3, branchTransactionDO.getBranchId());
             ps.setString(4, branchTransactionDO.getResourceGroupId());
             ps.setString(5, branchTransactionDO.getResourceId());
-            ps.setString(6, branchTransactionDO.getBranchType());
-            ps.setInt(7, branchTransactionDO.getStatus());
+            ps.setString(6, branchTransactionDO.getBranchType().name());
+            ps.setInt(7, branchTransactionDO.getStatus().getCode());
             ps.setString(8, branchTransactionDO.getClientId());
             ps.setString(9, branchTransactionDO.getApplicationData());
             return ps.executeUpdate() > 0;
@@ -334,16 +380,27 @@ public class LogStoreDataBaseDAO implements LogStore {
 
     @Override
     public boolean updateBranchTransactionDO(BranchTransactionDO branchTransactionDO) {
-        String sql = LogStoreSqlsFactory.getLogStoreSqls(dbType).getUpdateBranchTransactionStatusSQL(branchTable);
+        // sets place holder
+        StringBuilder setsPlaceHolder = new StringBuilder();
+        setsPlaceHolder.append(ServerTableColumnsName.BRANCH_TABLE_STATUS).append(" = ?, ");
+        setsPlaceHolder.append(ServerTableColumnsName.BRANCH_TABLE_APPLICATION_DATA).append(" = ?, ");
+
+        // build update branch sql
+        String updateSql = LogStoreSqlsFactory.getLogStoreSqls(dbType).getUpdateBranchTransactionSQL(branchTable, setsPlaceHolder.toString());
+
         Connection conn = null;
         PreparedStatement ps = null;
         try {
             conn = logStoreDataSource.getConnection();
             conn.setAutoCommit(true);
-            ps = conn.prepareStatement(sql);
-            ps.setInt(1, branchTransactionDO.getStatus());
-            ps.setString(2, branchTransactionDO.getXid());
-            ps.setLong(3, branchTransactionDO.getBranchId());
+
+            //sets
+            ps = conn.prepareStatement(updateSql);
+            ps.setInt(1, branchTransactionDO.getStatus().getCode());
+            ps.setString(2, branchTransactionDO.getApplicationData());
+            ps.setString(3, branchTransactionDO.getXid());
+            ps.setLong(4, branchTransactionDO.getBranchId());
+
             return ps.executeUpdate() > 0;
         } catch (SQLException e) {
             throw new StoreException(e);
@@ -381,6 +438,10 @@ public class LogStoreDataBaseDAO implements LogStore {
         return maxBranchId > maxTransId ? maxBranchId : maxTransId;
     }
 
+    //endregion
+
+    //region Private
+
     private long getCurrentMaxSessionId(String sql, long high, long low) {
         long max = 0;
         Connection conn = null;
@@ -405,10 +466,99 @@ public class LogStoreDataBaseDAO implements LogStore {
         return max;
     }
 
+    private String buildWherePlaceHolder(GlobalCondition condition) {
+        // where
+        StringBuilder wherePlaceHolder = new StringBuilder();
+        // status in (?, ?, ?)
+        if (condition.getStatuses() != null && condition.getStatuses().length > 0) {
+            wherePlaceHolder.append(wherePlaceHolder.length() == 0 ? " where " : " and ")
+                    .append(ServerTableColumnsName.GLOBAL_TABLE_STATUS);
+            if (condition.getStatuses().length > 1) {
+                wherePlaceHolder.append(" in (");
+                String paramsPlaceHolder = org.apache.commons.lang.StringUtils.repeat("?", ",", condition.getStatuses().length);
+                wherePlaceHolder.append(paramsPlaceHolder);
+                wherePlaceHolder.append(")");
+            } else {
+                wherePlaceHolder.append(" = ?");
+            }
+        }
+        //  true: begin_time  < System.currentTimeMillis() - timeout
+        // false: begin_time >= System.currentTimeMillis() - timeout
+        if (condition.getIsTimeoutData() != null) {
+            wherePlaceHolder.append(wherePlaceHolder.length() == 0 ? " where " : " and ")
+                    .append(ServerTableColumnsName.GLOBAL_TABLE_BEGIN_TIME);
+            if (condition.getIsTimeoutData()) {
+                wherePlaceHolder.append(" < ? - timeout");
+            } else {
+                wherePlaceHolder.append(" >= ? - timeout");
+            }
+        }
+        // begin_time < System.currentTimeMillis() - :overTimeAliveMills
+        if (condition.getOverTimeAliveMills() > 0) {
+            wherePlaceHolder.append(wherePlaceHolder.length() == 0 ? " where " : " and ")
+                    .append(ServerTableColumnsName.GLOBAL_TABLE_BEGIN_TIME).append(" < ?");
+        }
+        // gmt_modified >= :minGmtModified
+        if (condition.getMinGmtModified() != null) {
+            wherePlaceHolder.append(wherePlaceHolder.length() == 0 ? " where " : " and ")
+                    .append(ServerTableColumnsName.GLOBAL_TABLE_GMT_MODIFIED).append(" >= ?");
+        }
+
+        return wherePlaceHolder.toString();
+    }
+
+    private String buildOrderByPlaceHolder(GlobalCondition condition) {
+        if (condition.hasSortParams()) {
+            StringBuilder orderByPlaceHolder = new StringBuilder(" order by ");
+            SortParam[] sortParams = condition.getSortParams();
+            SortParam sortParam;
+            for (int i = 0, l = sortParams.length; i < l; ++i) {
+                sortParam = sortParams[i];
+                if (i > 0) {
+                    orderByPlaceHolder.append(", ");
+                }
+                orderByPlaceHolder.append(sortParam.getSortFieldName());
+                if (SortOrder.DESC == sortParam.getSortOrder()) {
+                    orderByPlaceHolder.append(" desc");
+                }
+            }
+            return orderByPlaceHolder.toString();
+        } else {
+            // db mode default sort is: order by gmt_modified asc
+            return " order by " + ServerTableColumnsName.GLOBAL_TABLE_GMT_MODIFIED;
+        }
+    }
+
+    private int setConditionParameters(PreparedStatement ps, GlobalCondition condition) throws SQLException {
+        int i = 0;
+        long now = System.currentTimeMillis();
+        // status in (?, ?, ?)
+        if (condition.getStatuses() != null && condition.getStatuses().length > 0) {
+            for (int j = 0, l = condition.getStatuses().length; j < l; j++) {
+                ps.setInt(++i, condition.getStatuses()[j].getCode());
+            }
+        }
+        //  true: begin_time  < System.currentTimeMillis() - timeout
+        // false: begin_time >= System.currentTimeMillis() - timeout
+        if (condition.getIsTimeoutData() != null) {
+            ps.setLong(++i, now);
+        }
+        // begin_time < System.currentTimeMillis() - :overTimeAliveMills
+        if (condition.getOverTimeAliveMills() > 0) {
+            ps.setLong(++i, now - condition.getOverTimeAliveMills());
+        }
+        // gmt_modified >= :minGmtModified
+        if (condition.getMinGmtModified() != null) {
+            ps.setDate(++i, new Date(condition.getMinGmtModified().getTime()));
+        }
+
+        return i;
+    }
+
     private GlobalTransactionDO convertGlobalTransactionDO(ResultSet rs) throws SQLException {
         GlobalTransactionDO globalTransactionDO = new GlobalTransactionDO();
         globalTransactionDO.setXid(rs.getString(ServerTableColumnsName.GLOBAL_TABLE_XID));
-        globalTransactionDO.setStatus(rs.getInt(ServerTableColumnsName.GLOBAL_TABLE_STATUS));
+        globalTransactionDO.setStatus(GlobalStatus.get(rs.getInt(ServerTableColumnsName.GLOBAL_TABLE_STATUS)));
         globalTransactionDO.setApplicationId(rs.getString(ServerTableColumnsName.GLOBAL_TABLE_APPLICATION_ID));
         globalTransactionDO.setBeginTime(rs.getLong(ServerTableColumnsName.GLOBAL_TABLE_BEGIN_TIME));
         globalTransactionDO.setTimeout(rs.getInt(ServerTableColumnsName.GLOBAL_TABLE_TIMEOUT));
@@ -425,13 +575,13 @@ public class LogStoreDataBaseDAO implements LogStore {
     private BranchTransactionDO convertBranchTransactionDO(ResultSet rs) throws SQLException {
         BranchTransactionDO branchTransactionDO = new BranchTransactionDO();
         branchTransactionDO.setResourceGroupId(rs.getString(ServerTableColumnsName.BRANCH_TABLE_RESOURCE_GROUP_ID));
-        branchTransactionDO.setStatus(rs.getInt(ServerTableColumnsName.BRANCH_TABLE_STATUS));
+        branchTransactionDO.setStatus(BranchStatus.get(rs.getInt(ServerTableColumnsName.BRANCH_TABLE_STATUS)));
         branchTransactionDO.setApplicationData(rs.getString(ServerTableColumnsName.BRANCH_TABLE_APPLICATION_DATA));
         branchTransactionDO.setClientId(rs.getString(ServerTableColumnsName.BRANCH_TABLE_CLIENT_ID));
         branchTransactionDO.setXid(rs.getString(ServerTableColumnsName.BRANCH_TABLE_XID));
         branchTransactionDO.setResourceId(rs.getString(ServerTableColumnsName.BRANCH_TABLE_RESOURCE_ID));
         branchTransactionDO.setBranchId(rs.getLong(ServerTableColumnsName.BRANCH_TABLE_BRANCH_ID));
-        branchTransactionDO.setBranchType(rs.getString(ServerTableColumnsName.BRANCH_TABLE_BRANCH_TYPE));
+        branchTransactionDO.setBranchType(BranchType.valueOf(rs.getString(ServerTableColumnsName.BRANCH_TABLE_BRANCH_TYPE)));
         branchTransactionDO.setTransactionId(rs.getLong(ServerTableColumnsName.BRANCH_TABLE_TRANSACTION_ID));
         branchTransactionDO.setGmtCreate(rs.getTimestamp(ServerTableColumnsName.BRANCH_TABLE_GMT_CREATE));
         branchTransactionDO.setGmtModified(rs.getTimestamp(ServerTableColumnsName.BRANCH_TABLE_GMT_MODIFIED));
@@ -496,6 +646,10 @@ public class LogStoreDataBaseDAO implements LogStore {
         return conn.getMetaData().getUserName();
     }
 
+    //endregion
+
+    //region Gets and Sets
+
     /**
      * Sets log store data source.
      *
@@ -532,9 +686,17 @@ public class LogStoreDataBaseDAO implements LogStore {
         this.dbType = dbType;
     }
 
+    /**
+     * Gets transaction name column size.
+     *
+     * @return the transaction name column size
+     */
     public int getTransactionNameColumnSize() {
         return transactionNameColumnSize;
     }
+
+    //endregion
+
 
     /**
      * column info

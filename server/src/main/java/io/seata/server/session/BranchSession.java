@@ -21,6 +21,7 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
+import io.seata.core.store.BranchTransactionDO;
 import io.seata.server.storage.file.lock.FileLocker;
 import io.seata.common.util.CompressUtil;
 import io.seata.core.exception.TransactionException;
@@ -37,7 +38,8 @@ import org.slf4j.LoggerFactory;
  *
  * @author sharajava
  */
-public class BranchSession implements Lockable, Comparable<BranchSession>, SessionStorable {
+public class BranchSession extends BranchTransactionDO
+        implements Lockable, Comparable<BranchSession>, SessionStorable {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(BranchSession.class);
 
@@ -46,100 +48,10 @@ public class BranchSession implements Lockable, Comparable<BranchSession>, Sessi
     private static ThreadLocal<ByteBuffer> byteBufferThreadLocal = ThreadLocal.withInitial(() -> ByteBuffer.allocate(
         MAX_BRANCH_SESSION_SIZE));
 
-    private String xid;
-
-    private long transactionId;
-
-    private long branchId;
-
-    private String resourceGroupId;
-
-    private String resourceId;
-
     private String lockKey;
-
-    private BranchType branchType;
-
-    private BranchStatus status = BranchStatus.Unknown;
-
-    private String clientId;
-
-    private String applicationData;
 
     private ConcurrentMap<FileLocker.BucketLockMap, Set<String>> lockHolder
         = new ConcurrentHashMap<>();
-
-    /**
-     * Gets application data.
-     *
-     * @return the application data
-     */
-    public String getApplicationData() {
-        return applicationData;
-    }
-
-    /**
-     * Sets application data.
-     *
-     * @param applicationData the application data
-     */
-    public void setApplicationData(String applicationData) {
-        this.applicationData = applicationData;
-    }
-
-    /**
-     * Gets resource group id.
-     *
-     * @return the resource group id
-     */
-    public String getResourceGroupId() {
-        return resourceGroupId;
-    }
-
-    /**
-     * Sets resource group id.
-     *
-     * @param resourceGroupId the resource group id
-     */
-    public void setResourceGroupId(String resourceGroupId) {
-        this.resourceGroupId = resourceGroupId;
-    }
-
-    /**
-     * Gets client id.
-     *
-     * @return the client id
-     */
-    public String getClientId() {
-        return clientId;
-    }
-
-    /**
-     * Sets client id.
-     *
-     * @param clientId the client id
-     */
-    public void setClientId(String clientId) {
-        this.clientId = clientId;
-    }
-
-    /**
-     * Gets resource id.
-     *
-     * @return the resource id
-     */
-    public String getResourceId() {
-        return resourceId;
-    }
-
-    /**
-     * Sets resource id.
-     *
-     * @param resourceId the resource id
-     */
-    public void setResourceId(String resourceId) {
-        this.resourceId = resourceId;
-    }
 
     /**
      * Gets lock key.
@@ -157,96 +69,6 @@ public class BranchSession implements Lockable, Comparable<BranchSession>, Sessi
      */
     public void setLockKey(String lockKey) {
         this.lockKey = lockKey;
-    }
-
-    /**
-     * Gets branch type.
-     *
-     * @return the branch type
-     */
-    public BranchType getBranchType() {
-        return branchType;
-    }
-
-    /**
-     * Sets branch type.
-     *
-     * @param branchType the branch type
-     */
-    public void setBranchType(BranchType branchType) {
-        this.branchType = branchType;
-    }
-
-    /**
-     * Gets status.
-     *
-     * @return the status
-     */
-    public BranchStatus getStatus() {
-        return status;
-    }
-
-    /**
-     * Sets status.
-     *
-     * @param status the status
-     */
-    public void setStatus(BranchStatus status) {
-        this.status = status;
-    }
-
-    /**
-     * Gets transaction id.
-     *
-     * @return the transaction id
-     */
-    public long getTransactionId() {
-        return transactionId;
-    }
-
-    /**
-     * Sets transaction id.
-     *
-     * @param transactionId the transaction id
-     */
-    public void setTransactionId(long transactionId) {
-        this.transactionId = transactionId;
-    }
-
-    /**
-     * Gets branch id.
-     *
-     * @return the branch id
-     */
-    public long getBranchId() {
-        return branchId;
-    }
-
-    /**
-     * Sets branch id.
-     *
-     * @param branchId the branch id
-     */
-    public void setBranchId(long branchId) {
-        this.branchId = branchId;
-    }
-
-    /**
-     * Gets xid.
-     *
-     * @return the xid
-     */
-    public String getXid() {
-        return xid;
-    }
-
-    /**
-     * Sets xid.
-     *
-     * @param xid the xid
-     */
-    public void setXid(String xid) {
-        this.xid = xid;
     }
 
     @Override
@@ -335,17 +157,17 @@ public class BranchSession implements Lockable, Comparable<BranchSession>, Sessi
         byteBuffer.putLong(branchId);
 
         if (resourceIdBytes != null) {
-            byteBuffer.putInt(resourceIdBytes.length);
+            byteBuffer.putShort((short)resourceIdBytes.length);
             byteBuffer.put(resourceIdBytes);
         } else {
-            byteBuffer.putInt(0);
+            byteBuffer.putShort((short)0);
         }
 
         if (lockKeyBytes != null) {
-            byteBuffer.putInt(lockKeyBytes.length);
+            byteBuffer.putShort((short)lockKeyBytes.length);
             byteBuffer.put(lockKeyBytes);
         } else {
-            byteBuffer.putInt(0);
+            byteBuffer.putShort((short)0);
         }
 
         if (clientIdBytes != null) {
@@ -363,10 +185,10 @@ public class BranchSession implements Lockable, Comparable<BranchSession>, Sessi
         }
 
         if (xidBytes != null) {
-            byteBuffer.putInt(xidBytes.length);
+            byteBuffer.putShort((short)xidBytes.length);
             byteBuffer.put(xidBytes);
         } else {
-            byteBuffer.putInt(0);
+            byteBuffer.putShort((short)0);
         }
 
         byteBuffer.put(branchTypeByte);
@@ -382,11 +204,11 @@ public class BranchSession implements Lockable, Comparable<BranchSession>, Sessi
                                      byte[] applicationDataBytes, byte[] xidBytes) {
         final int size = 8 // trascationId
             + 8 // branchId
-            + 4 // resourceIdBytes.length
-            + 4 // lockKeyBytes.length
+            + 2 // resourceIdBytes.length
+            + 2 // lockKeyBytes.length
             + 2 // clientIdBytes.length
             + 4 // applicationDataBytes.length
-            + 4 // xidBytes.size
+            + 2 // xidBytes.length
             + 1 // statusCode
             + (resourceIdBytes == null ? 0 : resourceIdBytes.length)
             + (lockKeyBytes == null ? 0 : lockKeyBytes.length)
@@ -402,13 +224,13 @@ public class BranchSession implements Lockable, Comparable<BranchSession>, Sessi
         ByteBuffer byteBuffer = ByteBuffer.wrap(a);
         this.transactionId = byteBuffer.getLong();
         this.branchId = byteBuffer.getLong();
-        int resourceLen = byteBuffer.getInt();
+        short resourceLen = byteBuffer.getShort();
         if (resourceLen > 0) {
             byte[] byResource = new byte[resourceLen];
             byteBuffer.get(byResource);
             this.resourceId = new String(byResource);
         }
-        int lockKeyLen = byteBuffer.getInt();
+        short lockKeyLen = byteBuffer.getShort();
         if (lockKeyLen > 0) {
             byte[] byLockKey = new byte[lockKeyLen];
             byteBuffer.get(byLockKey);
@@ -435,7 +257,7 @@ public class BranchSession implements Lockable, Comparable<BranchSession>, Sessi
             byteBuffer.get(byApplicationData);
             this.applicationData = new String(byApplicationData);
         }
-        int xidLen = byteBuffer.getInt();
+        short xidLen = byteBuffer.getShort();
         if (xidLen > 0) {
             byte[] xidBytes = new byte[xidLen];
             byteBuffer.get(xidBytes);

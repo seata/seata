@@ -332,7 +332,7 @@ public abstract class AbstractTCInboundHandler extends AbstractExceptionHandler 
 
     private void checkTransactionStatus(AbstractGlobalEndRequest request, AbstractGlobalEndResponse response) {
         try {
-            GlobalSession globalSession = SessionHolder.findGlobalSession(request.getXid(), false);
+            GlobalSession globalSession = SessionHolder.getGlobalSession(request.getXid(), false);
             if (globalSession != null) {
                 response.setGlobalStatus(globalSession.getStatus());
             } else {

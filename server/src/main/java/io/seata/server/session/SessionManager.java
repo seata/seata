@@ -22,6 +22,7 @@ import io.seata.core.exception.TransactionException;
 import io.seata.core.model.BranchStatus;
 import io.seata.core.model.GlobalStatus;
 import io.seata.core.rpc.Disposable;
+import io.seata.core.store.GlobalCondition;
 
 /**
  * The interface Session manager.
@@ -39,30 +40,32 @@ public interface SessionManager extends SessionLifecycleListener, Disposable {
     void addGlobalSession(GlobalSession session) throws TransactionException;
 
     /**
-     * Find global session global session.
+     * Get global session global session.
      *
      * @param xid the xid
      * @return the global session
      */
-    GlobalSession findGlobalSession(String xid) ;
+    default GlobalSession getGlobalSession(String xid) {
+        return getGlobalSession(xid, true);
+    }
 
     /**
-     * Find global session global session.
+     * Get global session global session.
      *
      * @param xid the xid
      * @param withBranchSessions the withBranchSessions
      * @return the global session
      */
-    GlobalSession findGlobalSession(String xid, boolean withBranchSessions);
+    GlobalSession getGlobalSession(String xid, boolean withBranchSessions);
 
     /**
-     * Update global session status.
+     * Update global session.
      *
      * @param session the session
      * @param status  the status
      * @throws TransactionException the transaction exception
      */
-    void updateGlobalSessionStatus(GlobalSession session, GlobalStatus status) throws TransactionException;
+    void updateGlobalSession(GlobalSession session, GlobalStatus status) throws TransactionException;
 
     /**
      * Remove global session.
@@ -82,13 +85,14 @@ public interface SessionManager extends SessionLifecycleListener, Disposable {
     void addBranchSession(GlobalSession globalSession, BranchSession session) throws TransactionException;
 
     /**
-     * Update branch session status.
+     * Update branch session.
      *
-     * @param session the session
-     * @param status  the status
+     * @param branchSession   the session
+     * @param status          the status
+     * @param applicationData the application data
      * @throws TransactionException the transaction exception
      */
-    void updateBranchSessionStatus(BranchSession session, BranchStatus status) throws TransactionException;
+    void updateBranchSession(BranchSession branchSession, BranchStatus status, String applicationData) throws TransactionException;
 
     /**
      * Remove branch session.
@@ -104,15 +108,71 @@ public interface SessionManager extends SessionLifecycleListener, Disposable {
      *
      * @return the collection
      */
-    Collection<GlobalSession> allSessions();
+    default Collection<GlobalSession> allSessions() {
+        return allSessions(true);
+    }
 
     /**
-     * Find global sessions list.
+     * All sessions collection.
+     *
+     * @param withBranchSessions the with branch sessions
+     * @return the collection
+     */
+    default Collection<GlobalSession> allSessions(boolean withBranchSessions) {
+        GlobalCondition condition = new GlobalCondition();
+        condition.setPageSize(0);
+        return findGlobalSessions(condition, withBranchSessions);
+    }
+
+    /**
+     * Find global sessions list by condition.
      *
      * @param condition the condition
      * @return the list
      */
-    List<GlobalSession> findGlobalSessions(SessionCondition condition);
+    default List<GlobalSession> findGlobalSessions(GlobalCondition condition) {
+        return findGlobalSessions(condition, true);
+    }
+
+    /**
+     * Find global sessions list by condition.
+     *
+     * @param condition          the condition
+     * @param withBranchSessions the withBranchSessions
+     * @return the list
+     */
+    List<GlobalSession> findGlobalSessions(GlobalCondition condition, boolean withBranchSessions);
+
+    /**
+     * Query global sessions list by status list.
+     *
+     * @param statuses the statuses
+     * @return the list
+     */
+    default List<GlobalSession> findGlobalSessions(GlobalStatus... statuses) {
+        return findGlobalSessions(statuses, true);
+    }
+
+    /**
+     * Query global sessions list by status list.
+     *
+     * @param statuses           the statuses
+     * @param withBranchSessions the withBranchSessions
+     * @return the list
+     */
+    default List<GlobalSession> findGlobalSessions(GlobalStatus[] statuses, boolean withBranchSessions) {
+        return findGlobalSessions(new GlobalCondition(statuses), withBranchSessions);
+    }
+
+    /**
+     * Query global sessions list.
+     *
+     * @param overTimeAliveMills the over time alive mills
+     * @return the list
+     */
+    default List<GlobalSession> findGlobalSessions(long overTimeAliveMills) {
+        return findGlobalSessions(new GlobalCondition(overTimeAliveMills));
+    }
 
     /**
      * lock and execute
