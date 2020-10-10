@@ -41,6 +41,7 @@ public class ColumnMeta {
     private int ordinalPosition;
     private String isNullAble;
     private String isAutoincrement;
+    private String isOnUpdateTimestamp;
 
     /**
      * Instantiates a new Column meta.
@@ -69,6 +70,7 @@ public class ColumnMeta {
                 ", ordinalPosition=" + ordinalPosition +
                 ", isNullAble='" + isNullAble + '\'' +
                 ", isAutoincrement='" + isAutoincrement + '\'' +
+                ", isOnUpdateTimestamp='" + isOnUpdateTimestamp + '\'' +
                 '}';
     }
 
@@ -404,6 +406,25 @@ public class ColumnMeta {
         this.isAutoincrement = isAutoincrement;
     }
 
+
+    /**
+     * Sets is onUpdateTimestamp.
+     *
+     * @return  the is onUpdateTimestamp
+     */
+    public String getIsOnUpdateTimestamp() {
+        return isOnUpdateTimestamp;
+    }
+
+    /**
+     * Sets is autoincrement.
+     *
+     * @param isOnUpdateTimestamp the is autoincrement
+     */
+    public void setIsOnUpdateTimestamp(String isOnUpdateTimestamp) {
+        this.isOnUpdateTimestamp = isOnUpdateTimestamp;
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) {
@@ -467,6 +488,9 @@ public class ColumnMeta {
         if (!Objects.equals(columnMeta.isAutoincrement, this.isAutoincrement)) {
             return false;
         }
+        if (!Objects.equals(columnMeta.isOnUpdateTimestamp, this.isOnUpdateTimestamp)) {
+            return false;
+        }
         return true;
     }
 
@@ -490,6 +514,7 @@ public class ColumnMeta {
         hash += Objects.hashCode(ordinalPosition);
         hash += Objects.hashCode(isNullAble);
         hash += Objects.hashCode(isAutoincrement);
+        hash += Objects.hashCode(isOnUpdateTimestamp);
         return hash;
     }
 }

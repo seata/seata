@@ -21,6 +21,8 @@ import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.sql.Types;
+import java.util.Objects;
 
 import io.seata.common.exception.ShouldNeverHappenException;
 import io.seata.common.loader.LoadLevel;
@@ -78,7 +80,7 @@ public class MysqlTableMetaCache extends AbstractTableMetaCache {
     protected TableMeta fetchSchema(Connection connection, String tableName) throws SQLException {
         String sql = "SELECT * FROM " + ColumnUtils.addEscape(tableName, JdbcConstants.MYSQL) + " LIMIT 1";
         try (Statement stmt = connection.createStatement();
-            ResultSet rs = stmt.executeQuery(sql)) {
+             ResultSet rs = stmt.executeQuery(sql)) {
             return resultSetMetaToSchema(rs.getMetaData(), connection.getMetaData());
         } catch (SQLException sqlEx) {
             throw sqlEx;
@@ -88,7 +90,7 @@ public class MysqlTableMetaCache extends AbstractTableMetaCache {
     }
 
     private TableMeta resultSetMetaToSchema(ResultSetMetaData rsmd, DatabaseMetaData dbmd)
-        throws SQLException {
+            throws SQLException {
         //always "" for mysql
         String schemaName = rsmd.getSchemaName(1);
         String catalogName = rsmd.getCatalogName(1);
@@ -114,7 +116,8 @@ public class MysqlTableMetaCache extends AbstractTableMetaCache {
          */
 
         try (ResultSet rsColumns = dbmd.getColumns(catalogName, schemaName, tableName, "%");
-             ResultSet rsIndex = dbmd.getIndexInfo(catalogName, schemaName, tableName, false, true)) {
+             ResultSet rsIndex = dbmd.getIndexInfo(catalogName, schemaName, tableName, false, true);
+             ResultSet vsColumns = dbmd.getVersionColumns(catalogName, schemaName, tableName)) {
             while (rsColumns.next()) {
                 ColumnMeta col = new ColumnMeta();
                 col.setTableCat(rsColumns.getString("TABLE_CAT"));
@@ -137,6 +140,14 @@ public class MysqlTableMetaCache extends AbstractTableMetaCache {
                 col.setIsAutoincrement(rsColumns.getString("IS_AUTOINCREMENT"));
 
                 tm.getAllColumns().put(col.getColumnName(), col);
+            }
+            while (Objects.nonNull(vsColumns) && vsColumns.next()) {
+                String columnName = vsColumns.getString("COLUMN_NAME");
+                int dataType = vsColumns.getInt("DATA_TYPE");
+                ColumnMeta col = tm.getAllColumns().get(columnName);
+                if (col != null && dataType == Types.TIMESTAMP) {
+                    col.setIsOnUpdateTimestamp("Yes");
+                }
             }
 
             while (rsIndex.next()) {

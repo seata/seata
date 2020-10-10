@@ -22,6 +22,7 @@ import static io.seata.common.DefaultValues.DEFAULT_ONLY_CARE_UPDATE_COLUMNS;
 import static io.seata.common.DefaultValues.DEFAULT_TRANSACTION_UNDO_DATA_VALIDATION;
 import static io.seata.common.DefaultValues.DEFAULT_TRANSACTION_UNDO_LOG_SERIALIZATION;
 import static io.seata.common.DefaultValues.DEFAULT_TRANSACTION_UNDO_LOG_TABLE;
+import static io.seata.common.DefaultValues.DEFAULT_DO_NOT_CARE_ON_UPDATE_TIMESTAMP_WHEN_INSERT;
 import static io.seata.spring.boot.autoconfigure.StarterConstants.UNDO_PREFIX;
 
 /**
@@ -34,6 +35,7 @@ public class UndoProperties {
     private String logSerialization = DEFAULT_TRANSACTION_UNDO_LOG_SERIALIZATION;
     private String logTable = DEFAULT_TRANSACTION_UNDO_LOG_TABLE;
     private boolean onlyCareUpdateColumns = DEFAULT_ONLY_CARE_UPDATE_COLUMNS;
+    private boolean doNotCareOnUpdateTimestampWhenInsert = DEFAULT_DO_NOT_CARE_ON_UPDATE_TIMESTAMP_WHEN_INSERT;
 
     public boolean isDataValidation() {
         return dataValidation;
@@ -68,6 +70,15 @@ public class UndoProperties {
 
     public UndoProperties setOnlyCareUpdateColumns(boolean onlyCareUpdateColumns) {
         this.onlyCareUpdateColumns = onlyCareUpdateColumns;
+        return this;
+    }
+
+    public boolean isdoNotCareOnUpdateTimestampWhenInsert() {
+        return doNotCareOnUpdateTimestampWhenInsert;
+    }
+
+    public UndoProperties setdoNotCareOnUpdateTimestampWhenInsert(boolean doNotCareOnUpdateTimestampWhenInsert) {
+        this.doNotCareOnUpdateTimestampWhenInsert = doNotCareOnUpdateTimestampWhenInsert;
         return this;
     }
 }

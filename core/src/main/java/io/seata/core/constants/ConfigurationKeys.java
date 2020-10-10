@@ -293,6 +293,11 @@ public interface ConfigurationKeys {
     String TRANSACTION_UNDO_ONLY_CARE_UPDATE_COLUMNS = CLIENT_UNDO_PREFIX + "onlyCareUpdateColumns";
 
     /**
+     * The constant TRANSACTION_UNDO_DO_NOT_CARE_ON_UPDATE_TIMESTAMP_WHEN_INSERT.
+     */
+    public static final String TRANSACTION_UNDO_DO_NOT_CARE_ON_UPDATE_TIMESTAMP_WHEN_INSERT = CLIENT_UNDO_PREFIX + "doNotCareOnUpdateTimestampWhenInsert";
+
+    /**
      * The constant METRICS_PREFIX.
      */
     String METRICS_PREFIX = "metrics.";

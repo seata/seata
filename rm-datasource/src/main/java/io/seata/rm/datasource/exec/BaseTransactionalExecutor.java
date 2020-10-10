@@ -21,15 +21,23 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.Map;
 import java.util.Objects;
+import java.util.List;
+import java.util.ArrayList;
+import java.util.StringJoiner;
 
 import io.seata.common.util.CollectionUtils;
 import io.seata.common.util.IOUtil;
 import io.seata.common.util.StringUtils;
+import io.seata.config.Configuration;
+import io.seata.config.ConfigurationFactory;
+import io.seata.core.constants.ConfigurationKeys;
+import io.seata.common.DefaultValues;
 import io.seata.core.context.RootContext;
 import io.seata.rm.datasource.ColumnUtils;
 import io.seata.rm.datasource.ConnectionProxy;
 import io.seata.rm.datasource.SqlGenerateUtils;
 import io.seata.rm.datasource.StatementProxy;
+import io.seata.rm.datasource.sql.struct.ColumnMeta;
 import io.seata.rm.datasource.sql.struct.Field;
 import io.seata.rm.datasource.sql.struct.TableMeta;
 import io.seata.rm.datasource.sql.struct.TableMetaCacheFactory;
@@ -39,9 +47,6 @@ import io.seata.sqlparser.ParametersHolder;
 import io.seata.sqlparser.SQLRecognizer;
 import io.seata.sqlparser.SQLType;
 import io.seata.sqlparser.WhereRecognizer;
-
-import java.util.ArrayList;
-import java.util.List;
 
 /**
  * The type Base transactional executor.
@@ -75,6 +80,11 @@ public abstract class BaseTransactionalExecutor<T, S extends Statement> implemen
     private TableMeta tableMeta;
 
     private static final String NEXT_LINE = "\n";
+
+    private static final Configuration CONFIG = ConfigurationFactory.getInstance();
+
+    private static final boolean DO_NOT_CARE_ON_UPDATE_TIMESTAMP_WHEN_INSERT = CONFIG.getBoolean(
+            ConfigurationKeys.TRANSACTION_UNDO_DO_NOT_CARE_ON_UPDATE_TIMESTAMP_WHEN_INSERT, DefaultValues.DEFAULT_DO_NOT_CARE_ON_UPDATE_TIMESTAMP_WHEN_INSERT);
 
     /**
      * Instantiates a new Base transactional executor.
@@ -375,19 +385,26 @@ public abstract class BaseTransactionalExecutor<T, S extends Statement> implemen
      */
     protected TableRecords buildTableRecords(Map<String, List<Object>> pkValuesMap) throws SQLException {
         List<String> pkColumnNameList = getTableMeta().getPrimaryKeyOnlyName();
-        StringBuilder sql = new StringBuilder()
-                .append("SELECT * FROM ")
-                .append(getFromTableInSQL())
-                .append(" WHERE ");
-        // build check sql
+
         String firstKey = pkValuesMap.keySet().stream().findFirst().get();
         int rowSize = pkValuesMap.get(firstKey).size();
-        sql.append(SqlGenerateUtils.buildWhereConditionByPKs(pkColumnNameList, rowSize, getDbType()));
+        String whereValueSql = SqlGenerateUtils.buildWhereConditionByPKs(pkColumnNameList, rowSize, getDbType());
+
+        StringBuilder prefix = new StringBuilder("SELECT ");
+        String suffix = " FROM " + getFromTableInSQL() + " WHERE " + whereValueSql;
+        StringJoiner selectSQLJoiner = new StringJoiner(", ", prefix.toString(), suffix);
+
+        for (String columnName : getTableMeta().getAllColumns().keySet()) {
+            if (canIgnoreOnUpdateTimestamp(tableMeta, columnName)) {
+                continue;
+            }
+            selectSQLJoiner.add(ColumnUtils.addEscape(columnName, getDbType()));
+        }
 
         PreparedStatement ps = null;
         ResultSet rs = null;
         try {
-            ps = statementProxy.getConnection().prepareStatement(sql.toString());
+            ps = statementProxy.getConnection().prepareStatement(selectSQLJoiner.toString());
 
             int paramIndex = 1;
             for (int r = 0; r < rowSize; r++) {
@@ -403,6 +420,14 @@ public abstract class BaseTransactionalExecutor<T, S extends Statement> implemen
         } finally {
             IOUtil.close(rs);
         }
+    }
+
+    private boolean canIgnoreOnUpdateTimestamp(TableMeta tableMeta, String columnName) {
+        if (DO_NOT_CARE_ON_UPDATE_TIMESTAMP_WHEN_INSERT) {
+            ColumnMeta currentColumn = tableMeta.getColumnMeta(ColumnUtils.delEscape(columnName, getDbType()));
+            return "Yes".equals(currentColumn.getIsOnUpdateTimestamp());
+        }
+        return false;
     }
 
     /**

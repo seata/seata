@@ -54,6 +54,8 @@ public interface DefaultValues {
     boolean DEFAULT_TRANSACTION_UNDO_DATA_VALIDATION = true;
     String DEFAULT_TRANSACTION_UNDO_LOG_SERIALIZATION = "jackson";
     boolean DEFAULT_ONLY_CARE_UPDATE_COLUMNS = true;
+    boolean DEFAULT_DO_NOT_CARE_ON_UPDATE_TIMESTAMP_WHEN_INSERT = true;
+
     /**
      * The constant  DEFAULT_TRANSACTION_UNDO_LOG_TABLE.
      */
