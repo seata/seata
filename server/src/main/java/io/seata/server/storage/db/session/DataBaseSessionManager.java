@@ -25,11 +25,11 @@ import io.seata.common.util.StringUtils;
 import io.seata.core.exception.TransactionException;
 import io.seata.core.model.BranchStatus;
 import io.seata.core.model.GlobalStatus;
+import io.seata.core.store.GlobalCondition;
 import io.seata.server.session.AbstractSessionManager;
 import io.seata.server.session.BranchSession;
 import io.seata.server.session.GlobalSession;
 import io.seata.server.session.Reloadable;
-import io.seata.server.session.SessionCondition;
 import io.seata.server.session.SessionHolder;
 import io.seata.server.session.SessionLifecycleListener;
 import io.seata.server.session.SessionManager;
@@ -169,15 +169,15 @@ public class DataBaseSessionManager extends AbstractSessionManager
     public Collection<GlobalSession> allSessions() {
         // get by taskName
         if (SessionHolder.ASYNC_COMMITTING_SESSION_MANAGER_NAME.equalsIgnoreCase(taskName)) {
-            return findGlobalSessions(new SessionCondition(GlobalStatus.AsyncCommitting));
+            return findGlobalSessions(new GlobalCondition(GlobalStatus.AsyncCommitting));
         } else if (SessionHolder.RETRY_COMMITTING_SESSION_MANAGER_NAME.equalsIgnoreCase(taskName)) {
-            return findGlobalSessions(new SessionCondition(new GlobalStatus[] {GlobalStatus.CommitRetrying}));
+            return findGlobalSessions(new GlobalCondition(new GlobalStatus[] {GlobalStatus.CommitRetrying}));
         } else if (SessionHolder.RETRY_ROLLBACKING_SESSION_MANAGER_NAME.equalsIgnoreCase(taskName)) {
-            return findGlobalSessions(new SessionCondition(new GlobalStatus[] {GlobalStatus.RollbackRetrying,
+            return findGlobalSessions(new GlobalCondition(new GlobalStatus[] {GlobalStatus.RollbackRetrying,
                 GlobalStatus.Rollbacking, GlobalStatus.TimeoutRollbacking, GlobalStatus.TimeoutRollbackRetrying}));
         } else {
             // all data
-            return findGlobalSessions(new SessionCondition(new GlobalStatus[] {
+            return findGlobalSessions(new GlobalCondition(new GlobalStatus[] {
                 GlobalStatus.UnKnown, GlobalStatus.Begin,
                 GlobalStatus.Committing, GlobalStatus.CommitRetrying, GlobalStatus.Rollbacking,
                 GlobalStatus.RollbackRetrying,
@@ -186,7 +186,7 @@ public class DataBaseSessionManager extends AbstractSessionManager
     }
 
     @Override
-    public List<GlobalSession> findGlobalSessions(SessionCondition condition) {
+    public List<GlobalSession> findGlobalSessions(GlobalCondition condition) {
         // nothing need to do
         return transactionStoreManager.readSession(condition);
     }

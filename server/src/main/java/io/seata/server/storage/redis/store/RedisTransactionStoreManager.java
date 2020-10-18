@@ -32,10 +32,10 @@ import io.seata.core.model.BranchStatus;
 import io.seata.core.model.BranchType;
 import io.seata.core.model.GlobalStatus;
 import io.seata.core.store.BranchTransactionDO;
+import io.seata.core.store.GlobalCondition;
 import io.seata.core.store.GlobalTransactionDO;
 import io.seata.server.session.BranchSession;
 import io.seata.server.session.GlobalSession;
-import io.seata.server.session.SessionCondition;
 import io.seata.server.storage.redis.JedisPooledFactory;
 import io.seata.server.store.AbstractTransactionStoreManager;
 import io.seata.server.store.SessionStorable;
@@ -256,36 +256,9 @@ public class RedisTransactionStoreManager extends AbstractTransactionStoreManage
     }
 
     @Override
-    public List<GlobalSession> readSession(SessionCondition sessionCondition) {
-        try (Jedis jedis = JedisPooledFactory.getJedisInstance()) {
-            if (!StringUtils.isEmpty(sessionCondition.getXid())) {
-                String globalSessionJson = jedis.get(getGlobalKeyByXid(sessionCondition.getXid()));
-                if (!StringUtils.isEmpty(globalSessionJson)) {
-                    GlobalSession session =
-                        convertGlobalSession(JSON.parseObject(globalSessionJson, GlobalTransactionDO.class));
-                    List<GlobalSession> globalSessions = new ArrayList<>();
-                    globalSessions.add(session);
-                    return globalSessions;
-                }
-            } else if (sessionCondition.getTransactionId() != null) {
-                String global = jedis.get(getGlobalKeyByTransactionId(sessionCondition.getTransactionId()));
-                if (StringUtils.isEmpty(global)) {
-                    return null;
-                }
-                GlobalTransactionDO globalTransactionDO = JSON.parseObject(global, GlobalTransactionDO.class);
-                String branchKey = getBranchListKeyByXid(globalTransactionDO.getXid());
-                Set<String> keys = lRange(jedis, branchKey);
-                List<BranchTransactionDO> branchTransactionDOs = null;
-                if (CollectionUtils.isNotEmpty(keys)) {
-                    branchTransactionDOs = getBranchJsons(jedis, keys);
-                }
-                GlobalSession globalSession = getGlobalSession(globalTransactionDO, branchTransactionDOs);
-                List<GlobalSession> globalSessions = new ArrayList<>();
-                globalSessions.add(globalSession);
-                return globalSessions;
-            } else if (CollectionUtils.isNotEmpty(sessionCondition.getStatuses())) {
-                return readSession(sessionCondition.getStatuses());
-            }
+    public List<GlobalSession> readSession(GlobalCondition sessionCondition) {
+        if (CollectionUtils.isNotEmpty(sessionCondition.getStatuses())) {
+            return readSession(sessionCondition.getStatuses());
         }
         return null;
     }

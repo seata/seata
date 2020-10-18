@@ -16,6 +16,8 @@
 package io.seata.core.store;
 
 
+import io.seata.core.model.GlobalStatus;
+
 import java.util.List;
 
 /**
@@ -44,11 +46,49 @@ public interface LogStore {
     /**
      * Query global transaction do list.
      *
-     * @param status the status
-     * @param limit  the limit
+     * @param condition the condition
      * @return the list
      */
-    List<GlobalTransactionDO> queryGlobalTransactionDO(int[] status, int limit);
+    List<GlobalTransactionDO> queryGlobalTransactionDO(GlobalCondition condition);
+
+    /**
+     * Query global transaction do list.
+     *
+     * @param statuses the statuses
+     * @return the list
+     */
+    default List<GlobalTransactionDO> queryGlobalTransactionDO(GlobalStatus... statuses) {
+        return this.queryGlobalTransactionDO(new GlobalCondition(statuses));
+    }
+
+    /**
+     * Query global transaction do list.
+     *
+     * @param statuses the statuses
+     * @param limit    the limit
+     * @return the list
+     */
+    default List<GlobalTransactionDO> queryGlobalTransactionDO(GlobalStatus[] statuses, int limit) {
+        return this.queryGlobalTransactionDO(new GlobalCondition(statuses, limit));
+    }
+
+    /**
+     * Count global transaction do.
+     *
+     * @param condition the condition
+     * @return the count
+     */
+    int countGlobalTransactionDO(GlobalCondition condition);
+
+    /**
+     * Count global transaction do.
+     *
+     * @param statuses the statuses
+     * @return the list
+     */
+    default int countGlobalTransactionDO(GlobalStatus... statuses) {
+        return this.countGlobalTransactionDO(new GlobalCondition(statuses));
+    }
 
     /**
      * Insert global transaction do boolean.

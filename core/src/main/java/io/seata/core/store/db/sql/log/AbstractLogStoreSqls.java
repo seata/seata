@@ -16,6 +16,12 @@
 package io.seata.core.store.db.sql.log;
 
 import io.seata.core.constants.ServerTableColumnsName;
+import io.seata.core.store.Pageable;
+
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
+
+import static io.seata.common.DefaultValues.FIRST_PAGE_INDEX;
 
 
 /**
@@ -33,6 +39,35 @@ public abstract class AbstractLogStoreSqls implements LogStoreSqls {
      * The constant BRANCH_TABLE_PLACEHOLD.
      */
     public static final String BRANCH_TABLE_PLACEHOLD = " #branch_table# ";
+
+    /**
+     * The constant SQL_PLACEHOLD.
+     */
+    public static final String SQL_PLACEHOLD = " #SQL_PLACEHOLD# ";
+
+    /**
+     * The constant WHERE_PLACEHOLD.
+     * format: where xxx = ? and yyy > ? and zzz < ?
+     */
+    public static final String WHERE_PLACEHOLD = " #WHERE_PLACEHOLD# ";
+
+    /**
+     * The constant ORDERBY_PLACEHOLD.
+     * format: order by xxx [asc|desc], yyy [asc|desc]
+     */
+    public static final String ORDERBY_PLACEHOLD = " #ORDERBY_PLACEHOLD# ";
+
+    /**
+     * The constant LIMIT_PLACEHOLD.
+     * format: limit ?,?
+     */
+    public static final String LIMIT_PLACEHOLD = " #LIMIT_PLACEHOLD# ";
+
+    /**
+     * The constant SETS_PLACEHOLD.
+     * format: xxx = ?, yyy = ?, zzz = ?,
+     */
+    public static final String SETS_PLACEHOLD = " #SETS_PLACEHOLD# ";
 
     /**
      * The constant PRAMETER_PLACEHOLD.
@@ -85,6 +120,13 @@ public abstract class AbstractLogStoreSqls implements LogStoreSqls {
             + " where " + ServerTableColumnsName.GLOBAL_TABLE_TRANSACTION_ID + " = ?";
 
     /**
+     * The constant COUNT_GLOBAL_TRANSACTION_BY_CONDITION.
+     */
+    public static final String COUNT_GLOBAL_TRANSACTION_BY_CONDITION = "select count(*)"
+            + " from " + GLOBAL_TABLE_PLACEHOLD
+            + WHERE_PLACEHOLD;
+
+    /**
      * The constant DELETE_BRANCH_TRANSACTION_BY_BRANCH_ID.
      */
     public static final String DELETE_BRANCH_TRANSACTION_BY_BRANCH_ID = "delete from " + BRANCH_TABLE_PLACEHOLD
@@ -134,7 +176,7 @@ public abstract class AbstractLogStoreSqls implements LogStoreSqls {
     public abstract String getInsertGlobalTransactionSQL(String globalTable);
 
     @Override
-    public abstract String getUpdateGlobalTransactionStatusSQL(String globalTable);
+    public abstract String getUpdateGlobalTransactionSQL(String globalTable, String setsPlaceHolder);
 
     @Override
     public String getDeleteGlobalTransactionSQL(String globalTable) {
@@ -152,17 +194,34 @@ public abstract class AbstractLogStoreSqls implements LogStoreSqls {
     }
 
     @Override
-    public abstract String getQueryGlobalTransactionSQLByStatus(String globalTable, String paramsPlaceHolder);
+    public abstract String getQueryGlobalTransactionSQLByCondition(String globalTable, String wherePlaceHolder,
+                                                                   String orderByPlaceHolder, Pageable pageable);
 
     @Override
-    public abstract String getQueryGlobalTransactionForRecoverySQL(String globalTable);
+    public void setQueryGlobalTransactionSQLPagingParameters(PreparedStatement ps, Pageable pageable,
+                                                             int currentParamIndex) throws SQLException {
+        if (pageable.getPageSize() > 0) {
+            if (pageable.getPageIndex() > FIRST_PAGE_INDEX) {
+                int fromIndex = (pageable.getPageIndex() - FIRST_PAGE_INDEX) * pageable.getPageSize();
+                int toIndex = fromIndex + pageable.getPageSize();
+                ps.setInt(++currentParamIndex, fromIndex);
+                ps.setInt(++currentParamIndex, toIndex);
+            } else {
+                ps.setInt(++currentParamIndex, pageable.getPageSize());
+            }
+        }
+    }
 
+    @Override
+    public String getCountGlobalTransactionSQLByCondition(String globalTable, String wherePlaceHolder) {
+        return COUNT_GLOBAL_TRANSACTION_BY_CONDITION.replace(GLOBAL_TABLE_PLACEHOLD, globalTable).replace(WHERE_PLACEHOLD, wherePlaceHolder);
+    }
 
     @Override
     public abstract String getInsertBranchTransactionSQL(String branchTable);
 
     @Override
-    public abstract String getUpdateBranchTransactionStatusSQL(String branchTable);
+    public abstract String getUpdateBranchTransactionSQL(String branchTable, String setsPlaceHolder);
 
     @Override
     public String getDeleteBranchTransactionByBranchIdSQL(String branchTable) {

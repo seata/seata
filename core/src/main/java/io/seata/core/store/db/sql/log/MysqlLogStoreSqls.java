@@ -17,6 +17,9 @@ package io.seata.core.store.db.sql.log;
 
 import io.seata.common.loader.LoadLevel;
 import io.seata.core.constants.ServerTableColumnsName;
+import io.seata.core.store.Pageable;
+
+import static io.seata.common.DefaultValues.FIRST_PAGE_INDEX;
 
 /**
  * Database log store mysql sql
@@ -33,30 +36,21 @@ public class MysqlLogStoreSqls extends AbstractLogStoreSqls {
             + " values (?, ?, ?, ?, ?, ?, ?, ?, ?, now(), now())";
 
     /**
-     * The constant UPDATE_GLOBAL_TRANSACTION_STATUS_MYSQL.
+     * The constant UPDATE_GLOBAL_TRANSACTION_MYSQL.
      */
-    public static final String UPDATE_GLOBAL_TRANSACTION_STATUS_MYSQL = "update " + GLOBAL_TABLE_PLACEHOLD
-            + "   set " + ServerTableColumnsName.GLOBAL_TABLE_STATUS + " = ?,"
+    public static final String UPDATE_GLOBAL_TRANSACTION_MYSQL = "update " + GLOBAL_TABLE_PLACEHOLD
+            + "   set " + SETS_PLACEHOLD
             + "       " + ServerTableColumnsName.GLOBAL_TABLE_GMT_MODIFIED + " = now()"
             + " where " + ServerTableColumnsName.GLOBAL_TABLE_XID + " = ?";
 
     /**
-     * The constant QUERY_GLOBAL_TRANSACTION_BY_STATUS.
+     * The constant QUERY_GLOBAL_TRANSACTION_BY_CONDITION_MYSQL.
      */
-    public static final String QUERY_GLOBAL_TRANSACTION_BY_STATUS_MYSQL = "select " + ALL_GLOBAL_COLUMNS
-            + "  from " + GLOBAL_TABLE_PLACEHOLD
-            + " where " + ServerTableColumnsName.GLOBAL_TABLE_STATUS + " in (" + PRAMETER_PLACEHOLD + ")"
-            + " order by " + ServerTableColumnsName.GLOBAL_TABLE_GMT_MODIFIED
-            + " limit ?";
-
-    /**
-     * The constant QUERY_GLOBAL_TRANSACTION_FOR_RECOVERY_MYSQL.
-     */
-    public static final String QUERY_GLOBAL_TRANSACTION_FOR_RECOVERY_MYSQL = "select " + ALL_GLOBAL_COLUMNS
-            + "  from " + GLOBAL_TABLE_PLACEHOLD
-            + " where " + ServerTableColumnsName.GLOBAL_TABLE_STATUS + " in (0, 2, 3, 4, 5, 6, 7, 8, 10 ,12, 14)"
-            + " order by " + ServerTableColumnsName.GLOBAL_TABLE_GMT_MODIFIED
-            + " limit ?";
+    public static final String QUERY_GLOBAL_TRANSACTION_BY_CONDITION_MYSQL = "select " + ALL_GLOBAL_COLUMNS
+            + " from " + GLOBAL_TABLE_PLACEHOLD
+            + WHERE_PLACEHOLD
+            + ORDERBY_PLACEHOLD
+            + LIMIT_PLACEHOLD;
 
     /**
      * The constant INSERT_BRANCH_TRANSACTION_MYSQL.
@@ -66,10 +60,10 @@ public class MysqlLogStoreSqls extends AbstractLogStoreSqls {
             + " values (?, ?, ?, ?, ?, ?, ?, ?, ?, now(6), now(6))";
 
     /**
-     * The constant UPDATE_BRANCH_TRANSACTION_STATUS_MYSQL.
+     * The constant UPDATE_BRANCH_TRANSACTION_MYSQL.
      */
-    public static final String UPDATE_BRANCH_TRANSACTION_STATUS_MYSQL = "update " + BRANCH_TABLE_PLACEHOLD
-            + "   set " + ServerTableColumnsName.BRANCH_TABLE_STATUS + " = ?,"
+    public static final String UPDATE_BRANCH_TRANSACTION_MYSQL = "update " + BRANCH_TABLE_PLACEHOLD
+            + "   set " + SETS_PLACEHOLD
             + "       " + ServerTableColumnsName.BRANCH_TABLE_GMT_MODIFIED + " = now(6)"
             + " where " + ServerTableColumnsName.BRANCH_TABLE_XID + " = ?"
             + "   and " + ServerTableColumnsName.BRANCH_TABLE_BRANCH_ID + " = ?";
@@ -80,19 +74,30 @@ public class MysqlLogStoreSqls extends AbstractLogStoreSqls {
     }
 
     @Override
-    public String getUpdateGlobalTransactionStatusSQL(String globalTable) {
-        return UPDATE_GLOBAL_TRANSACTION_STATUS_MYSQL.replace(GLOBAL_TABLE_PLACEHOLD, globalTable);
+    public String getUpdateGlobalTransactionSQL(String globalTable, String setsPlaceHolder) {
+        return UPDATE_GLOBAL_TRANSACTION_MYSQL.replace(GLOBAL_TABLE_PLACEHOLD, globalTable)
+            .replace(SETS_PLACEHOLD, setsPlaceHolder);
     }
 
     @Override
-    public String getQueryGlobalTransactionSQLByStatus(String globalTable, String paramsPlaceHolder) {
-        return QUERY_GLOBAL_TRANSACTION_BY_STATUS_MYSQL.replace(GLOBAL_TABLE_PLACEHOLD, globalTable)
-            .replace(PRAMETER_PLACEHOLD, paramsPlaceHolder);
-    }
+    public String getQueryGlobalTransactionSQLByCondition(String globalTable, String wherePlaceHolder,
+                                                          String orderByPlaceHolder, Pageable pageable) {
+        // build limit place holder
+        String limitPlaceHolder;
+        if (pageable != null && pageable.getPageSize() > 0) {
+            if (pageable.getPageIndex() > FIRST_PAGE_INDEX) {
+                limitPlaceHolder = " limit ?,?";
+            } else {
+                limitPlaceHolder = " limit ?";
+            }
+        } else {
+            limitPlaceHolder = "";
+        }
 
-    @Override
-    public String getQueryGlobalTransactionForRecoverySQL(String globalTable) {
-        return QUERY_GLOBAL_TRANSACTION_FOR_RECOVERY_MYSQL.replace(GLOBAL_TABLE_PLACEHOLD, globalTable);
+        return QUERY_GLOBAL_TRANSACTION_BY_CONDITION_MYSQL.replace(GLOBAL_TABLE_PLACEHOLD, globalTable)
+            .replace(WHERE_PLACEHOLD, wherePlaceHolder)
+            .replace(ORDERBY_PLACEHOLD, orderByPlaceHolder)
+            .replace(LIMIT_PLACEHOLD, limitPlaceHolder);
     }
 
     @Override
@@ -101,7 +106,8 @@ public class MysqlLogStoreSqls extends AbstractLogStoreSqls {
     }
 
     @Override
-    public String getUpdateBranchTransactionStatusSQL(String branchTable) {
-        return UPDATE_BRANCH_TRANSACTION_STATUS_MYSQL.replace(BRANCH_TABLE_PLACEHOLD, branchTable);
+    public String getUpdateBranchTransactionSQL(String branchTable, String setsPlaceHolder) {
+        return UPDATE_BRANCH_TRANSACTION_MYSQL.replace(BRANCH_TABLE_PLACEHOLD, branchTable)
+            .replace(SETS_PLACEHOLD, setsPlaceHolder);
     }
 }
