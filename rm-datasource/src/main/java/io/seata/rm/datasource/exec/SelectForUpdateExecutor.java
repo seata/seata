@@ -95,17 +95,8 @@ public class SelectForUpdateExecutor<T, S extends Statement> extends BaseTransac
                     if (StringUtils.isNullOrEmpty(lockKeys)) {
                         break;
                     }
-
-                    if (RootContext.inGlobalTransaction()) {
-                        //do as usual
-                        statementProxy.getConnectionProxy().checkLock(lockKeys);
-                    } else if (RootContext.requireGlobalLock()) {
-                        //check lock key before commit just like DML to avoid reentrant lock problem(no xid thus can
-                        // not reentrant)
-                        statementProxy.getConnectionProxy().appendLockKey(lockKeys);
-                    } else {
-                        throw new RuntimeException("Unknown situation!");
-                    }
+                    // check pk lock to TC
+                    statementProxy.getConnectionProxy().checkLock(lockKeys);
                     break;
                 } catch (LockConflictException lce) {
                     if (sp != null) {
