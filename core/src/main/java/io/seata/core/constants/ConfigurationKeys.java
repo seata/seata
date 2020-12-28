@@ -195,6 +195,16 @@ public interface ConfigurationKeys {
     String STORE_REDIS_PREFIX = "store.redis.";
 
     /**
+     * The constant STORE_REDIS_SINGLE_PREFIX.
+     */
+    String STORE_REDIS_SINGLE_PREFIX = "store.redis.single.";
+
+    /**
+     * The constant STORE_REDIS_CLUSTER_PREFIX.
+     */
+    String STORE_REDIS_CLUSTER_PREFIX = "store.redis.cluster.";
+
+    /**
      * The constant STORE_DB_GLOBAL_TABLE.
      */
     String STORE_DB_GLOBAL_TABLE = STORE_DB_PREFIX + "globalTable";
@@ -486,9 +496,34 @@ public interface ConfigurationKeys {
     String SQL_PARSER_TYPE = CLIENT_RM_PREFIX + "sqlParserType";
 
     /**
+     * The constant STORE_REDIS_MODE.
+     */
+    String STORE_REDIS_MODE = STORE_REDIS_PREFIX + "mode";
+
+    /**
      * The constant STORE_REDIS_HOST.
      */
     String STORE_REDIS_HOST = STORE_REDIS_PREFIX + "host";
+
+    /**
+     * The constant STORE_REDIS_SINGLE_HOST.
+     */
+    String STORE_REDIS_SINGLE_HOST = STORE_REDIS_SINGLE_PREFIX + "host";
+
+    /**
+     * The constant STORE_REDIS_SINGLE_PORT.
+     */
+    String STORE_REDIS_SINGLE_PORT = STORE_REDIS_SINGLE_PREFIX + "port";
+
+    /**
+     * The constant STORE_REDIS_CLUSTER_NODES.
+     */
+    String STORE_REDIS_CLUSTER_NODES = STORE_REDIS_CLUSTER_PREFIX + "nodes";
+
+    /**
+     * The constant STORE_REDIS_CLUSTER_MAXREDIRECTIONS.
+     */
+    String STORE_REDIS_CLUSTER_MAXREDIRECTIONS = STORE_REDIS_CLUSTER_PREFIX + "maxRedirections";
 
     /**
      * The constant STORE_MIN_Conn.
@@ -519,6 +554,21 @@ public interface ConfigurationKeys {
      * The constant STORE_REDIS_PASSWORD.
      */
     String STORE_REDIS_PASSWORD = STORE_REDIS_PREFIX + "password";
+
+    /**
+     * The constant STORE_REDIS_TIMEOUT.
+     */
+    String STORE_REDIS_TIMEOUT = STORE_REDIS_PREFIX + "timeout";
+
+    /**
+     * The constant STORE_REDIS_SOTIMEOUT.
+     */
+    String STORE_REDIS_SOTIMEOUT = STORE_REDIS_PREFIX + "soTimeout";
+
+    /**
+     * The constant STORE_REDIS_CONNECTION_TIMEOUT.
+     */
+    String STORE_REDIS_CONNECTION_TIMEOUT = STORE_REDIS_PREFIX + "connectionTimeout";
 
     /**
      * The constant STORE_REDIS_QUERY_LIMIT.

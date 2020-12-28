@@ -47,6 +47,11 @@ public interface Constants {
     String ROW_LOCK_KEY_SPLIT_CHAR = ";";
 
     /**
+     * The constant REDIS_CLUSTER_NODES_SPLIT_CHAR.
+     */
+    public static final String REDIS_CLUSTER_NODES_SPLIT_CHAR = ";";
+
+    /**
      * the start time of transaction
      */
     String START_TIME = "start-time";
