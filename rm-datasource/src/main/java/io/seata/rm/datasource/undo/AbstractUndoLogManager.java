@@ -25,8 +25,11 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-
+import java.util.concurrent.SynchronousQueue;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 import io.seata.common.Constants;
+import io.seata.common.thread.NamedThreadFactory;
 import io.seata.common.util.CollectionUtils;
 import io.seata.common.util.SizeUtil;
 import io.seata.config.ConfigurationFactory;
@@ -44,6 +47,7 @@ import io.seata.rm.datasource.sql.struct.TableMetaCacheFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+
 import static io.seata.common.DefaultValues.DEFAULT_TRANSACTION_UNDO_LOG_TABLE;
 import static io.seata.common.DefaultValues.DEFAULT_CLIENT_UNDO_COMPRESS_ENABLE;
 import static io.seata.common.DefaultValues.DEFAULT_CLIENT_UNDO_COMPRESS_TYPE;
@@ -56,6 +60,9 @@ import static io.seata.core.exception.TransactionExceptionCode.BranchRollbackFai
 public abstract class AbstractUndoLogManager implements UndoLogManager {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(AbstractUndoLogManager.class);
+
+    private static final ThreadPoolExecutor ASYN_REDIS_THREAD =
+        new ThreadPoolExecutor(0, 10, 60L, TimeUnit.SECONDS, new SynchronousQueue<>(),new NamedThreadFactory("AsynRedisThread",10));
 
     protected enum State {
         /**
@@ -112,6 +119,13 @@ public abstract class AbstractUndoLogManager implements UndoLogManager {
         SERIALIZER_LOCAL.remove();
     }
 
+    private static boolean CACHE_ENABLE = false;
+
+    static {
+        CACHE_ENABLE =
+            ConfigurationFactory.getInstance().getBoolean(ConfigurationKeys.CLIENT_UNDO_CACHE_ENABLE, CACHE_ENABLE);
+    }
+
     /**
      * Delete undo log.
      *
@@ -123,6 +137,7 @@ public abstract class AbstractUndoLogManager implements UndoLogManager {
     @Override
     public void deleteUndoLog(String xid, long branchId, Connection conn) throws SQLException {
         try (PreparedStatement deletePST = conn.prepareStatement(DELETE_UNDO_LOG_SQL)) {
+            ASYN_REDIS_THREAD.execute(() -> UndoLogCache.getInstance().remove(xid, branchId));
             deletePST.setLong(1, branchId);
             deletePST.setString(2, xid);
             deletePST.executeUpdate();
@@ -238,8 +253,17 @@ public abstract class AbstractUndoLogManager implements UndoLogManager {
         if (LOGGER.isDebugEnabled()) {
             LOGGER.debug("Flushing UNDO LOG: {}", new String(undoLogContent, Constants.DEFAULT_CHARSET));
         }
-
-        insertUndoLogWithNormal(xid, branchId, buildContext(parser.getName(), compressorType), undoLogContent, cp.getTargetConnection());
+        String rollbackCtx = buildContext(parser.getName(), compressorType);
+        insertUndoLogWithNormal(xid, branchId, rollbackCtx, undoLogContent, cp.getTargetConnection());
+        if (CACHE_ENABLE) {
+            Map<String, Object> undoLog = new HashMap<>();
+            undoLog.put(UndoLogCache.XID, xid);
+            undoLog.put(UndoLogCache.BRANCH_ID, branchId);
+            undoLog.put(UndoLogCache.CONTEXT, rollbackCtx);
+            undoLog.put(UndoLogCache.ROLL_BACK_INFO, undoLogContent);
+            undoLog.put(UndoLogCache.STATE, State.Normal.getValue());
+            ASYN_REDIS_THREAD.execute(() -> UndoLogCache.getInstance().put(undoLog));
+        }
     }
 
     /**
@@ -259,62 +283,63 @@ public abstract class AbstractUndoLogManager implements UndoLogManager {
 
         for (; ; ) {
             try {
-                conn = dataSourceProxy.getPlainConnection();
-
-                // The entire undo process should run in a local transaction.
-                if (originalAutoCommit = conn.getAutoCommit()) {
-                    conn.setAutoCommit(false);
-                }
-
-                // Find UNDO LOG
-                selectPST = conn.prepareStatement(SELECT_UNDO_LOG_SQL);
-                selectPST.setLong(1, branchId);
-                selectPST.setString(2, xid);
-                rs = selectPST.executeQuery();
 
                 boolean exists = false;
-                while (rs.next()) {
-                    exists = true;
+                // Find UNDO LOG
+                Map<String, Object> cache = CACHE_ENABLE ? UndoLogCache.getInstance().get(xid, branchId) : null;
+                if (cache == null) {
+                    if (conn == null) {
+                        conn = dataSourceProxy.getPlainConnection();
+                        // The entire undo process should run in a local transaction.
+                        if (originalAutoCommit = conn.getAutoCommit()) {
+                            conn.setAutoCommit(false);
+                        }
+                    }
 
-                    // It is possible that the server repeatedly sends a rollback request to roll back
-                    // the same branch transaction to multiple processes,
-                    // ensuring that only the undo_log in the normal state is processed.
-                    int state = rs.getInt(ClientTableColumnsName.UNDO_LOG_LOG_STATUS);
+                    selectPST = conn.prepareStatement(SELECT_UNDO_LOG_SQL);
+                    selectPST.setLong(1, branchId);
+                    selectPST.setString(2, xid);
+                    rs = selectPST.executeQuery();
+
+                    while (rs.next()) {
+                        exists = true;
+
+                        // It is possible that the server repeatedly sends a rollback request to roll back
+                        // the same branch transaction to multiple processes,
+                        // ensuring that only the undo_log in the normal state is processed.
+                        int state = rs.getInt(ClientTableColumnsName.UNDO_LOG_LOG_STATUS);
+                        if (!canUndo(state)) {
+                            if (LOGGER.isInfoEnabled()) {
+                                LOGGER.info("xid {} branch {}, ignore {} undo_log", xid, branchId, state);
+                            }
+                            return;
+                        }
+                        String contextString = rs.getString(ClientTableColumnsName.UNDO_LOG_CONTEXT);
+                        byte[] rollbackInfo = getRollbackInfo(rs);
+                        undo(contextString, rollbackInfo, dataSourceProxy, conn);
+
+                    }
+                } else {
+                    if (LOGGER.isDebugEnabled()) {
+                        LOGGER.debug("undo_log success hit the redis cache ");
+                    }
+                    exists = true;
+                    int state = (int)cache.get(UndoLogCache.STATE);
                     if (!canUndo(state)) {
                         if (LOGGER.isInfoEnabled()) {
                             LOGGER.info("xid {} branch {}, ignore {} undo_log", xid, branchId, state);
                         }
                         return;
                     }
-
-                    String contextString = rs.getString(ClientTableColumnsName.UNDO_LOG_CONTEXT);
-                    Map<String, String> context = parseContext(contextString);
-                    byte[] rollbackInfo = getRollbackInfo(rs);
-
-                    String serializer = context == null ? null : context.get(UndoLogConstants.SERIALIZER_KEY);
-                    UndoLogParser parser = serializer == null ? UndoLogParserFactory.getInstance()
-                        : UndoLogParserFactory.getInstance(serializer);
-                    BranchUndoLog branchUndoLog = parser.decode(rollbackInfo);
-
-                    try {
-                        // put serializer name to local
-                        setCurrentSerializer(parser.getName());
-                        List<SQLUndoLog> sqlUndoLogs = branchUndoLog.getSqlUndoLogs();
-                        if (sqlUndoLogs.size() > 1) {
-                            Collections.reverse(sqlUndoLogs);
+                    if (conn == null) {
+                        conn = dataSourceProxy.getPlainConnection();
+                        // The entire undo process should run in a local transaction.
+                        if (originalAutoCommit = conn.getAutoCommit()) {
+                            conn.setAutoCommit(false);
                         }
-                        for (SQLUndoLog sqlUndoLog : sqlUndoLogs) {
-                            TableMeta tableMeta = TableMetaCacheFactory.getTableMetaCache(dataSourceProxy.getDbType()).getTableMeta(
-                                conn, sqlUndoLog.getTableName(), dataSourceProxy.getResourceId());
-                            sqlUndoLog.setTableMeta(tableMeta);
-                            AbstractUndoExecutor undoExecutor = UndoExecutorFactory.getUndoExecutor(
-                                dataSourceProxy.getDbType(), sqlUndoLog);
-                            undoExecutor.executeOn(conn);
-                        }
-                    } finally {
-                        // remove serializer name
-                        removeCurrentSerializer();
                     }
+                    undo((String)cache.get(UndoLogCache.CONTEXT), (byte[])cache.get(UndoLogCache.ROLL_BACK_INFO),
+                        dataSourceProxy, conn);
                 }
 
                 // If undo_log exists, it means that the branch transaction has completed the first phase,
@@ -381,6 +406,37 @@ public abstract class AbstractUndoLogManager implements UndoLogManager {
         }
     }
 
+    private void undo(String undoLogContext, byte[] rollbackinfo, DataSourceProxy dataSourceProxy, Connection conn)
+        throws SQLException {
+        String contextString = undoLogContext;
+        Map<String, String> context = parseContext(contextString);
+        byte[] rollbackInfo = rollbackinfo;
+
+        String serializer = context == null ? null : context.get(UndoLogConstants.SERIALIZER_KEY);
+        UndoLogParser parser =
+            serializer == null ? UndoLogParserFactory.getInstance() : UndoLogParserFactory.getInstance(serializer);
+        BranchUndoLog branchUndoLog = parser.decode(rollbackInfo);
+
+        try {
+            // put serializer name to local
+            setCurrentSerializer(parser.getName());
+            List<SQLUndoLog> sqlUndoLogs = branchUndoLog.getSqlUndoLogs();
+            if (sqlUndoLogs.size() > 1) {
+                Collections.reverse(sqlUndoLogs);
+            }
+            for (SQLUndoLog sqlUndoLog : sqlUndoLogs) {
+                TableMeta tableMeta = TableMetaCacheFactory.getTableMetaCache(dataSourceProxy.getDbType())
+                    .getTableMeta(conn, sqlUndoLog.getTableName(), dataSourceProxy.getResourceId());
+                sqlUndoLog.setTableMeta(tableMeta);
+                AbstractUndoExecutor undoExecutor =
+                    UndoExecutorFactory.getUndoExecutor(dataSourceProxy.getDbType(), sqlUndoLog);
+                undoExecutor.executeOn(conn);
+            }
+        } finally {
+            // remove serializer name
+            removeCurrentSerializer();
+        }
+    }
     /**
      * insert uodo log when global finished
      *

@@ -66,6 +66,12 @@
             <artifactId>fastjson</artifactId>
             <scope>test</scope>
         </dependency>
+        <!-- jedis -->
+        <dependency>
+            <groupId>redis.clients</groupId>
+            <artifactId>jedis</artifactId>
+            <scope>compile</scope>
+        </dependency>
     </dependencies>
 
 </project>

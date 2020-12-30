@@ -66,7 +66,10 @@ import static io.seata.spring.boot.autoconfigure.StarterConstants.SPECIAL_KEY_VG
 import static io.seata.spring.boot.autoconfigure.StarterConstants.THREAD_FACTORY_PREFIX;
 import static io.seata.spring.boot.autoconfigure.StarterConstants.TRANSPORT_PREFIX;
 import static io.seata.spring.boot.autoconfigure.StarterConstants.UNDO_PREFIX;
-
+import static io.seata.spring.boot.autoconfigure.StarterConstants.UNDO_REDIS_SENTINEL_PREFIX;
+import static io.seata.spring.boot.autoconfigure.StarterConstants.UNDO_REDIS_SINGLE_PREFIX;
+import static io.seata.spring.boot.autoconfigure.StarterConstants.UNDO_CACHE_PREFIX;
+import static io.seata.spring.boot.autoconfigure.StarterConstants.UNDO_REDIS_PREFIX;
 /**
  * @author xingfudeshi@gmail.com
  */
@@ -85,7 +88,10 @@ public class SpringBootConfigurationProvider implements ExtConfigurationProvider
         PROPERTY_BEAN_MAP.putIfAbsent(THREAD_FACTORY_PREFIX, new CompletableFuture<>());
         PROPERTY_BEAN_MAP.putIfAbsent(UNDO_PREFIX, new CompletableFuture<>());
         PROPERTY_BEAN_MAP.putIfAbsent(COMPRESS_PREFIX, new CompletableFuture<>());
-
+        PROPERTY_BEAN_MAP.putIfAbsent(UNDO_REDIS_PREFIX, new CompletableFuture<>());
+        PROPERTY_BEAN_MAP.putIfAbsent(UNDO_REDIS_SENTINEL_PREFIX, new CompletableFuture<>());
+        PROPERTY_BEAN_MAP.putIfAbsent(UNDO_REDIS_SINGLE_PREFIX, new CompletableFuture<>());
+        PROPERTY_BEAN_MAP.putIfAbsent(UNDO_CACHE_PREFIX, new CompletableFuture<>());
         PROPERTY_BEAN_MAP.putIfAbsent(LOG_PREFIX, new CompletableFuture<>());
         PROPERTY_BEAN_MAP.putIfAbsent(TRANSPORT_PREFIX, new CompletableFuture<>());
         PROPERTY_BEAN_MAP.putIfAbsent(CONFIG_PREFIX, new CompletableFuture<>());

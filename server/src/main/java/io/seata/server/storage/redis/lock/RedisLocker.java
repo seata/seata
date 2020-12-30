@@ -31,7 +31,7 @@ import io.seata.common.util.StringUtils;
 import io.seata.core.lock.AbstractLocker;
 import io.seata.core.lock.RowLock;
 import io.seata.core.store.LockDO;
-import io.seata.server.storage.redis.JedisPooledFactory;
+import io.seata.core.store.redis.JedisPooledFactory;
 import redis.clients.jedis.Jedis;
 import redis.clients.jedis.Pipeline;
 

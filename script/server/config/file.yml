@@ -51,4 +51,3 @@ store:
       maxConn: 10
       maxTotal: 100
       queryLimit: 100
-

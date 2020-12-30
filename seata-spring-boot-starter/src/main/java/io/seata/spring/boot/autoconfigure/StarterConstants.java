@@ -55,7 +55,10 @@ public interface StarterConstants {
     String CONFIG_ZK_PREFIX = CONFIG_PREFIX + ".zk";
     String CONFIG_FILE_PREFIX = CONFIG_PREFIX + ".file";
     String CONFIG_CUSTOM_PREFIX = CONFIG_PREFIX + ".custom";
-
+    String UNDO_REDIS_PREFIX = UNDO_PREFIX + ".redis";
+    String UNDO_REDIS_SENTINEL_PREFIX = UNDO_REDIS_PREFIX + ".sentinel";
+    String UNDO_REDIS_SINGLE_PREFIX = UNDO_REDIS_PREFIX + ".single";
+    String UNDO_CACHE_PREFIX = UNDO_PREFIX + ".cache";
     int MAP_CAPACITY = 64;
     HashMap<String, CompletableFuture<Object>> PROPERTY_BEAN_MAP = new HashMap<>(MAP_CAPACITY);
 

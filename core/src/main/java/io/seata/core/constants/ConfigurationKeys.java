@@ -294,6 +294,11 @@ public interface ConfigurationKeys {
     String CLIENT_UNDO_PREFIX = "client.undo.";
 
     /**
+     * The constant CLIENT_UNDO_REDIS_PREFIX.
+     */
+    public static final String CLIENT_UNDO_REDIS_PREFIX = CLIENT_UNDO_PREFIX + "redis.";
+
+    /**
      * The constant TRANSACTION_UNDO_DATA_VALIDATION.
      */
     String TRANSACTION_UNDO_DATA_VALIDATION = CLIENT_UNDO_PREFIX + "dataValidation";
@@ -491,6 +496,11 @@ public interface ConfigurationKeys {
     String STORE_REDIS_MODE = STORE_REDIS_PREFIX + "mode";
 
     /**
+     * The constant CLIENT_UNDO_REDIS_MODE.
+     */
+    String CLIENT_UNDO_REDIS_MODE = CLIENT_UNDO_PREFIX + "mode";
+
+    /**
      * The constant STORE_REDIS_HOST.
      */
     String STORE_REDIS_HOST = STORE_REDIS_PREFIX + "host";
@@ -561,14 +571,29 @@ public interface ConfigurationKeys {
     String STORE_REDIS_SENTINEL_PREFIX = STORE_REDIS_PREFIX + "sentinel.";
 
     /**
-     * STORE_REDIS_SENTINEL_MASTERNAME.
+     * The constant STORE_REDIS_SENTINEL_MASTERNAME.
      */
     String STORE_REDIS_SENTINEL_MASTERNAME = STORE_REDIS_SENTINEL_PREFIX + "masterName";
 
     /**
-     * STORE_REDIS_SENTINEL_HOST.
+     * The constant STORE_REDIS_SENTINEL_HOST.
      */
     String STORE_REDIS_SENTINEL_HOST = STORE_REDIS_SENTINEL_PREFIX + "sentinelHosts";
+
+    /**
+     * The constant CLIENT_UNDO_REDIS_SENTINEL_PREFIX.
+     */
+    String CLIENT_UNDO_REDIS_SENTINEL_PREFIX = CLIENT_UNDO_REDIS_PREFIX + "sentinel.";
+
+    /**
+     * The constant CLIENT_UNDO_REDIS_SENTINEL_MASTERNAME.
+     */
+    String CLIENT_UNDO_REDIS_SENTINEL_MASTERNAME = CLIENT_UNDO_REDIS_SENTINEL_PREFIX + "masterName";
+
+    /**
+     * The constant CLIENT_UNDO_REDIS_SENTINEL_HOST.
+     */
+    String CLIENT_UNDO_REDIS_SENTINEL_HOST = CLIENT_UNDO_REDIS_SENTINEL_PREFIX + "sentinelHosts";
 
     /**
      * The constant CLIENT_DEGRADE_CHECK_PERIOD.
@@ -622,4 +647,55 @@ public interface ConfigurationKeys {
      * The constant DATA_SOURCE_PROXY_MODE.
      */
     String DATA_SOURCE_PROXY_MODE = "dataSourceProxyMode";
+
+    /**
+     * The constant CLIENT_REDIS_SINGLE_PREFIX.
+     */
+    String CLIENT_REDIS_SINGLE_PREFIX = CLIENT_UNDO_REDIS_PREFIX + "single.";
+
+    /**
+     * The constant CLIENT_UNDO_REDIS_HOST.
+     */
+    String CLIENT_UNDO_REDIS_HOST = CLIENT_REDIS_SINGLE_PREFIX + "host";
+
+    /**
+     * The constant CLIENT_UNDO_REDIS_MIN_CONN.
+     */
+    String CLIENT_UNDO_REDIS_MIN_CONN = CLIENT_UNDO_REDIS_PREFIX + "minConn";
+
+    /**
+     * The constant CLIENT_UNDO_REDIS_PORT.
+     */
+    String CLIENT_UNDO_REDIS_PORT = CLIENT_REDIS_SINGLE_PREFIX  + "port";
+
+    /**
+     * The constant CLIENT_UNDO_REDIS_MAX_CONN.
+     */
+    String CLIENT_UNDO_REDIS_MAX_CONN = CLIENT_UNDO_REDIS_PREFIX + "maxConn";
+
+    /**
+     * The constant CLIENT_UNDO_REDIS_DATABASE.
+     */
+    String CLIENT_UNDO_REDIS_DATABASE = CLIENT_UNDO_REDIS_PREFIX + "database";
+
+    /**
+     * The constant CLIENT_UNDO_REDIS_PASSWORD.
+     */
+    String CLIENT_UNDO_REDIS_PASSWORD = CLIENT_UNDO_REDIS_PREFIX + "password";
+
+    /**
+     * The constant CLIENT_UNDO_CACHE_ENABLE.
+     */
+    String CLIENT_UNDO_CACHE_ENABLE = CLIENT_UNDO_PREFIX + "cache.enable";
+
+    /**
+     * The constant CLIENT_UNDO_REDIS_QUERY_LIMIT.
+     */
+    String CLIENT_UNDO_REDIS_QUERY_LIMIT = CLIENT_UNDO_REDIS_PREFIX + "queryLimit";
+
+    /**
+     * the constant CLIENT_UNDO_REDIS_MAX_TOTAL
+     */
+    String CLIENT_UNDO_REDIS_MAX_TOTAL = CLIENT_UNDO_REDIS_PREFIX + "maxTotal";
+
 }

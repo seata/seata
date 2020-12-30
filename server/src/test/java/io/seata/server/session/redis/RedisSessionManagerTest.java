@@ -16,6 +16,7 @@
 
 package io.seata.server.session.redis;
 
+import io.seata.core.store.redis.JedisPooledFactory;
 import io.seata.server.session.SessionCondition;
 import java.io.IOException;
 import com.github.fppt.jedismock.RedisServer;
@@ -28,7 +29,6 @@ import io.seata.server.UUIDGenerator;
 import io.seata.server.session.BranchSession;
 import io.seata.server.session.GlobalSession;
 import io.seata.server.session.SessionManager;
-import io.seata.server.storage.redis.JedisPooledFactory;
 import io.seata.server.storage.redis.session.RedisSessionManager;
 import io.seata.server.storage.redis.store.RedisTransactionStoreManager;
 import java.util.List;
