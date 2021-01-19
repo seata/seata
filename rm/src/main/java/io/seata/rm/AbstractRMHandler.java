@@ -31,6 +31,7 @@ import io.seata.core.protocol.transaction.RMInboundHandler;
 import io.seata.core.protocol.transaction.UndoLogDeleteRequest;
 import io.seata.core.rpc.RpcContext;
 import io.seata.core.rpc.TransactionMessageHandler;
+import io.seata.rm.transaction.RMTransactionHookManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -88,22 +89,55 @@ public abstract class AbstractRMHandler extends AbstractExceptionHandler
      */
     protected void doBranchCommit(BranchCommitRequest request, BranchCommitResponse response)
         throws TransactionException {
+        BranchType branchType = request.getBranchType();
         String xid = request.getXid();
         long branchId = request.getBranchId();
         String resourceId = request.getResourceId();
         String applicationData = request.getApplicationData();
         if (LOGGER.isInfoEnabled()) {
-            LOGGER.info("Branch committing: " + xid + " " + branchId + " " + resourceId + " " + applicationData);
-        }
-        BranchStatus status = getResourceManager().branchCommit(request.getBranchType(), xid, branchId, resourceId,
-            applicationData);
-        response.setXid(xid);
-        response.setBranchId(branchId);
-        response.setBranchStatus(status);
-        if (LOGGER.isInfoEnabled()) {
-            LOGGER.info("Branch commit result: " + status);
+            LOGGER.info("Branch Committing: {} {} {} {}", xid, branchId, resourceId, applicationData);
         }
 
+        try {
+            //trigger before branch commit hooks
+            RMTransactionHookManager.triggerHooks(LOGGER, branchId, hook -> {
+                hook.beforeBranchCommit(branchType, xid, branchId);
+            });
+
+            //do branch commit
+            BranchStatus status = getResourceManager().branchCommit(branchType, xid, branchId, resourceId,
+                applicationData);
+            response.setXid(xid);
+            response.setBranchId(branchId);
+            response.setBranchStatus(status);
+            if (LOGGER.isInfoEnabled()) {
+                LOGGER.info("Branch Committed result: {}", status);
+            }
+
+            //trigger after branch commit hooks
+            if (status == BranchStatus.PhaseTwo_Committed) {
+                RMTransactionHookManager.triggerHooks(LOGGER, branchId, hook -> {
+                    hook.afterBranchCommitted(branchType, xid, branchId);
+                });
+            } else {
+                RMTransactionHookManager.triggerHooks(LOGGER, branchId, hook -> {
+                    hook.afterBranchCommitFailed(branchType, xid, branchId, status);
+                });
+            }
+
+            //if committed or unretryable, remove branch hooks
+            if (status == BranchStatus.PhaseTwo_Committed || status == BranchStatus.PhaseTwo_CommitFailed_Unretryable) {
+                RMTransactionHookManager.removeBranchHooks(branchId);
+            }
+        } catch (Exception e) {
+            //trigger after branch commit failed hooks
+            RMTransactionHookManager.triggerHooks(LOGGER, branchId, hook -> {
+                hook.afterBranchCommitException(branchType, xid, branchId, e);
+            });
+
+            // throw the exception after finished hooks
+            throw e;
+        }
     }
 
     /**
@@ -115,20 +149,54 @@ public abstract class AbstractRMHandler extends AbstractExceptionHandler
      */
     protected void doBranchRollback(BranchRollbackRequest request, BranchRollbackResponse response)
         throws TransactionException {
+        BranchType branchType = request.getBranchType();
         String xid = request.getXid();
         long branchId = request.getBranchId();
         String resourceId = request.getResourceId();
         String applicationData = request.getApplicationData();
         if (LOGGER.isInfoEnabled()) {
-            LOGGER.info("Branch Rollbacking: " + xid + " " + branchId + " " + resourceId);
+            LOGGER.info("Branch Rollbacking: {} {} {} {}", xid, branchId, resourceId, applicationData);
         }
-        BranchStatus status = getResourceManager().branchRollback(request.getBranchType(), xid, branchId, resourceId,
-            applicationData);
-        response.setXid(xid);
-        response.setBranchId(branchId);
-        response.setBranchStatus(status);
-        if (LOGGER.isInfoEnabled()) {
-            LOGGER.info("Branch Rollbacked result: " + status);
+
+        try {
+            //trigger before branch rollback hooks
+            RMTransactionHookManager.triggerHooks(LOGGER, branchId, hook -> {
+                hook.beforeBranchRollback(branchType, xid, branchId);
+            });
+
+            //do branch rollback
+            BranchStatus status = getResourceManager().branchRollback(branchType, xid, branchId, resourceId,
+                applicationData);
+            response.setXid(xid);
+            response.setBranchId(branchId);
+            response.setBranchStatus(status);
+            if (LOGGER.isInfoEnabled()) {
+                LOGGER.info("Branch Rollbacked result: {}", status);
+            }
+
+            //trigger after branch rollback hooks
+            if (status == BranchStatus.PhaseTwo_Rollbacked) {
+                RMTransactionHookManager.triggerHooks(LOGGER, branchId, hook -> {
+                    hook.afterBranchRollbacked(branchType, xid, branchId);
+                });
+            } else {
+                RMTransactionHookManager.triggerHooks(LOGGER, branchId, hook -> {
+                    hook.afterBranchRollbackFailed(branchType, xid, branchId, status);
+                });
+            }
+
+            //if rollbacked or unretryable, remove branch hooks
+            if (status == BranchStatus.PhaseTwo_Rollbacked || status == BranchStatus.PhaseTwo_RollbackFailed_Unretryable) {
+                RMTransactionHookManager.removeBranchHooks(branchId);
+            }
+        } catch (Exception e) {
+            //trigger after branch rollback failed hooks
+            RMTransactionHookManager.triggerHooks(LOGGER, branchId, hook -> {
+                hook.afterBranchRollbackException(branchType, xid, branchId, e);
+            });
+
+            // throw the exception after finished hooks
+            throw e;
         }
     }
 

@@ -21,6 +21,7 @@ import io.seata.core.model.BranchStatus;
 import io.seata.core.model.BranchType;
 import io.seata.rm.BaseDataSourceResource;
 import io.seata.rm.DefaultResourceManager;
+import io.seata.rm.transaction.RMTransactionHookManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -136,6 +137,8 @@ public class ConnectionProxyXA extends AbstractConnectionProxyXA implements Hold
                 cleanXABranchContext();
                 throw new SQLException("failed to register xa branch " + xid + " since " + te.getCode() + ":" + te.getMessage(), te);
             }
+            RMTransactionHookManager.setLocalBranchId(branchId);
+
             // 2. build XA-Xid with xid and branchId
             this.xaBranchXid = XAXidBuilder.build(xid, branchId);
             try {

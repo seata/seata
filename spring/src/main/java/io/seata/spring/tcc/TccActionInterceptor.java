@@ -29,6 +29,7 @@ import io.seata.rm.tcc.api.TwoPhaseBusinessAction;
 import io.seata.rm.tcc.interceptor.ActionInterceptorHandler;
 import io.seata.rm.tcc.remoting.RemotingDesc;
 import io.seata.rm.tcc.remoting.parser.DubboUtil;
+import io.seata.rm.transaction.RMTransactionHookManager;
 import io.seata.spring.util.SpringProxyUtils;
 import org.aopalliance.intercept.MethodInterceptor;
 import org.aopalliance.intercept.MethodInvocation;
@@ -102,6 +103,7 @@ public class TccActionInterceptor implements MethodInterceptor, ConfigurationCha
                 if (BranchType.TCC != previousBranchType) {
                     RootContext.unbindBranchType();
                 }
+                RMTransactionHookManager.clear();
             }
         }
         return invocation.proceed();
