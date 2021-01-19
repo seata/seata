@@ -15,10 +15,9 @@
  */
 package io.seata.tm.api.transaction;
 
-import io.seata.common.util.CollectionUtils;
-
 import java.io.Serializable;
 import java.util.Set;
+import io.seata.common.util.CollectionUtils;
 
 /**
  * @author guoyao

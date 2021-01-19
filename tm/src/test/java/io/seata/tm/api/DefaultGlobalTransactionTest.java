@@ -96,5 +96,14 @@ class DefaultGlobalTransactionTest {
         tx.begin();
         Assertions.assertThrows(TransactionException.class, tx::rollback);
     }
+    
+    @Test
+    public void testExistingTransaction() {
+        RootContext.bind(DEFAULT_XID);
+        DefaultGlobalTransaction defaultGlobalTransaction = new DefaultGlobalTransaction();
+        Assertions.assertTrue(defaultGlobalTransaction.existingTransaction(), "Existing transaction");
 
+        RootContext.unbind();
+        Assertions.assertFalse(defaultGlobalTransaction.existingTransaction(), "No existing transaction");
+    }
 }

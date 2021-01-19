@@ -15,7 +15,6 @@
  */
 package io.seata.saga.engine.store.db;
 
-import io.seata.common.util.BeanUtils;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -23,10 +22,9 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-
 import javax.sql.DataSource;
-
 import io.seata.common.exception.StoreException;
+import io.seata.common.util.BeanUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

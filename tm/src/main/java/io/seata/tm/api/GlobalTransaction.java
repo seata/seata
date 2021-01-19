@@ -18,6 +18,7 @@ package io.seata.tm.api;
 import io.seata.core.exception.TransactionException;
 import io.seata.core.model.GlobalStatus;
 import io.seata.tm.api.transaction.SuspendedResourcesHolder;
+import io.seata.tm.api.transaction.Propagation;
 
 /**
  * Global transaction.
@@ -52,6 +53,17 @@ public interface GlobalTransaction {
      * out.
      */
     void begin(int timeout, String name) throws TransactionException;
+
+    /**
+     * Begin a new global transaction with given timeout and given name and propagation.
+     *
+     * @param timeout Given timeout in MILLISECONDS.
+     * @param name    Given name.
+     * @param propagation    propagation.
+     * @throws TransactionException Any exception that fails this will be wrapped with TransactionException and thrown
+     * out.
+     */
+    void begin(int timeout, String name, Propagation propagation) throws TransactionException;
 
     /**
      * Commit the global transaction.
