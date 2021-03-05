@@ -16,6 +16,8 @@
 package io.seata.sqlparser.druid.mysql;
 
 import com.alibaba.druid.sql.ast.SQLExpr;
+import com.alibaba.druid.sql.ast.SQLLimit;
+import com.alibaba.druid.sql.ast.SQLOrderBy;
 import com.alibaba.druid.sql.ast.SQLStatement;
 import com.alibaba.druid.sql.ast.statement.SQLExprTableSource;
 import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlDeleteStatement;
@@ -94,13 +96,27 @@ public class MySQLDeleteRecognizer extends BaseMySQLRecognizer implements SQLDel
     }
 
     @Override
-    public String getLimit(ParametersHolder parametersHolder, ArrayList<List<Object>> paramAppenderList) {
-        return super.getLimit(ast, getSQLType(), parametersHolder, paramAppenderList);
+    public String getLimitCondition() {
+        SQLLimit limit = ast.getLimit();
+        return super.getLimitCondition(limit);
     }
 
     @Override
-    public String getOrderBy() {
-        return super.getOrderBy(ast, getSQLType());
+    public String getLimitCondition(ParametersHolder parametersHolder, ArrayList<List<Object>> paramAppenderList) {
+        SQLLimit limit = ast.getLimit();
+        return super.getLimitCondition(limit, parametersHolder, paramAppenderList);
+    }
+
+    @Override
+    public String getOrderByCondition() {
+        SQLOrderBy sqlOrderBy = ast.getOrderBy();
+        return super.getOrderByCondition(sqlOrderBy);
+    }
+
+    @Override
+    public String getOrderByCondition(ParametersHolder parametersHolder, ArrayList<List<Object>> paramAppenderList) {
+        SQLOrderBy sqlOrderBy = ast.getOrderBy();
+        return super.getOrderByCondition(sqlOrderBy, parametersHolder, paramAppenderList);
     }
 
 }

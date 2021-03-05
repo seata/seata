@@ -16,6 +16,8 @@
 package io.seata.sqlparser.druid;
 
 import com.alibaba.druid.sql.ast.SQLExpr;
+import com.alibaba.druid.sql.ast.SQLLimit;
+import com.alibaba.druid.sql.ast.SQLOrderBy;
 import com.alibaba.druid.sql.ast.expr.SQLBetweenExpr;
 import com.alibaba.druid.sql.ast.expr.SQLBinaryOpExpr;
 import com.alibaba.druid.sql.ast.expr.SQLExistsExpr;
@@ -68,6 +70,14 @@ public abstract class BaseRecognizer implements SQLRecognizer {
         } else {
             throw new IllegalArgumentException("unexpected WHERE expr: " + where.getClass().getSimpleName());
         }
+    }
+
+    public void executeLimit(SQLLimit sqlLimit, SQLASTVisitor visitor) {
+        visitor.visit(sqlLimit);
+    }
+
+    public void executeOrderBy(SQLOrderBy sqlOrderBy,SQLASTVisitor visitor) {
+        visitor.visit(sqlOrderBy);
     }
 
     @Override

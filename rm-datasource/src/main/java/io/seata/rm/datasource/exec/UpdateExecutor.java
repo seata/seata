@@ -34,7 +34,6 @@ import io.seata.rm.datasource.SqlGenerateUtils;
 import io.seata.rm.datasource.StatementProxy;
 import io.seata.rm.datasource.sql.struct.TableMeta;
 import io.seata.rm.datasource.sql.struct.TableRecords;
-import io.seata.sqlparser.ParametersHolder;
 import io.seata.sqlparser.SQLRecognizer;
 import io.seata.sqlparser.SQLUpdateRecognizer;
 
@@ -78,17 +77,16 @@ public class UpdateExecutor<T, S extends Statement> extends AbstractDMLBaseExecu
         StringBuilder prefix = new StringBuilder("SELECT ");
         StringBuilder suffix = new StringBuilder(" FROM ").append(getFromTableInSQL());
         String whereCondition = buildWhereCondition(recognizer, paramAppenderList);
+        String orderByCondition = buildOrderCondition(recognizer, paramAppenderList);
+        String limitCondition = buildLimitCondition(recognizer, paramAppenderList);
         if (StringUtils.isNotBlank(whereCondition)) {
             suffix.append(WHERE).append(whereCondition);
         }
-        String orderBy = recognizer.getOrderBy();
-        if (StringUtils.isNotBlank(orderBy)) {
-            suffix.append(orderBy);
+        if (StringUtils.isNotBlank(orderByCondition)) {
+            suffix.append(" ").append(orderByCondition);
         }
-        ParametersHolder parametersHolder = statementProxy instanceof ParametersHolder ? (ParametersHolder)statementProxy : null;
-        String limit = recognizer.getLimit(parametersHolder, paramAppenderList);
-        if (StringUtils.isNotBlank(limit)) {
-            suffix.append(limit);
+        if (StringUtils.isNotBlank(limitCondition)) {
+            suffix.append(" ").append(limitCondition);
         }
         suffix.append(" FOR UPDATE");
         StringJoiner selectSQLJoin = new StringJoiner(", ", prefix.toString(), suffix.toString());

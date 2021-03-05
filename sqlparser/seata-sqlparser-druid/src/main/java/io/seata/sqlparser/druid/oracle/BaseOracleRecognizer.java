@@ -16,6 +16,7 @@
 package io.seata.sqlparser.druid.oracle;
 
 import com.alibaba.druid.sql.ast.SQLExpr;
+import com.alibaba.druid.sql.ast.SQLOrderBy;
 import com.alibaba.druid.sql.ast.expr.SQLVariantRefExpr;
 import com.alibaba.druid.sql.dialect.oracle.visitor.OracleOutputVisitor;
 import io.seata.common.util.StringUtils;
@@ -79,6 +80,28 @@ public abstract class BaseOracleRecognizer extends BaseRecognizer {
 
         StringBuilder sb = new StringBuilder();
         executeVisit(where, new OracleOutputVisitor(sb));
+        return sb.toString();
+    }
+
+    protected String getOrderByCondition(SQLOrderBy sqlOrderBy) {
+        if (Objects.isNull(sqlOrderBy)) {
+            return StringUtils.EMPTY;
+        }
+
+        StringBuilder sb = new StringBuilder();
+        executeOrderBy(sqlOrderBy, new OracleOutputVisitor(sb));
+
+        return sb.toString();
+    }
+
+    protected String getOrderByCondition(SQLOrderBy sqlOrderBy, final ParametersHolder parametersHolder,
+                                         final ArrayList<List<Object>> paramAppenderList) {
+        if (Objects.isNull(sqlOrderBy)) {
+            return StringUtils.EMPTY;
+        }
+
+        StringBuilder sb = new StringBuilder();
+        executeOrderBy(sqlOrderBy, createOutputVisitor(parametersHolder, paramAppenderList, sb));
         return sb.toString();
     }
 }

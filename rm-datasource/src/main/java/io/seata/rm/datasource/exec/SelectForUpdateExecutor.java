@@ -138,8 +138,16 @@ public class SelectForUpdateExecutor<T, S extends Statement> extends BaseTransac
         selectSQLAppender.append(getColumnNamesInSQL(getTableMeta().getEscapePkNameList(getDbType())));
         selectSQLAppender.append(" FROM ").append(getFromTableInSQL());
         String whereCondition = buildWhereCondition(recognizer, paramAppenderList);
+        String orderByCondition = buildOrderCondition(recognizer, paramAppenderList);
+        String limitCondition = buildLimitCondition(recognizer, paramAppenderList);
         if (StringUtils.isNotBlank(whereCondition)) {
             selectSQLAppender.append(" WHERE ").append(whereCondition);
+        }
+        if (StringUtils.isNotBlank(orderByCondition)) {
+            selectSQLAppender.append(" ").append(orderByCondition);
+        }
+        if (StringUtils.isNotBlank(limitCondition)) {
+            selectSQLAppender.append(" ").append(limitCondition);
         }
         selectSQLAppender.append(" FOR UPDATE");
         return selectSQLAppender.toString();

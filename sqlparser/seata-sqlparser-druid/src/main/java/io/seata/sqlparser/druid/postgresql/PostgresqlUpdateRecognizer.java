@@ -130,4 +130,28 @@ public class PostgresqlUpdateRecognizer extends BasePostgresqlRecognizer impleme
         return sb.toString();
     }
 
+    @Override
+    public String getLimitCondition() {
+        //postgre does not have limit condition in update statement
+        return null;
+    }
+
+    @Override
+    public String getLimitCondition(ParametersHolder parametersHolder, ArrayList<List<Object>> paramAppenderList) {
+        //postgre does not have limit condition in update statement
+        return null;
+    }
+
+    @Override
+    public String getOrderByCondition() {
+        //postgre does not have order by condition in update statement
+        return null;
+    }
+
+    @Override
+    public String getOrderByCondition(ParametersHolder parametersHolder, ArrayList<List<Object>> paramAppenderList) {
+        //postgre does not have order by condition in update statement
+        return null;
+    }
+
 }

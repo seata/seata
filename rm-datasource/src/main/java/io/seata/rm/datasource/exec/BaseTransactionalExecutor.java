@@ -151,6 +151,38 @@ public abstract class BaseTransactionalExecutor<T, S extends Statement> implemen
     }
 
     /**
+     * build buildOrderCondition
+     * @param recognizer
+     * @param paramAppenderList
+     * @return the string
+     */
+    protected String buildOrderCondition(WhereRecognizer recognizer, ArrayList<List<Object>> paramAppenderList) {
+        String orderByCondition = null;
+        if (statementProxy instanceof ParametersHolder) {
+            orderByCondition = recognizer.getOrderByCondition((ParametersHolder) statementProxy, paramAppenderList);
+        } else {
+            orderByCondition = recognizer.getOrderByCondition();
+        }
+        return orderByCondition;
+    }
+
+    /**
+     * build buildLimitCondition
+     * @param recognizer
+     * @param paramAppenderList
+     * @return the string
+     */
+    protected String buildLimitCondition(WhereRecognizer recognizer, ArrayList<List<Object>> paramAppenderList) {
+        String limitCondition = null;
+        if (statementProxy instanceof ParametersHolder) {
+            limitCondition = recognizer.getLimitCondition((ParametersHolder) statementProxy, paramAppenderList);
+        } else {
+            limitCondition = recognizer.getLimitCondition();
+        }
+        return limitCondition;
+    }
+
+    /**
      * Gets column name in sql.
      *
      * @param columnName the column name
