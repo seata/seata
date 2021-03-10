@@ -16,8 +16,9 @@
 package io.seata.tm.api;
 
 import java.util.List;
-
+import java.util.Set;
 import io.seata.common.exception.ShouldNeverHappenException;
+import io.seata.common.util.CollectionUtils;
 import io.seata.core.context.GlobalLockConfigHolder;
 import io.seata.core.exception.TransactionException;
 import io.seata.core.model.GlobalLockConfig;
@@ -120,6 +121,10 @@ public class TransactionalTemplate {
                 // 2. If the tx role is 'GlobalTransactionRole.Launcher', send the request of beginTransaction to TC,
                 //    else do nothing. Of course, the hooks will still be triggered.
                 beginTransaction(txInfo, tx);
+                Set<TransactionHook> transactionHooks = txInfo.getTransactionHooks();
+                if (CollectionUtils.isNotEmpty(transactionHooks)) {
+                    TransactionHookManager.registerHooks(transactionHooks);
+                }
 
                 Object rs;
                 try {

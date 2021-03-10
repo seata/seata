@@ -17,6 +17,7 @@ package io.seata.spring.annotation;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
+import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.Optional;
 import java.util.Set;
@@ -45,6 +46,7 @@ import io.seata.tm.api.TransactionalExecutor;
 import io.seata.tm.api.TransactionalTemplate;
 import io.seata.tm.api.transaction.NoRollbackRule;
 import io.seata.tm.api.transaction.RollbackRule;
+import io.seata.tm.api.transaction.TransactionHook;
 import io.seata.tm.api.transaction.TransactionInfo;
 import org.aopalliance.intercept.MethodInterceptor;
 import org.aopalliance.intercept.MethodInvocation;
@@ -220,6 +222,16 @@ public class GlobalTransactionalInterceptor implements ConfigurationChangeListen
                         rollbackRules.add(new NoRollbackRule(rbRule));
                     }
                     transactionInfo.setRollbackRules(rollbackRules);
+                    Set<TransactionHook> hooks = new HashSet<>();
+                    for (Class<?> hook : globalTrxAnno.transactionHooks()) {
+                        try {
+                            hooks.add((TransactionHook)hook.newInstance());
+                        } catch (Exception e) {
+                            LOGGER.error("you need to pass in the implementation class for transactionHook , error:{}",
+                                e.getMessage());
+                        }
+                    }
+                    transactionInfo.setTransactionHooks(hooks);
                     return transactionInfo;
                 }
             });

@@ -15,6 +15,7 @@
  */
 package io.seata.spring.boot.autoconfigure;
 
+import java.util.List;
 import io.seata.integration.http.HttpHandlerExceptionResolver;
 import io.seata.integration.http.TransactionPropagationInterceptor;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnWebApplication;
@@ -22,8 +23,6 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.web.servlet.HandlerExceptionResolver;
 import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurerAdapter;
-
-import java.util.List;
 
 /**
  * Auto bean add for spring context if in springboot env.

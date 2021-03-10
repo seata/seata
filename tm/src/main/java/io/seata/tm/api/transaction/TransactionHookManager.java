@@ -18,6 +18,8 @@ package io.seata.tm.api.transaction;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Set;
+import io.seata.common.util.CollectionUtils;
 
 /**
  * @author guoyao
@@ -62,9 +64,25 @@ public final class TransactionHookManager {
     }
 
     /**
+     * add new hooks
+     *
+     * @param transactionHook
+     */
+    public static void registerHooks(Set<TransactionHook> transactionHook) {
+        if (CollectionUtils.isNotEmpty(transactionHook)) {
+            List<TransactionHook> transactionHooks = LOCAL_HOOKS.get();
+            if (transactionHooks == null) {
+                LOCAL_HOOKS.set(new ArrayList<>());
+            }
+            LOCAL_HOOKS.get().addAll(transactionHook);
+        }
+    }
+
+    /**
      * clear hooks
      */
     public static void clear() {
         LOCAL_HOOKS.remove();
     }
+
 }

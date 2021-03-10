@@ -21,8 +21,9 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
-import io.seata.common.DefaultValues;
 import io.seata.tm.api.transaction.Propagation;
+import io.seata.tm.api.transaction.TransactionHook;
+import io.seata.common.DefaultValues;
 import org.aopalliance.intercept.MethodInvocation;
 
 /**
@@ -99,4 +100,12 @@ public @interface GlobalTransactional {
      * @return
      */
     int lockRetryTimes() default -1;
+
+    /**
+     * the Transaction hook
+     *
+     * @return
+     */
+    Class<? extends TransactionHook>[] transactionHooks() default {};
+
 }

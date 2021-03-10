@@ -15,9 +15,8 @@
  */
 package io.seata.spring.annotation.datasource;
 
-import javax.sql.DataSource;
 import java.util.concurrent.ConcurrentHashMap;
-
+import javax.sql.DataSource;
 import io.seata.common.util.CollectionUtils;
 import io.seata.core.model.BranchType;
 import io.seata.rm.datasource.DataSourceProxy;
