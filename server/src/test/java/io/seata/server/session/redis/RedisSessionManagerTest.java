@@ -281,10 +281,6 @@ public class RedisSessionManagerTest {
         sessionManager.addBranchSession(session, branchSession);
 
         SessionCondition condition = new SessionCondition();
-        condition.setStatus(GlobalStatus.Begin);
-        sessionManager.findGlobalSessions(condition);
-
-        condition.setStatus(null);
         GlobalStatus[] statuses = {GlobalStatus.Begin};
         condition.setStatuses(statuses);
         sessionManager.findGlobalSessions(condition);

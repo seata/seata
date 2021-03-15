@@ -387,8 +387,6 @@ public class RedisTransactionStoreManager extends AbstractTransactionStoreManage
             return globalSessions;
         } else if (CollectionUtils.isNotEmpty(sessionCondition.getStatuses())) {
             return readSession(sessionCondition.getStatuses());
-        } else if (sessionCondition.getStatus() != null) {
-            return readSession(new GlobalStatus[]{sessionCondition.getStatus()});
         }
         return null;
     }

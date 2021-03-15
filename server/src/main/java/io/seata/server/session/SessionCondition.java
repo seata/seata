@@ -25,9 +25,8 @@ import io.seata.core.model.GlobalStatus;
 public class SessionCondition {
     private Long transactionId;
     private String xid;
-    private GlobalStatus status;
     private GlobalStatus[] statuses;
-    private long overTimeAliveMills;
+    private Long overTimeAliveMills;
 
     /**
      * Instantiates a new Session condition.
@@ -47,19 +46,9 @@ public class SessionCondition {
     /**
      * Instantiates a new Session condition.
      *
-     * @param status the status
-     */
-    public SessionCondition(GlobalStatus status) {
-        this.status = status;
-        statuses = new GlobalStatus[] {status};
-    }
-
-    /**
-     * Instantiates a new Session condition.
-     *
      * @param statuses the statuses
      */
-    public SessionCondition(GlobalStatus[] statuses) {
+    public SessionCondition(GlobalStatus... statuses) {
         this.statuses = statuses;
     }
 
@@ -73,29 +62,11 @@ public class SessionCondition {
     }
 
     /**
-     * Gets status.
-     *
-     * @return the status
-     */
-    public GlobalStatus getStatus() {
-        return status;
-    }
-
-    /**
-     * Sets status.
-     *
-     * @param status the status
-     */
-    public void setStatus(GlobalStatus status) {
-        this.status = status;
-    }
-
-    /**
      * Gets over time alive mills.
      *
      * @return the over time alive mills
      */
-    public long getOverTimeAliveMills() {
+    public Long getOverTimeAliveMills() {
         return overTimeAliveMills;
     }
 
@@ -128,7 +99,7 @@ public class SessionCondition {
         return statuses;
     }
 
-    public void setStatuses(GlobalStatus[] statuses) {
+    public void setStatuses(GlobalStatus... statuses) {
         this.statuses = statuses;
     }
 }

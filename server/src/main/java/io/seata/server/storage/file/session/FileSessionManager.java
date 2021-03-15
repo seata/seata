@@ -24,6 +24,8 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.Arrays;
+import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 
 import io.seata.common.exception.ShouldNeverHappenException;
@@ -120,10 +122,38 @@ public class FileSessionManager extends AbstractSessionManager implements Reload
     @Override
     public List<GlobalSession> findGlobalSessions(SessionCondition condition) {
         List<GlobalSession> found = new ArrayList<>();
+
+        List<GlobalStatus> globalStatuses = null;
+        if (null != condition.getStatuses() && condition.getStatuses().length > 0) {
+            globalStatuses = Arrays.asList(condition.getStatuses());
+        }
         for (GlobalSession globalSession : sessionMap.values()) {
-            if (System.currentTimeMillis() - globalSession.getBeginTime() > condition.getOverTimeAliveMills()) {
-                found.add(globalSession);
+            if (null != condition.getOverTimeAliveMills() && condition.getOverTimeAliveMills() > 0) {
+                if (System.currentTimeMillis() - globalSession.getBeginTime() <= condition.getOverTimeAliveMills()) {
+                    continue;
+                }
             }
+
+            if (!StringUtils.isEmpty(condition.getXid())) {
+                if (!Objects.equals(condition.getXid(), globalSession.getXid())) {
+                    continue;
+                }
+            }
+
+            if (null != condition.getTransactionId() && condition.getTransactionId() > 0) {
+                if (!Objects.equals(condition.getTransactionId(), globalSession.getTransactionId())) {
+                    continue;
+                }
+            }
+
+            if (null != globalStatuses) {
+                if (!globalStatuses.contains(globalSession.getStatus())) {
+                    continue;
+                }
+            }
+
+            // All test pass, add to resp
+            found.add(globalSession);
         }
         return found;
     }
