@@ -28,6 +28,7 @@ import static io.seata.spring.boot.autoconfigure.StarterConstants.CONFIG_ETCD3_P
 @ConfigurationProperties(prefix = CONFIG_ETCD3_PREFIX)
 public class ConfigEtcd3Properties {
     private String serverAddr = "http://localhost:2379";
+    private String key = "seata.properties";
 
     public String getServerAddr() {
         return serverAddr;
@@ -38,4 +39,12 @@ public class ConfigEtcd3Properties {
         return this;
     }
 
+    public String getKey() {
+        return key;
+    }
+
+    public ConfigEtcd3Properties setKey(String key) {
+        this.key = key;
+        return this;
+    }
 }
