@@ -21,6 +21,7 @@ import io.seata.common.exception.FrameworkErrorCode;
 import io.seata.common.exception.FrameworkException;
 import io.seata.common.thread.NamedThreadFactory;
 import io.seata.common.util.StringUtils;
+import io.seata.core.model.BranchType;
 import io.seata.core.model.Resource;
 import io.seata.core.model.ResourceManager;
 import io.seata.core.protocol.AbstractMessage;
@@ -158,13 +159,6 @@ public final class RmNettyRemotingClient extends AbstractNettyRemotingClient {
             LOGGER.info("register RM success. client version:{}, server version:{},channel:{}", registerRMRequest.getVersion(), registerRMResponse.getVersion(), channel);
         }
         getClientChannelManager().registerChannel(serverAddress, channel);
-        String dbKey = getMergedResourceKeys();
-        if (registerRMRequest.getResourceIds() != null) {
-            if (!registerRMRequest.getResourceIds().equals(dbKey)) {
-                sendRegisterMessage(serverAddress, channel, dbKey);
-            }
-        }
-
     }
 
     @Override
@@ -180,35 +174,42 @@ public final class RmNettyRemotingClient extends AbstractNettyRemotingClient {
     /**
      * Register new db key.
      *
-     * @param resourceGroupId the resource group id
-     * @param resourceId      the db key
+     * @param resourceId db key
      */
-    public void registerResource(String resourceGroupId, String resourceId) {
-
+    public void registerResource(String resourceId, BranchType type) {
         // Resource registration cannot be performed until the RM client is initialized
         if (StringUtils.isBlank(transactionServiceGroup)) {
             return;
         }
 
-        if (getClientChannelManager().getChannels().isEmpty()) {
-            getClientChannelManager().reconnect(transactionServiceGroup);
-            return;
+        NettyClientChannelManager channelManager = getClientChannelManager();
+        if (channelManager.getChannels().isEmpty()) {
+            channelManager.reconnect(transactionServiceGroup);
         }
-        synchronized (getClientChannelManager().getChannels()) {
-            for (Map.Entry<String, Channel> entry : getClientChannelManager().getChannels().entrySet()) {
-                String serverAddress = entry.getKey();
-                Channel rmChannel = entry.getValue();
-                if (LOGGER.isInfoEnabled()) {
-                    LOGGER.info("will register resourceId:{}", resourceId);
-                }
-                sendRegisterMessage(serverAddress, rmChannel, resourceId);
-            }
-        }
+
+        RegisterRMRequest message = buildRegisterRMRequest(resourceId, type);
+        Map<String, Channel> channels = channelManager.getChannels();
+        channels.forEach((serverAddress, rmChannel) -> {
+            LOGGER.info("will register resource: {}", resourceId);
+            sendRegisterMessage(serverAddress, rmChannel, message);
+        });
     }
 
-    public void sendRegisterMessage(String serverAddress, Channel channel, String resourceId) {
+    /**
+     * build RegisterRMRequest
+     * note: BranchType store in message.extraData
+     */
+    private RegisterRMRequest buildRegisterRMRequest(String resourceId, BranchType type) {
         RegisterRMRequest message = new RegisterRMRequest(applicationId, transactionServiceGroup);
         message.setResourceIds(resourceId);
+        if (type != null) {
+            String typeName = type.name();
+            message.setExtraData(typeName);
+        }
+        return message;
+    }
+
+    private void sendRegisterMessage(String serverAddress, Channel channel, RegisterRMRequest message) {
         try {
             super.sendAsyncRequest(channel, message);
         } catch (FrameworkException e) {
@@ -218,7 +219,7 @@ public final class RmNettyRemotingClient extends AbstractNettyRemotingClient {
                     LOGGER.info("remove not writable channel:{}", channel);
                 }
             } else {
-                LOGGER.error("register resource failed, channel:{},resourceId:{}", channel, resourceId, e);
+                LOGGER.error("register resource failed, resourceId: {}", message.getResourceIds(), e);
             }
         }
     }

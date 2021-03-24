@@ -19,12 +19,15 @@ import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.Calendar;
 import java.util.Date;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 import io.seata.core.model.BranchType;
 import io.seata.core.model.ResourceManager;
 import io.seata.core.protocol.transaction.UndoLogDeleteRequest;
 import io.seata.rm.datasource.DataSourceManager;
 import io.seata.rm.datasource.DataSourceProxy;
+import io.seata.rm.datasource.undo.UndoLogManager;
 import io.seata.rm.datasource.undo.UndoLogManagerFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -40,43 +43,93 @@ public class RMHandlerAT extends AbstractRMHandler {
 
     private static final int LIMIT_ROWS = 3000;
 
+    private final Map<String, Boolean> undoLogTableExistRecord = new ConcurrentHashMap<>();
+
     @Override
     public void handle(UndoLogDeleteRequest request) {
+        String resourceId = request.getResourceId();
         DataSourceManager dataSourceManager = (DataSourceManager)getResourceManager();
-        DataSourceProxy dataSourceProxy = dataSourceManager.get(request.getResourceId());
+        DataSourceProxy dataSourceProxy = dataSourceManager.get(resourceId);
         if (dataSourceProxy == null) {
-            LOGGER.warn("Failed to get dataSourceProxy for delete undolog on {}", request.getResourceId());
+            LOGGER.warn("Failed to get dataSourceProxy for delete undolog on {}", resourceId);
             return;
         }
-        Date logCreatedSave = getLogCreated(request.getSaveDays());
-        Connection conn = null;
+
+        boolean hasUndoLogTable = undoLogTableExistRecord.computeIfAbsent(resourceId, id -> checkUndoLogTableExist(dataSourceProxy));
+        if (!hasUndoLogTable) {
+            LOGGER.debug("resource({}) has no undo_log table, UndoLogDeleteRequest will be ignored", resourceId);
+            return;
+        }
+
+        Connection conn = getConnection(dataSourceProxy);
+        if (conn == null) {
+            LOGGER.warn("Failed to get connection to delete expired undo_log for {}", resourceId);
+            return;
+        }
+
+        Date division = getLogCreated(request.getSaveDays());
+
+        UndoLogManager manager = getUndoLogManager(dataSourceProxy);
+
+        int deleteRows;
+        do {
+            deleteRows = deleteUndoLog(manager, conn, division);
+        } while (deleteRows == LIMIT_ROWS);
+
         try {
-            conn = dataSourceProxy.getPlainConnection();
-            int deleteRows = 0;
-            do {
-                try {
-                    deleteRows = UndoLogManagerFactory.getUndoLogManager(dataSourceProxy.getDbType())
-                            .deleteUndoLogByLogCreated(logCreatedSave, LIMIT_ROWS, conn);
-                    if (deleteRows > 0 && !conn.getAutoCommit()) {
-                        conn.commit();
-                    }
-                } catch (SQLException exx) {
-                    if (deleteRows > 0 && !conn.getAutoCommit()) {
-                        conn.rollback();
-                    }
-                    throw exx;
-                }
-            } while (deleteRows == LIMIT_ROWS);
-        } catch (Exception e) {
-            LOGGER.error("Failed to delete expired undo_log, error:{}", e.getMessage(), e);
-        } finally {
-            if (conn != null) {
-                try {
-                    conn.close();
-                } catch (SQLException closeEx) {
-                    LOGGER.warn("Failed to close JDBC resource while deleting undo_log ", closeEx);
-                }
+            conn.close();
+        } catch (SQLException closeEx) {
+            LOGGER.warn("Failed to close JDBC resource after deleting undo_log", closeEx);
+        }
+    }
+
+    boolean checkUndoLogTableExist(DataSourceProxy dataSourceProxy) {
+        Connection connection = getConnection(dataSourceProxy);
+        if (connection == null) {
+            return false;
+        }
+        UndoLogManager manager = getUndoLogManager(dataSourceProxy);
+        boolean isExisted = manager.hasUndoLogTable(connection);
+        try {
+            connection.close();
+        } catch (SQLException e) {
+            String resourceId = dataSourceProxy.getResourceId();
+            LOGGER.warn("Failed to close JDBC resource for {}", resourceId, e);
+        }
+        return isExisted;
+    }
+
+    Connection getConnection(DataSourceProxy dataSourceProxy) {
+        try {
+            return dataSourceProxy.getPlainConnection();
+        } catch (SQLException e) {
+            String resourceId = dataSourceProxy.getResourceId();
+            LOGGER.error("Failed to get connection for {}", resourceId, e);
+            return null;
+        }
+    }
+
+    UndoLogManager getUndoLogManager(DataSourceProxy dataSourceProxy) {
+        return UndoLogManagerFactory.getUndoLogManager(dataSourceProxy.getDbType());
+    }
+
+    int deleteUndoLog(UndoLogManager manager, Connection conn, Date division) {
+        try {
+            int deleteRows = manager.deleteUndoLogByLogCreated(division, LIMIT_ROWS, conn);
+            if (!conn.getAutoCommit()) {
+                conn.commit();
             }
+            return deleteRows;
+        } catch (SQLException e) {
+            LOGGER.error("Failed to delete expired undo_log", e);
+            try {
+                if (!conn.getAutoCommit()) {
+                    conn.rollback();
+                }
+            } catch (SQLException re) {
+                LOGGER.error("Failed to rollback undolog", re);
+            }
+            return 0;
         }
     }
 
@@ -90,9 +143,7 @@ public class RMHandlerAT extends AbstractRMHandler {
     }
 
     /**
-     * get AT resource managerDataSourceManager.java
-     *
-     * @return
+     * get AT resource manager
      */
     @Override
     protected ResourceManager getResourceManager() {
@@ -103,5 +154,4 @@ public class RMHandlerAT extends AbstractRMHandler {
     public BranchType getBranchType() {
         return BranchType.AT;
     }
-
 }

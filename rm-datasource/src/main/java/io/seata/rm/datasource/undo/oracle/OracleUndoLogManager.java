@@ -38,6 +38,7 @@ public class OracleUndoLogManager extends AbstractUndoLogManager {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(OracleUndoLogManager.class);
 
+    private static final String CHECK_UNDO_LOG_TABLE_EXIST_SQL = "SELECT 1 FROM " + UNDO_LOG_TABLE_NAME + " WHERE ROWNUM = 1";
 
     private static final String INSERT_UNDO_LOG_SQL = "INSERT INTO " + UNDO_LOG_TABLE_NAME +
             " (" + ClientTableColumnsName.UNDO_LOG_ID + "," + ClientTableColumnsName.UNDO_LOG_BRANCH_XID + ", "
@@ -97,4 +98,8 @@ public class OracleUndoLogManager extends AbstractUndoLogManager {
         }
     }
 
+    @Override
+    protected String getCheckUndoLogTableExistSql() {
+        return CHECK_UNDO_LOG_TABLE_EXIST_SQL;
+    }
 }

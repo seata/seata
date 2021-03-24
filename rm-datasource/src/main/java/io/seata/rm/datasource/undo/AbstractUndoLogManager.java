@@ -82,6 +82,8 @@ public abstract class AbstractUndoLogManager implements UndoLogManager {
     protected static final String UNDO_LOG_TABLE_NAME = ConfigurationFactory.getInstance().getConfig(
         ConfigurationKeys.TRANSACTION_UNDO_LOG_TABLE, DEFAULT_TRANSACTION_UNDO_LOG_TABLE);
 
+    private static final String CHECK_UNDO_LOG_TABLE_EXIST_SQL = "SELECT 1 FROM " + UNDO_LOG_TABLE_NAME + " LIMIT 1";
+
     protected static final String SELECT_UNDO_LOG_SQL = "SELECT * FROM " + UNDO_LOG_TABLE_NAME + " WHERE "
         + ClientTableColumnsName.UNDO_LOG_BRANCH_XID + " = ? AND " + ClientTableColumnsName.UNDO_LOG_XID
         + " = ? FOR UPDATE";
@@ -430,5 +432,20 @@ public abstract class AbstractUndoLogManager implements UndoLogManager {
      */
     protected boolean needCompress(byte[] undoLogContent) {
         return ROLLBACK_INFO_COMPRESS_ENABLE && undoLogContent.length > ROLLBACK_INFO_COMPRESS_THRESHOLD;
+    }
+
+    @Override
+    public boolean hasUndoLogTable(Connection conn) {
+        String checkExistSql = getCheckUndoLogTableExistSql();
+        try (PreparedStatement checkPst = conn.prepareStatement(checkExistSql)) {
+            checkPst.executeQuery();
+            return true;
+        } catch (SQLException e) {
+            return false;
+        }
+    }
+
+    protected String getCheckUndoLogTableExistSql() {
+        return CHECK_UNDO_LOG_TABLE_EXIST_SQL;
     }
 }

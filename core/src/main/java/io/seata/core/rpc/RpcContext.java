@@ -16,7 +16,6 @@
 package io.seata.core.rpc;
 
 import io.netty.channel.Channel;
-import io.seata.common.util.CollectionUtils;
 import io.seata.common.util.StringUtils;
 import io.seata.core.rpc.netty.ChannelUtil;
 import io.seata.core.rpc.netty.NettyPoolKey;
@@ -53,11 +52,6 @@ public class RpcContext {
     private Set<String> resourceSets;
 
     /**
-     * id
-     */
-    private ConcurrentMap<Channel, RpcContext> clientIDHolderMap;
-
-    /**
      * tm
      */
     private ConcurrentMap<Integer, RpcContext> clientTMHolderMap;
@@ -72,19 +66,19 @@ public class RpcContext {
      */
     public void release() {
         Integer clientPort = ChannelUtil.getClientPortFromChannel(channel);
-        if (clientIDHolderMap != null) {
-            clientIDHolderMap = null;
-        }
+
         if (clientRole == NettyPoolKey.TransactionRole.TMROLE && clientTMHolderMap != null) {
             clientTMHolderMap.remove(clientPort);
             clientTMHolderMap = null;
         }
+
         if (clientRole == NettyPoolKey.TransactionRole.RMROLE && clientRMHolderMap != null) {
             for (Map<Integer, RpcContext> portMap : clientRMHolderMap.values()) {
                 portMap.remove(clientPort);
             }
             clientRMHolderMap = null;
         }
+
         if (resourceSets != null) {
             resourceSets.clear();
         }
@@ -100,21 +94,6 @@ public class RpcContext {
             throw new IllegalStateException();
         }
         this.clientTMHolderMap = clientTMHolderMap;
-        Integer clientPort = ChannelUtil.getClientPortFromChannel(channel);
-        this.clientTMHolderMap.put(clientPort, this);
-    }
-
-    /**
-     * Hold in identified channels.
-     *
-     * @param clientIDHolderMap the client id holder map
-     */
-    public void holdInIdentifiedChannels(ConcurrentMap<Channel, RpcContext> clientIDHolderMap) {
-        if (this.clientIDHolderMap != null) {
-            throw new IllegalStateException();
-        }
-        this.clientIDHolderMap = clientIDHolderMap;
-        this.clientIDHolderMap.put(channel, this);
     }
 
     /**
@@ -127,24 +106,7 @@ public class RpcContext {
         if (this.clientRMHolderMap == null) {
             this.clientRMHolderMap = new ConcurrentHashMap<>();
         }
-        Integer clientPort = ChannelUtil.getClientPortFromChannel(channel);
-        portMap.put(clientPort, this);
         this.clientRMHolderMap.put(resourceId, portMap);
-    }
-
-    /**
-     * Hold in resource manager channels.
-     *
-     * @param resourceId the resource id
-     * @param clientPort the client port
-     */
-    public void holdInResourceManagerChannels(String resourceId, Integer clientPort) {
-        if (this.clientRMHolderMap == null) {
-            this.clientRMHolderMap = new ConcurrentHashMap<>();
-        }
-        ConcurrentMap<Integer, RpcContext> portMap = CollectionUtils.computeIfAbsent(clientRMHolderMap, resourceId,
-            key -> new ConcurrentHashMap<>());
-        portMap.put(clientPort, this);
     }
 
     /**

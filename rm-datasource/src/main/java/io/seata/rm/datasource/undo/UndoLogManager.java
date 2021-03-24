@@ -79,4 +79,10 @@ public interface UndoLogManager {
      */
     int deleteUndoLogByLogCreated(Date logCreated, int limitRows, Connection conn) throws SQLException;
 
+    /**
+     * does this resource have undolog table?(some may not have, if they don't use AT mode at all)
+     * @param conn connection of the resource
+     * @return whether undolog table exist or not
+     */
+    boolean hasUndoLogTable(Connection conn);
 }

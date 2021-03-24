@@ -118,6 +118,6 @@ public abstract class AbstractResourceManager implements ResourceManager {
 
     @Override
     public void registerResource(Resource resource) {
-        RmNettyRemotingClient.getInstance().registerResource(resource.getResourceGroupId(), resource.getResourceId());
+        RmNettyRemotingClient.getInstance().registerResource(resource.getResourceId(), resource.getBranchType());
     }
 }

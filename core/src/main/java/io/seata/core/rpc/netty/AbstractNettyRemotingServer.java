@@ -193,30 +193,18 @@ public abstract class AbstractNettyRemotingServer extends AbstractNettyRemoting 
          */
         @Override
         public void channelInactive(ChannelHandlerContext ctx) throws Exception {
-            debugLog("inactive:" + ctx);
-            if (messageExecutor.isShutdown()) {
-                return;
-            }
             handleDisconnect(ctx);
             super.channelInactive(ctx);
         }
 
         private void handleDisconnect(ChannelHandlerContext ctx) {
-            final String ipAndPort = NetUtil.toStringAddress(ctx.channel().remoteAddress());
-            RpcContext rpcContext = ChannelManager.getContextFromIdentified(ctx.channel());
-            if (LOGGER.isInfoEnabled()) {
-                LOGGER.info(ipAndPort + " to server channel inactive.");
-            }
-            if (rpcContext != null && rpcContext.getClientRole() != null) {
-                rpcContext.release();
-                if (LOGGER.isInfoEnabled()) {
-                    LOGGER.info("remove channel:" + ctx.channel() + "context:" + rpcContext);
-                }
-            } else {
-                if (LOGGER.isInfoEnabled()) {
-                    LOGGER.info("remove unused channel:" + ctx.channel());
-                }
-            }
+            Channel channel = ctx.channel();
+            String ipAndPort = NetUtil.toStringAddress(channel.remoteAddress());
+
+            RpcContext rpcContext = ChannelManager.getContextFromIdentified(channel);
+            ChannelManager.releaseRpcContext(channel);
+
+            LOGGER.info("{} to server channel inactive, remove RPC context: {}", ipAndPort, rpcContext);
         }
 
         /**

@@ -18,6 +18,7 @@ package io.seata.server.coordinator;
 import java.time.Duration;
 import java.util.Collection;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import io.netty.channel.Channel;
@@ -30,6 +31,7 @@ import io.seata.core.context.RootContext;
 import io.seata.core.event.EventBus;
 import io.seata.core.event.GlobalTransactionEvent;
 import io.seata.core.exception.TransactionException;
+import io.seata.core.model.BranchType;
 import io.seata.core.model.GlobalStatus;
 import io.seata.core.protocol.AbstractMessage;
 import io.seata.core.protocol.AbstractResultMessage;
@@ -377,19 +379,24 @@ public class DefaultCoordinator extends AbstractTCInboundHandler implements Tran
             }
             return;
         }
-        short saveDays = CONFIG.getShort(ConfigurationKeys.TRANSACTION_UNDO_LOG_SAVE_DAYS,
+
+        short configSaveDays = CONFIG.getShort(ConfigurationKeys.TRANSACTION_UNDO_LOG_SAVE_DAYS,
             UndoLogDeleteRequest.DEFAULT_SAVE_DAYS);
-        for (Map.Entry<String, Channel> channelEntry : rmChannels.entrySet()) {
-            String resourceId = channelEntry.getKey();
-            UndoLogDeleteRequest deleteRequest = new UndoLogDeleteRequest();
-            deleteRequest.setResourceId(resourceId);
-            deleteRequest.setSaveDays(saveDays > 0 ? saveDays : UndoLogDeleteRequest.DEFAULT_SAVE_DAYS);
-            try {
-                remotingServer.sendAsyncRequest(channelEntry.getValue(), deleteRequest);
-            } catch (Exception e) {
-                LOGGER.error("Failed to async delete undo log resourceId = {}, exception: {}", resourceId, e.getMessage());
+        short saveDays = configSaveDays > 0 ? configSaveDays : UndoLogDeleteRequest.DEFAULT_SAVE_DAYS;
+
+        rmChannels.forEach((resourceId, rmChannel) -> {
+            Set<BranchType> typeSet = ChannelManager.getBranchTypeSet(resourceId);
+            if (typeSet.contains(BranchType.AT)) {
+                UndoLogDeleteRequest deleteRequest = new UndoLogDeleteRequest();
+                deleteRequest.setResourceId(resourceId);
+                deleteRequest.setSaveDays(saveDays);
+                try {
+                    remotingServer.sendAsyncRequest(rmChannel, deleteRequest);
+                } catch (Exception e) {
+                    LOGGER.error("Failed to async delete undo log resourceId = {}, exception: {}", resourceId, e.getMessage());
+                }
             }
-        }
+        });
     }
 
     /**
