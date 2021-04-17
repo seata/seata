@@ -21,10 +21,14 @@ import org.springframework.stereotype.Component;
 
 import static io.seata.common.DefaultValues.DEFAULT_BOSS_THREAD_PREFIX;
 import static io.seata.common.DefaultValues.DEFAULT_BOSS_THREAD_SIZE;
+import static io.seata.common.DefaultValues.DEFAULT_CLIENT_PIPELINE_THREAD_PREFIX;
+import static io.seata.common.DefaultValues.DEFAULT_CLIENT_PIPELINE_THREAD_SIZE;
 import static io.seata.common.DefaultValues.DEFAULT_EXECUTOR_THREAD_PREFIX;
 import static io.seata.common.DefaultValues.DEFAULT_NIO_WORKER_THREAD_PREFIX;
 import static io.seata.common.DefaultValues.DEFAULT_SELECTOR_THREAD_PREFIX;
 import static io.seata.common.DefaultValues.DEFAULT_SELECTOR_THREAD_SIZE;
+import static io.seata.common.DefaultValues.DEFAULT_SERVER_PIPELINE_THREAD_PREFIX;
+import static io.seata.common.DefaultValues.DEFAULT_SERVER_PIPELINE_THREAD_SIZE;
 import static io.seata.common.DefaultValues.DEFAULT_WORKER_THREAD_PREFIX;
 import static io.seata.spring.boot.autoconfigure.StarterConstants.THREAD_FACTORY_PREFIX_KEBAB_STYLE;
 
@@ -49,6 +53,16 @@ public class ThreadFactoryProperties {
      * auto default pin or 8
      */
     private String workerThreadSize = WorkThreadMode.Default.name();
+    private String serverPipelineThreadPrefix = DEFAULT_SERVER_PIPELINE_THREAD_PREFIX;
+    /**
+     * server pipeline thread size, mainly deal with non-business logic such as codec etc
+     */
+    private int serverPipelineThreadSize = DEFAULT_SERVER_PIPELINE_THREAD_SIZE;
+    private String clientPipelineThreadPrefix = DEFAULT_CLIENT_PIPELINE_THREAD_PREFIX;
+    /**
+     * client pipeline thread size, mainly deal with non-business logic such as codec etc
+     */
+    private int clientPipelineThreadSize = DEFAULT_CLIENT_PIPELINE_THREAD_SIZE;
 
     public String getBossThreadPrefix() {
         return bossThreadPrefix;
@@ -128,6 +142,42 @@ public class ThreadFactoryProperties {
 
     public ThreadFactoryProperties setWorkerThreadSize(String workerThreadSize) {
         this.workerThreadSize = workerThreadSize;
+        return this;
+    }
+
+    public String getServerPipelineThreadPrefix() {
+        return serverPipelineThreadPrefix;
+    }
+
+    public ThreadFactoryProperties setServerPipelineThreadPrefix(String serverPipelineThreadPrefix) {
+        this.serverPipelineThreadPrefix = serverPipelineThreadPrefix;
+        return this;
+    }
+
+    public int getServerPipelineThreadSize() {
+        return serverPipelineThreadSize;
+    }
+
+    public ThreadFactoryProperties setServerPipelineThreadSize(int serverPipelineThreadSize) {
+        this.serverPipelineThreadSize = serverPipelineThreadSize;
+        return this;
+    }
+
+    public String getClientPipelineThreadPrefix() {
+        return clientPipelineThreadPrefix;
+    }
+
+    public ThreadFactoryProperties setClientPipelineThreadPrefix(String clientPipelineThreadPrefix) {
+        this.clientPipelineThreadPrefix = clientPipelineThreadPrefix;
+        return this;
+    }
+
+    public int getClientPipelineThreadSize() {
+        return clientPipelineThreadSize;
+    }
+
+    public ThreadFactoryProperties setClientPipelineThreadSize(int clientPipelineThreadSize) {
+        this.clientPipelineThreadSize = clientPipelineThreadSize;
         return this;
     }
 }

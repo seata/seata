@@ -59,6 +59,10 @@ seata:
       client-worker-thread-prefix: NettyClientWorkerThread
       worker-thread-size: default
       boss-thread-size: 1
+      server-pipeline-thread-prefix: NettyServerPipeline
+      server-pipeline-thread-size: 8
+      client-pipeline-thread-prefix: NettyClientPipeline
+      client-pipeline-thread-size: 4
     type: TCP
     server: NIO
     heartbeat: true

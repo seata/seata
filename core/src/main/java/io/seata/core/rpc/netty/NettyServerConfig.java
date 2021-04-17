@@ -25,6 +25,8 @@ import static io.seata.common.DefaultValues.DEFAULT_BOSS_THREAD_SIZE;
 import static io.seata.common.DefaultValues.DEFAULT_EXECUTOR_THREAD_PREFIX;
 import static io.seata.common.DefaultValues.DEFAULT_NIO_WORKER_THREAD_PREFIX;
 import static io.seata.common.DefaultValues.DEFAULT_SHUTDOWN_TIMEOUT_SEC;
+import static io.seata.common.DefaultValues.DEFAULT_SERVER_PIPELINE_THREAD_PREFIX;
+import static io.seata.common.DefaultValues.DEFAULT_SERVER_PIPELINE_THREAD_SIZE;
 
 /**
  * The type Netty server config.
@@ -301,5 +303,23 @@ public class NettyServerConfig extends NettyBaseConfig {
 
     public static int getKeepAliveTime() {
         return keepAliveTime;
+    }
+
+    /**
+     * Get server pipeline thread prefix string.
+     *
+     * @return the string
+     */
+    public String getServerPipelineThreadPrefix() {
+        return CONFIG.getConfig(ConfigurationKeys.SERVER_PIPELINE_THREAD_PREFIX, DEFAULT_SERVER_PIPELINE_THREAD_PREFIX);
+    }
+
+    /**
+     * Get server pipeline thread size int.
+     *
+     * @return the int
+     */
+    public int getServerPipelineThreadSize() {
+        return CONFIG.getInt(ConfigurationKeys.SERVER_PIPELINE_THREAD_SIZE, DEFAULT_SERVER_PIPELINE_THREAD_SIZE);
     }
 }

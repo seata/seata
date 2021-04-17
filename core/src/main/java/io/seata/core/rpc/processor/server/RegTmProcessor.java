@@ -66,7 +66,6 @@ public class RegTmProcessor implements RemotingProcessor {
         try {
             if (null == checkAuthHandler || checkAuthHandler.regTransactionManagerCheckAuth(message)) {
                 ChannelManager.registerTMChannel(message, ctx.channel());
-                Version.putChannelVersion(ctx.channel(), message.getVersion());
                 isSuccess = true;
                 if (LOGGER.isDebugEnabled()) {
                     LOGGER.debug("checkAuth for client:{},vgroup:{},applicationId:{}",

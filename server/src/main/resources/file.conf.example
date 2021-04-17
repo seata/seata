@@ -20,6 +20,12 @@ transport {
     bossThreadSize = 1
     #auto default pin or 8
     workerThreadSize = "default"
+    serverPipelineThreadPrefix = "NettyServerPipeline"
+    # server pipeline thread size, mainly deal with non-business logic such as codec etc
+    serverPipelineThreadSize = 8
+    clientPipelineThreadPrefix = "NettyClientPipeline"
+    # client pipeline thread size, mainly deal with non-business logic such as codec etc
+    clientPipelineThreadSize = 4
   }
   shutdown {
     # when destroy server, wait seconds

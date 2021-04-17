@@ -119,4 +119,9 @@ public interface DefaultValues {
      * the constant DEFAULT_RETRY_DEAD_THRESHOLD
      */
     int DEFAULT_RETRY_DEAD_THRESHOLD = 2 * 60 * 1000 + 10 * 1000;
+
+    String DEFAULT_SERVER_PIPELINE_THREAD_PREFIX = "NettyServerPipeline";
+    int DEFAULT_SERVER_PIPELINE_THREAD_SIZE = 8;
+    String DEFAULT_CLIENT_PIPELINE_THREAD_PREFIX = "NettyClientPipeline";
+    int DEFAULT_CLIENT_PIPELINE_THREAD_SIZE = 4;
 }

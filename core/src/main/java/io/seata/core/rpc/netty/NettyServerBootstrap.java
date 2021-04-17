@@ -16,7 +16,6 @@
 package io.seata.core.rpc.netty;
 
 import io.netty.bootstrap.ServerBootstrap;
-import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelInitializer;
@@ -27,6 +26,7 @@ import io.netty.channel.epoll.EpollEventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.handler.timeout.IdleStateHandler;
+import io.netty.util.concurrent.DefaultEventExecutorGroup;
 import io.seata.common.XID;
 import io.seata.common.thread.NamedThreadFactory;
 import io.seata.core.rpc.RemotingBootstrap;
@@ -56,6 +56,8 @@ public class NettyServerBootstrap implements RemotingBootstrap {
     private ChannelHandler[] channelHandlers;
     private int listenPort;
     private final AtomicBoolean initialized = new AtomicBoolean(false);
+    private DefaultEventExecutorGroup defaultEventExecutorGroup;
+    private ProtocolV1Encoder protocolV1Encoder;
 
     public NettyServerBootstrap(NettyServerConfig nettyServerConfig) {
 
@@ -87,18 +89,6 @@ public class NettyServerBootstrap implements RemotingBootstrap {
     }
 
     /**
-     * Add channel pipeline last.
-     *
-     * @param channel  the channel
-     * @param handlers the handlers
-     */
-    private void addChannelPipelineLast(Channel channel, ChannelHandler... handlers) {
-        if (channel != null && handlers != null) {
-            channel.pipeline().addLast(handlers);
-        }
-    }
-
-    /**
      * Sets listen port.
      *
      * @param listenPort the listen port
@@ -122,6 +112,11 @@ public class NettyServerBootstrap implements RemotingBootstrap {
 
     @Override
     public void start() {
+        this.defaultEventExecutorGroup = new DefaultEventExecutorGroup(nettyServerConfig.getServerPipelineThreadSize(),
+                new NamedThreadFactory(nettyServerConfig.getServerPipelineThreadPrefix(),
+                        nettyServerConfig.getServerPipelineThreadSize()));
+        this.protocolV1Encoder = new ProtocolV1Encoder();
+
         this.serverBootstrap.group(this.eventLoopGroupBoss, this.eventLoopGroupWorker)
             .channel(NettyServerConfig.SERVER_CHANNEL_CLAZZ)
             .option(ChannelOption.SO_BACKLOG, nettyServerConfig.getSoBackLogSize())
@@ -137,13 +132,13 @@ public class NettyServerBootstrap implements RemotingBootstrap {
             .childHandler(new ChannelInitializer<SocketChannel>() {
                 @Override
                 public void initChannel(SocketChannel ch) {
-                    ch.pipeline().addLast(new IdleStateHandler(nettyServerConfig.getChannelMaxReadIdleSeconds(), 0, 0))
-                        .addLast(new ProtocolV1Decoder())
-                        .addLast(new ProtocolV1Encoder());
+                    ch.pipeline().addLast(defaultEventExecutorGroup,
+                            new IdleStateHandler(nettyServerConfig.getChannelMaxReadIdleSeconds(), 0, 0),
+                            new ProtocolV1Decoder(),
+                            protocolV1Encoder);
                     if (channelHandlers != null) {
-                        addChannelPipelineLast(ch, channelHandlers);
+                        ch.pipeline().addLast(defaultEventExecutorGroup, channelHandlers);
                     }
-
                 }
             });
 
@@ -174,6 +169,9 @@ public class NettyServerBootstrap implements RemotingBootstrap {
 
             this.eventLoopGroupBoss.shutdownGracefully();
             this.eventLoopGroupWorker.shutdownGracefully();
+            if (this.defaultEventExecutorGroup != null) {
+                this.defaultEventExecutorGroup.shutdownGracefully();
+            }
         } catch (Exception exx) {
             LOGGER.error(exx.getMessage());
         }

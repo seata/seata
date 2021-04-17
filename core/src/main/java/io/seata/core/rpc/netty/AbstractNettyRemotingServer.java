@@ -17,7 +17,7 @@ package io.seata.core.rpc.netty;
 
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelDuplexHandler;
-import io.netty.channel.ChannelHandler;
+import io.netty.channel.ChannelHandler.Sharable;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPromise;
 import io.netty.handler.timeout.IdleState;
@@ -157,7 +157,7 @@ public abstract class AbstractNettyRemotingServer extends AbstractNettyRemoting 
     /**
      * The type ServerHandler.
      */
-    @ChannelHandler.Sharable
+    @Sharable
     class ServerHandler extends ChannelDuplexHandler {
 
         /**

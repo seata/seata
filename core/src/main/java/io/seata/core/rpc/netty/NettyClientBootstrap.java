@@ -60,9 +60,9 @@ public class NettyClientBootstrap implements RemotingBootstrap {
     private static final String THREAD_PREFIX_SPLIT_CHAR = "_";
     private final NettyPoolKey.TransactionRole transactionRole;
     private ChannelHandler[] channelHandlers;
+    private ProtocolV1Encoder protocolV1Encoder;
 
-    public NettyClientBootstrap(NettyClientConfig nettyClientConfig, final EventExecutorGroup eventExecutorGroup,
-                                NettyPoolKey.TransactionRole transactionRole) {
+    public NettyClientBootstrap(NettyClientConfig nettyClientConfig, NettyPoolKey.TransactionRole transactionRole) {
         if (nettyClientConfig == null) {
             nettyClientConfig = new NettyClientConfig();
             if (LOGGER.isInfoEnabled()) {
@@ -75,7 +75,6 @@ public class NettyClientBootstrap implements RemotingBootstrap {
         this.eventLoopGroupWorker = new NioEventLoopGroup(selectorThreadSizeThreadSize,
             new NamedThreadFactory(getThreadPrefix(this.nettyClientConfig.getClientSelectorThreadPrefix()),
                 selectorThreadSizeThreadSize));
-        this.defaultEventExecutorGroup = eventExecutorGroup;
     }
 
     /**
@@ -103,17 +102,18 @@ public class NettyClientBootstrap implements RemotingBootstrap {
 
     @Override
     public void start() {
-        if (this.defaultEventExecutorGroup == null) {
-            this.defaultEventExecutorGroup = new DefaultEventExecutorGroup(nettyClientConfig.getClientWorkerThreads(),
-                new NamedThreadFactory(getThreadPrefix(nettyClientConfig.getClientWorkerThreadPrefix()),
-                    nettyClientConfig.getClientWorkerThreads()));
-        }
-        this.bootstrap.group(this.eventLoopGroupWorker).channel(
-            nettyClientConfig.getClientChannelClazz()).option(
-            ChannelOption.TCP_NODELAY, true).option(ChannelOption.SO_KEEPALIVE, true).option(
-            ChannelOption.CONNECT_TIMEOUT_MILLIS, nettyClientConfig.getConnectTimeoutMillis()).option(
-            ChannelOption.SO_SNDBUF, nettyClientConfig.getClientSocketSndBufSize()).option(ChannelOption.SO_RCVBUF,
-            nettyClientConfig.getClientSocketRcvBufSize());
+        this.defaultEventExecutorGroup = new DefaultEventExecutorGroup(nettyClientConfig.getClientPipelineThreadSize(),
+                new NamedThreadFactory(getThreadPrefix(nettyClientConfig.getClientPipelineThreadPrefix()),
+                        nettyClientConfig.getClientPipelineThreadSize()));
+        this.protocolV1Encoder = new ProtocolV1Encoder();
+
+        this.bootstrap.group(this.eventLoopGroupWorker)
+                .channel(nettyClientConfig.getClientChannelClazz())
+                .option(ChannelOption.TCP_NODELAY, true)
+                .option(ChannelOption.SO_KEEPALIVE, true)
+                .option(ChannelOption.CONNECT_TIMEOUT_MILLIS, nettyClientConfig.getConnectTimeoutMillis())
+                .option(ChannelOption.SO_SNDBUF, nettyClientConfig.getClientSocketSndBufSize())
+                .option(ChannelOption.SO_RCVBUF, nettyClientConfig.getClientSocketRcvBufSize());
 
         if (nettyClientConfig.enableNative()) {
             if (PlatformDependent.isOsx()) {
@@ -131,14 +131,12 @@ public class NettyClientBootstrap implements RemotingBootstrap {
                 @Override
                 public void initChannel(SocketChannel ch) {
                     ChannelPipeline pipeline = ch.pipeline();
-                    pipeline.addLast(
-                        new IdleStateHandler(nettyClientConfig.getChannelMaxReadIdleSeconds(),
-                            nettyClientConfig.getChannelMaxWriteIdleSeconds(),
-                            nettyClientConfig.getChannelMaxAllIdleSeconds()))
-                        .addLast(new ProtocolV1Decoder())
-                        .addLast(new ProtocolV1Encoder());
+                    pipeline.addLast(defaultEventExecutorGroup,
+                            new IdleStateHandler(nettyClientConfig.getChannelMaxReadIdleSeconds(), nettyClientConfig.getChannelMaxWriteIdleSeconds(), nettyClientConfig.getChannelMaxAllIdleSeconds()),
+                            new ProtocolV1Decoder(),
+                            protocolV1Encoder);
                     if (channelHandlers != null) {
-                        addChannelPipelineLast(ch, channelHandlers);
+                        pipeline.addLast(defaultEventExecutorGroup, channelHandlers);
                     }
                 }
             });

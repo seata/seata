@@ -16,7 +16,6 @@
 package io.seata.core.rpc.netty;
 
 import io.netty.channel.Channel;
-import io.netty.util.concurrent.EventExecutorGroup;
 import io.seata.common.exception.FrameworkErrorCode;
 import io.seata.common.exception.FrameworkException;
 import io.seata.common.thread.NamedThreadFactory;
@@ -81,9 +80,8 @@ public final class RmNettyRemotingClient extends AbstractNettyRemotingClient {
         }
     }
 
-    private RmNettyRemotingClient(NettyClientConfig nettyClientConfig, EventExecutorGroup eventExecutorGroup,
-                                  ThreadPoolExecutor messageExecutor) {
-        super(nettyClientConfig, eventExecutorGroup, messageExecutor, TransactionRole.RMROLE);
+    private RmNettyRemotingClient(NettyClientConfig nettyClientConfig, ThreadPoolExecutor messageExecutor) {
+        super(nettyClientConfig, messageExecutor, TransactionRole.RMROLE);
     }
 
     /**
@@ -115,7 +113,7 @@ public final class RmNettyRemotingClient extends AbstractNettyRemotingClient {
                         KEEP_ALIVE_TIME, TimeUnit.SECONDS, new LinkedBlockingQueue<>(MAX_QUEUE_SIZE),
                         new NamedThreadFactory(nettyClientConfig.getRmDispatchThreadPrefix(),
                             nettyClientConfig.getClientWorkerThreads()), new ThreadPoolExecutor.CallerRunsPolicy());
-                    instance = new RmNettyRemotingClient(nettyClientConfig, null, messageExecutor);
+                    instance = new RmNettyRemotingClient(nettyClientConfig, messageExecutor);
                 }
             }
         }
