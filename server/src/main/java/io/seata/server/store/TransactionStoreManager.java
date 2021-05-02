@@ -35,6 +35,15 @@ public interface TransactionStoreManager {
      * @return the boolean
      */
     boolean writeSession(LogOperation logOperation, SessionStorable session);
+    
+    /**
+     * Write sessions boolean.
+     *
+     * @param logOperation the log operation
+     * @param sessions      the sessions
+     * @return the boolean
+     */
+    boolean writeSession(LogOperation logOperation, List<SessionStorable> sessions);
 
 
     /**
@@ -96,7 +105,15 @@ public interface TransactionStoreManager {
         /**
          * Branch remove log operation.
          */
-        BRANCH_REMOVE((byte)6);
+        BRANCH_REMOVE((byte)6),
+        /**
+         * Global clean removed log operation.
+         */
+        GLOBAL_CLEAN((byte)7),
+        /**
+         * Branch clean removed log operation.
+         */
+        BRANCH_CLEAN((byte)8);
 
         private byte code;
 

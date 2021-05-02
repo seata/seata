@@ -49,6 +49,15 @@ public interface LogStore {
      * @return the list
      */
     List<GlobalTransactionDO> queryGlobalTransactionDO(int[] status, int limit);
+    
+    /**
+     * Query expired removed global transaction do list.
+     *
+     * @param expiredTime
+     * @param limit
+     * @return global transaction do list.
+     */
+    List<GlobalTransactionDO> queryExpiredGlobalTransactionDO(long expiredTime, int limit);
 
     /**
      * Insert global transaction do boolean.
@@ -73,6 +82,14 @@ public interface LogStore {
      * @return the boolean
      */
     boolean deleteGlobalTransactionDO(GlobalTransactionDO globalTransactionDO);
+    
+    /**
+     * Batch delete global transaction do boolean.
+     *
+     * @param globalTransactionDO the global transaction do
+     * @return the boolean
+     */
+    boolean deleteGlobalTransactionDO(List<GlobalTransactionDO> globalTransactionDOs);
 
     /**
      * Query branch transaction do list.
@@ -113,6 +130,14 @@ public interface LogStore {
      * @return the boolean
      */
     boolean deleteBranchTransactionDO(BranchTransactionDO branchTransactionDO);
+    
+    /**
+     * Batch delete branch transaction do boolean.
+     *
+     * @param branchTransactionDOs the branch transaction do list
+     * @return the boolean
+     */
+    boolean deleteBranchTransactionDO(List<BranchTransactionDO> branchTransactionDOs);
 
     /**
      * Gets current max session id.

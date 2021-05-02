@@ -40,6 +40,7 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
 
 /**
  * The type Data base session manager test.
@@ -208,6 +209,17 @@ public class DataBaseSessionManagerTest {
             //delete
             sessionManager.removeGlobalSession(session);
 
+            rs = conn.createStatement().executeQuery(sql);
+            if(rs.next()){
+                Assertions.assertEquals(rs.getInt("status"), GlobalStatus.Removed.getCode());
+            }else{
+                Assertions.assertTrue(true);
+            }
+            
+            List<GlobalSession> list = new ArrayList<>();
+            list.add(session);
+            sessionManager.cleanGlobalSession(list);
+            
             rs = conn.createStatement().executeQuery(sql);
             if(rs.next()){
                 Assertions.assertTrue(false);
@@ -390,6 +402,17 @@ public class DataBaseSessionManagerTest {
         try{
             conn = dataSource.getConnection();
             ResultSet rs = conn.createStatement().executeQuery(sql);
+            if(rs.next()){
+                Assertions.assertEquals(rs.getInt("status"), BranchStatus.Removed.getCode());
+            }else{
+                Assertions.assertTrue(true);
+            }
+            
+            List<BranchSession> list = new ArrayList<>();
+            list.add(branchSession);
+            sessionManager.cleanBranchSession(list);
+            
+            rs = conn.createStatement().executeQuery(sql);
             if(rs.next()){
                 Assertions.assertTrue(false);
             }else{

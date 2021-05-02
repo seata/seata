@@ -20,7 +20,9 @@ import java.sql.DatabaseMetaData;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 import javax.sql.DataSource;
 
@@ -83,6 +85,8 @@ public class LogStoreDataBaseDAO implements LogStore {
     private String dbType;
 
     private int transactionNameColumnSize = TRANSACTION_NAME_DEFAULT_SIZE;
+    
+    private final static SimpleDateFormat SDF = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
 
     /**
      * Instantiates a new Log store data base dao.
@@ -251,6 +255,29 @@ public class LogStoreDataBaseDAO implements LogStore {
         }
         return true;
     }
+    
+    @Override
+    public boolean deleteGlobalTransactionDO(List<GlobalTransactionDO> globalTransactionDOs) {
+        int length = globalTransactionDOs.size();
+        String paramsPlaceHolder = org.apache.commons.lang.StringUtils.repeat("?", ",", length);
+        String sql = LogStoreSqlsFactory.getLogStoreSqls(dbType).getBatchDeleteGlobalTransactionSQL(globalTable, paramsPlaceHolder);
+        Connection conn = null;
+        PreparedStatement ps = null;
+        try {
+            conn = logStoreDataSource.getConnection();
+            conn.setAutoCommit(true);
+            ps = conn.prepareStatement(sql);
+            for (int i = 0; i < length; i++) {
+                ps.setString(i + 1, globalTransactionDOs.get(i).getXid());
+            }
+            ps.executeUpdate();
+        } catch (SQLException e) {
+            throw new StoreException(e);
+        } finally {
+            IOUtil.close(ps, conn);
+        }
+        return true;
+    }
 
     @Override
     public List<BranchTransactionDO> queryBranchTransactionDO(String xid) {
@@ -371,6 +398,29 @@ public class LogStoreDataBaseDAO implements LogStore {
         }
         return true;
     }
+    
+    @Override
+    public boolean deleteBranchTransactionDO(List<BranchTransactionDO> branchTransactionDOs) {
+        int length = branchTransactionDOs.size();
+        String paramsPlaceHolder = org.apache.commons.lang.StringUtils.repeat("?", ",", length);
+        String sql = LogStoreSqlsFactory.getLogStoreSqls(dbType).getBatchDeleteBranchTransactionByBranchIdSQL(branchTable, paramsPlaceHolder);
+        Connection conn = null;
+        PreparedStatement ps = null;
+        try {
+            conn = logStoreDataSource.getConnection();
+            conn.setAutoCommit(true);
+            ps = conn.prepareStatement(sql);
+            for (int i = 0; i < length; i++) {
+                ps.setLong(i + 1, branchTransactionDOs.get(i).getBranchId());
+            }
+            ps.executeUpdate();
+        } catch (SQLException e) {
+            throw new StoreException(e);
+        } finally {
+            IOUtil.close(ps, conn);
+        }
+        return true;
+    }
 
     @Override
     public long getCurrentMaxSessionId(long high, long low) {
@@ -403,6 +453,32 @@ public class LogStoreDataBaseDAO implements LogStore {
             IOUtil.close(rs, ps, conn);
         }
         return max;
+    }
+    
+
+    @Override
+    public List<GlobalTransactionDO> queryExpiredGlobalTransactionDO(long expiredTime, int limit) {
+        List<GlobalTransactionDO> ret = new ArrayList<>();
+        Connection conn = null;
+        PreparedStatement ps = null;
+        ResultSet rs = null;
+        try {
+            conn = logStoreDataSource.getConnection();
+            conn.setAutoCommit(true);
+            String sql = LogStoreSqlsFactory.getLogStoreSqls(dbType).getQueryRemovedGlobalTransactionSQL(globalTable);
+            ps = conn.prepareStatement(sql);
+            ps.setString(1, SDF.format(new Date(expiredTime)));
+            ps.setInt(2, limit);
+            rs = ps.executeQuery();
+            while (rs.next()) {
+                ret.add(convertGlobalTransactionDO(rs));
+            }
+            return ret;
+        } catch (SQLException e) {
+            throw new DataAccessException(e);
+        } finally {
+            IOUtil.close(rs, ps, conn);
+        }
     }
 
     private GlobalTransactionDO convertGlobalTransactionDO(ResultSet rs) throws SQLException {

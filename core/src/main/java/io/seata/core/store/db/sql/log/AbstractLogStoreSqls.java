@@ -69,6 +69,12 @@ public abstract class AbstractLogStoreSqls implements LogStoreSqls {
      */
     public static final String DELETE_GLOBAL_TRANSACTION = "delete from " + GLOBAL_TABLE_PLACEHOLD
             + " where " + ServerTableColumnsName.GLOBAL_TABLE_XID + " = ?";
+    
+    /**
+     * The constant BATCH_DELETE_GLOBAL_TRANSACTION.
+     */
+    public static final String BATCH_DELETE_GLOBAL_TRANSACTION = "delete from " + GLOBAL_TABLE_PLACEHOLD
+            + " where " + ServerTableColumnsName.GLOBAL_TABLE_XID + " in (" + PRAMETER_PLACEHOLD + ")";
 
     /**
      * The constant QUERY_GLOBAL_TRANSACTION.
@@ -90,6 +96,12 @@ public abstract class AbstractLogStoreSqls implements LogStoreSqls {
     public static final String DELETE_BRANCH_TRANSACTION_BY_BRANCH_ID = "delete from " + BRANCH_TABLE_PLACEHOLD
             + " where " + ServerTableColumnsName.BRANCH_TABLE_XID + " = ?"
             + "   and " + ServerTableColumnsName.BRANCH_TABLE_BRANCH_ID + " = ?";
+    
+    /**
+     * The constant BATCH_BRANCH_TRANSACTION_BY_BRANCH_ID.
+     */
+    public static final String BATCH_DELETE_BRANCH_TRANSACTION_BY_BRANCH_ID = "delete from " + BRANCH_TABLE_PLACEHOLD
+            + " where " + ServerTableColumnsName.BRANCH_TABLE_BRANCH_ID + " in (" + PRAMETER_PLACEHOLD + ")";
 
     /**
      * The constant DELETE_BRANCH_TRANSACTION_BY_XID.
@@ -140,6 +152,13 @@ public abstract class AbstractLogStoreSqls implements LogStoreSqls {
     public String getDeleteGlobalTransactionSQL(String globalTable) {
         return DELETE_GLOBAL_TRANSACTION.replace(GLOBAL_TABLE_PLACEHOLD, globalTable);
     }
+    
+    @Override
+    public String getBatchDeleteGlobalTransactionSQL(String globalTable, String paramsPlaceHolder) {
+        return BATCH_DELETE_GLOBAL_TRANSACTION.replace(GLOBAL_TABLE_PLACEHOLD, globalTable)
+                .replace(PRAMETER_PLACEHOLD, paramsPlaceHolder);
+    }
+
 
     @Override
     public String getQueryGlobalTransactionSQL(String globalTable) {
@@ -157,6 +176,8 @@ public abstract class AbstractLogStoreSqls implements LogStoreSqls {
     @Override
     public abstract String getQueryGlobalTransactionForRecoverySQL(String globalTable);
 
+    @Override
+    public abstract String getQueryRemovedGlobalTransactionSQL(String globalTable);
 
     @Override
     public abstract String getInsertBranchTransactionSQL(String branchTable);
@@ -169,6 +190,12 @@ public abstract class AbstractLogStoreSqls implements LogStoreSqls {
         return DELETE_BRANCH_TRANSACTION_BY_BRANCH_ID.replace(BRANCH_TABLE_PLACEHOLD, branchTable);
     }
 
+    @Override
+    public String getBatchDeleteBranchTransactionByBranchIdSQL(String branchTable, String paramsPlaceHolder) {
+        return BATCH_DELETE_BRANCH_TRANSACTION_BY_BRANCH_ID.replace(BRANCH_TABLE_PLACEHOLD, branchTable)
+                .replace(PRAMETER_PLACEHOLD, paramsPlaceHolder);
+    }
+    
     @Override
     public String getDeleteBranchTransactionByXId(String branchTable) {
         return DELETE_BRANCH_TRANSACTION_BY_XID.replace(BRANCH_TABLE_PLACEHOLD, branchTable);

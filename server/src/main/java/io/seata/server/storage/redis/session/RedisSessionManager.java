@@ -15,6 +15,7 @@
  */
 package io.seata.server.storage.redis.session;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import io.seata.common.exception.StoreException;
@@ -31,6 +32,7 @@ import io.seata.server.session.GlobalSession;
 import io.seata.server.session.SessionCondition;
 import io.seata.server.session.SessionHolder;
 import io.seata.server.storage.redis.store.RedisTransactionStoreManager;
+import io.seata.server.store.SessionStorable;
 import io.seata.server.store.TransactionStoreManager.LogOperation;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -116,6 +118,15 @@ public class RedisSessionManager extends AbstractSessionManager
             throw new StoreException("removeGlobalSession failed.");
         }
     }
+    
+    @Override
+    public void cleanGlobalSession(List<GlobalSession> sessions) throws TransactionException {
+        List<SessionStorable> globalSessions = new ArrayList<>(sessions);
+        boolean ret = transactionStoreManager.writeSession(LogOperation.GLOBAL_CLEAN, globalSessions);
+        if (!ret) {
+            throw new StoreException("cleanGlobalSession failed.");
+        }
+    }
 
     @Override
     public void addBranchSession(GlobalSession globalSession, BranchSession session) throws TransactionException {
@@ -147,6 +158,18 @@ public class RedisSessionManager extends AbstractSessionManager
         boolean ret = transactionStoreManager.writeSession(LogOperation.BRANCH_REMOVE, session);
         if (!ret) {
             throw new StoreException("removeBranchSession failed.");
+        }
+    }
+    
+    @Override
+    public void cleanBranchSession(List<BranchSession> sessions) throws TransactionException {
+        if (!StringUtils.isEmpty(taskName)) {
+            return;
+        }
+        List<SessionStorable> branchSessions = new ArrayList<>(sessions);
+        boolean ret = transactionStoreManager.writeSession(LogOperation.BRANCH_CLEAN, branchSessions);
+        if (!ret) {
+            throw new StoreException("cleanBranchSession failed.");
         }
     }
 

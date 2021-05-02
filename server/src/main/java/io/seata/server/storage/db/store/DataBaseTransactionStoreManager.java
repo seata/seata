@@ -29,6 +29,7 @@ import io.seata.common.util.StringUtils;
 import io.seata.config.Configuration;
 import io.seata.config.ConfigurationFactory;
 import io.seata.core.constants.ConfigurationKeys;
+import io.seata.core.model.BranchStatus;
 import io.seata.core.model.GlobalStatus;
 import io.seata.core.store.BranchTransactionDO;
 import io.seata.core.store.GlobalTransactionDO;
@@ -103,13 +104,34 @@ public class DataBaseTransactionStoreManager extends AbstractTransactionStoreMan
         } else if (LogOperation.GLOBAL_UPDATE.equals(logOperation)) {
             return logStore.updateGlobalTransactionDO(SessionConverter.convertGlobalTransactionDO(session));
         } else if (LogOperation.GLOBAL_REMOVE.equals(logOperation)) {
-            return logStore.deleteGlobalTransactionDO(SessionConverter.convertGlobalTransactionDO(session));
+            // Marked as removed in the database
+            GlobalTransactionDO globalTransactionDO = SessionConverter.convertGlobalTransactionDO(session);
+            globalTransactionDO.setStatus(GlobalStatus.Removed.getCode());
+            return logStore.updateGlobalTransactionDO(globalTransactionDO);
         } else if (LogOperation.BRANCH_ADD.equals(logOperation)) {
             return logStore.insertBranchTransactionDO(SessionConverter.convertBranchTransactionDO(session));
         } else if (LogOperation.BRANCH_UPDATE.equals(logOperation)) {
             return logStore.updateBranchTransactionDO(SessionConverter.convertBranchTransactionDO(session));
         } else if (LogOperation.BRANCH_REMOVE.equals(logOperation)) {
-            return logStore.deleteBranchTransactionDO(SessionConverter.convertBranchTransactionDO(session));
+            // Marked as removed in the database
+            BranchTransactionDO branchTransactionDO = SessionConverter.convertBranchTransactionDO(session);
+            branchTransactionDO.setStatus(BranchStatus.Removed.getCode());
+            return logStore.updateBranchTransactionDO(branchTransactionDO);
+        } else {
+            throw new StoreException("Unknown LogOperation:" + logOperation.name());
+        }
+    }
+    
+    @Override
+    public boolean writeSession(LogOperation logOperation, List<SessionStorable> sessions) {
+        if (LogOperation.GLOBAL_CLEAN.equals(logOperation)) {
+            List<GlobalTransactionDO> list = new ArrayList<>();
+            sessions.forEach(s -> list.add(SessionConverter.convertGlobalTransactionDO(s)));
+            return logStore.deleteGlobalTransactionDO(list);
+        } else if (LogOperation.BRANCH_CLEAN.equals(logOperation)) {
+            List<BranchTransactionDO> list = new ArrayList<>();
+            sessions.forEach(s -> list.add(SessionConverter.convertBranchTransactionDO(s)));
+            return logStore.deleteBranchTransactionDO(list);
         } else {
             throw new StoreException("Unknown LogOperation:" + logOperation.name());
         }
@@ -163,6 +185,9 @@ public class DataBaseTransactionStoreManager extends AbstractTransactionStoreMan
         //reduce rpc with db when branchRegister and getGlobalStatus
         if (withBranchSessions) {
             branchTransactionDOs = logStore.queryBranchTransactionDO(globalTransactionDO.getXid());
+            branchTransactionDOs = branchTransactionDOs.stream()
+                    .filter(b -> BranchStatus.Removed.getCode() != b.getStatus())
+                    .collect(Collectors.toList());
         }
         return getGlobalSession(globalTransactionDO, branchTransactionDOs);
     }
@@ -180,6 +205,21 @@ public class DataBaseTransactionStoreManager extends AbstractTransactionStoreMan
         }
         //global transaction
         List<GlobalTransactionDO> globalTransactionDOs = logStore.queryGlobalTransactionDO(states, logQueryLimit);
+        if (CollectionUtils.isEmpty(globalTransactionDOs)) {
+            return null;
+        }
+        List<String> xids = globalTransactionDOs.stream().map(GlobalTransactionDO::getXid).collect(Collectors.toList());
+        List<BranchTransactionDO> branchTransactionDOs = logStore.queryBranchTransactionDO(xids);
+        Map<String, List<BranchTransactionDO>> branchTransactionDOsMap = branchTransactionDOs.stream()
+            .filter(s -> s.getStatus() != BranchStatus.Removed.getCode())
+            .collect(Collectors.groupingBy(BranchTransactionDO::getXid, LinkedHashMap::new, Collectors.toList()));
+        return globalTransactionDOs.stream().map(globalTransactionDO ->
+            getGlobalSession(globalTransactionDO, branchTransactionDOsMap.get(globalTransactionDO.getXid())))
+            .collect(Collectors.toList());
+    }
+    
+    public List<GlobalSession> readSession(GlobalStatus status, long expiredTime) {
+        List<GlobalTransactionDO> globalTransactionDOs = logStore.queryExpiredGlobalTransactionDO(expiredTime, logQueryLimit);
         if (CollectionUtils.isEmpty(globalTransactionDOs)) {
             return null;
         }
@@ -210,6 +250,8 @@ public class DataBaseTransactionStoreManager extends AbstractTransactionStoreMan
             }
         } else if (CollectionUtils.isNotEmpty(sessionCondition.getStatuses())) {
             return readSession(sessionCondition.getStatuses());
+        } else if (GlobalStatus.Removed.equals(sessionCondition.getStatus()) && null != sessionCondition.getExpiredTime()) {
+            return readSession(sessionCondition.getStatus(), sessionCondition.getExpiredTime());
         }
         return null;
     }

@@ -57,6 +57,16 @@ public class PostgresqlLogStoreSqls extends AbstractLogStoreSqls {
             + " where " + ServerTableColumnsName.GLOBAL_TABLE_STATUS + " in (0, 2, 3, 4, 5, 6, 7, 8, 10 ,12, 14)"
             + " order by " + ServerTableColumnsName.GLOBAL_TABLE_GMT_MODIFIED
             + " limit ?";
+    
+    /**
+     * The constant QUERY_REMOVED_GLOBAL_TRANSACTION_POSTGRESQL.
+     */
+    public static final String QUERY_REMOVED_GLOBAL_TRANSACTION_POSTGRESQL = "select " + ALL_GLOBAL_COLUMNS
+            + "  from " + GLOBAL_TABLE_PLACEHOLD
+            + " where " + ServerTableColumnsName.GLOBAL_TABLE_STATUS + " = 16"
+            + "   and " + ServerTableColumnsName.GLOBAL_TABLE_GMT_MODIFIED + " < ?"
+            + " order by " + ServerTableColumnsName.GLOBAL_TABLE_GMT_MODIFIED
+            + " limit ?";
 
     /**
      * The constant INSERT_BRANCH_TRANSACTION_POSTGRESQL.
@@ -103,5 +113,10 @@ public class PostgresqlLogStoreSqls extends AbstractLogStoreSqls {
     @Override
     public String getUpdateBranchTransactionStatusSQL(String branchTable) {
         return UPDATE_BRANCH_TRANSACTION_STATUS_POSTGRESQL.replace(BRANCH_TABLE_PLACEHOLD, branchTable);
+    }
+
+    @Override
+    public String getQueryRemovedGlobalTransactionSQL(String globalTable) {
+        return QUERY_REMOVED_GLOBAL_TRANSACTION_POSTGRESQL.replace(GLOBAL_TABLE_PLACEHOLD, globalTable);
     }
 }

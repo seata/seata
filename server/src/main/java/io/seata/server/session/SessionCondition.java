@@ -28,6 +28,7 @@ public class SessionCondition {
     private GlobalStatus status;
     private GlobalStatus[] statuses;
     private long overTimeAliveMills;
+    private Long expiredTime;
 
     /**
      * Instantiates a new Session condition.
@@ -106,6 +107,14 @@ public class SessionCondition {
      */
     public void setOverTimeAliveMills(long overTimeAliveMills) {
         this.overTimeAliveMills = overTimeAliveMills;
+    }
+
+    public Long getExpiredTime() {
+        return expiredTime;
+    }
+
+    public void setExpiredTime(Long expiredTime) {
+        this.expiredTime = expiredTime;
     }
 
     public Long getTransactionId() {

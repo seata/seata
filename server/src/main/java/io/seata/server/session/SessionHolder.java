@@ -41,6 +41,7 @@ import static io.seata.common.Constants.RETRY_COMMITTING;
 import static io.seata.common.Constants.RETRY_ROLLBACKING;
 import static io.seata.common.Constants.TX_TIMEOUT_CHECK;
 import static io.seata.common.Constants.UNDOLOG_DELETE;
+import static io.seata.common.Constants.STORE_LOG_DELETE;
 
 /**
  * The type Session holder.
@@ -375,6 +376,15 @@ public class SessionHolder {
     public static boolean undoLogDeleteLock() {
         return getRootSessionManager().scheduledLock(UNDOLOG_DELETE);
     }
+    
+    /**
+     * store log delete lock
+     *
+     * @return the boolean
+     */
+    public static boolean storeLogDeleteLock() {
+        return getRootSessionManager().scheduledLock(STORE_LOG_DELETE);
+    }
 
     /**
      * un retry rollbacking lock
@@ -419,6 +429,15 @@ public class SessionHolder {
      */
     public static boolean unUndoLogDeleteLock() {
         return getRootSessionManager().unScheduledLock(UNDOLOG_DELETE);
+    }
+    
+    /**
+     * un store log delete lock
+     *
+     * @return the boolean
+     */
+    public static boolean unStoreLogDeleteLock() {
+        return getRootSessionManager().unScheduledLock(STORE_LOG_DELETE);
     }
 
     public static void destroy() {

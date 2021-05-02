@@ -15,6 +15,9 @@
  */
 package io.seata.server.session;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import io.seata.core.exception.BranchTransactionException;
 import io.seata.core.exception.GlobalTransactionException;
 import io.seata.core.exception.TransactionException;
@@ -177,6 +180,18 @@ public abstract class AbstractSessionManager implements SessionManager, SessionL
 
     @Override
     public void destroy() {
+    }
+    
+    @Override
+    public void cleanGlobalSession(List<GlobalSession> globalSessions) throws TransactionException {
+        List<SessionStorable> sessions = new ArrayList<>(globalSessions);
+        transactionStoreManager.writeSession(LogOperation.GLOBAL_CLEAN, sessions);
+    }
+
+    @Override
+    public void cleanBranchSession(List<BranchSession> branchSessions) throws TransactionException {
+        List<SessionStorable> sessions = new ArrayList<>(branchSessions);
+        transactionStoreManager.writeSession(LogOperation.BRANCH_CLEAN, sessions);
     }
 
     /**

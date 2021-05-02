@@ -25,6 +25,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
 
 import io.seata.common.exception.ShouldNeverHappenException;
 import io.seata.common.loader.LoadLevel;
@@ -80,6 +81,11 @@ public class FileSessionManager extends AbstractSessionManager implements Reload
                 public boolean writeSession(LogOperation logOperation, SessionStorable session) {
                     return true;
                 }
+
+                @Override
+                public boolean writeSession(LogOperation logOperation, List<SessionStorable> sessions) {
+                    return true;
+                }
             };
         }
     }
@@ -114,7 +120,7 @@ public class FileSessionManager extends AbstractSessionManager implements Reload
 
     @Override
     public Collection<GlobalSession> allSessions() {
-        return sessionMap.values();
+        return sessionMap.values().stream().filter(s -> !s.getStatus().equals(GlobalStatus.Removed)).collect(Collectors.toList());
     }
 
     @Override
@@ -240,6 +246,7 @@ public class FileSessionManager extends AbstractSessionManager implements Reload
                     }
                     break;
                 }
+                case GLOBAL_CLEAN:
                 case GLOBAL_REMOVE: {
                     GlobalSession globalSession = (GlobalSession)sessionStorable;
                     if (globalSession.getTransactionId() == 0) {
@@ -286,6 +293,7 @@ public class FileSessionManager extends AbstractSessionManager implements Reload
                     }
                     break;
                 }
+                case BRANCH_CLEAN:
                 case BRANCH_REMOVE: {
                     BranchSession branchSession = (BranchSession)sessionStorable;
                     String xid = branchSession.getXid();

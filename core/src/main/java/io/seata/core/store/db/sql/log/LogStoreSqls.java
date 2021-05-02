@@ -44,6 +44,15 @@ public interface LogStoreSqls {
      * @return the string
      */
     String getDeleteGlobalTransactionSQL(String globalTable);
+    
+    /**
+     * Get batch delete global transaction sql string.
+     *
+     * @param globalTable the global table
+     * @param paramsPlaceHolder the params place holder
+     * @return the string
+     */
+    String getBatchDeleteGlobalTransactionSQL(String globalTable, String paramsPlaceHolder);
 
     /**
      * Get query global transaction sql string.
@@ -69,6 +78,15 @@ public interface LogStoreSqls {
      * @return the string
      */
     String getQueryGlobalTransactionSQLByStatus(String globalTable, String paramsPlaceHolder);
+    
+    /**
+     * Get query removed global transaction sql string.
+     *
+     * @param globalTable       the global table
+     * @param paramsPlaceHolder the params place holder
+     * @return the string
+     */
+    String getQueryRemovedGlobalTransactionSQL(String globalTable);
 
     /**
      * Get query global transaction for recovery sql string.
@@ -102,6 +120,15 @@ public interface LogStoreSqls {
      */
     String getDeleteBranchTransactionByBranchIdSQL(String branchTable);
 
+    /**
+     * Get batch delete branch transaction by branch id sql string.
+     *
+     * @param branchTable the branch table
+     * @param paramsPlaceHolder the params place holder
+     * @return the string
+     */
+    String getBatchDeleteBranchTransactionByBranchIdSQL(String branchTable, String paramsPlaceHolder);
+    
     /**
      * Get delete branch transaction by x id string.
      *

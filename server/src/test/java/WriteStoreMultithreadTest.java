@@ -170,6 +170,17 @@ public class WriteStoreMultithreadTest {
                     public void onEnd(GlobalSession globalSession) throws TransactionException {
 
                     }
+
+                    @Override
+                    public void cleanGlobalSession(List<GlobalSession> sessions) throws TransactionException {
+                        
+                    }
+
+                    @Override
+                    public void cleanBranchSession(List<BranchSession> sessions) throws TransactionException {
+                        
+                    }
+
                 });
         long beginWriteMills = System.currentTimeMillis();
         for (int i = 0; i < threadNum; i++) {

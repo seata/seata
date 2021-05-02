@@ -114,11 +114,13 @@ public class TransactionWriteStore implements SessionStorable {
             case GLOBAL_ADD:
             case GLOBAL_UPDATE:
             case GLOBAL_REMOVE:
+            case GLOBAL_CLEAN:
                 sessionStorable = new GlobalSession();
                 break;
             case BRANCH_ADD:
             case BRANCH_UPDATE:
             case BRANCH_REMOVE:
+            case BRANCH_CLEAN:
                 sessionStorable = new BranchSession();
                 break;
             default:

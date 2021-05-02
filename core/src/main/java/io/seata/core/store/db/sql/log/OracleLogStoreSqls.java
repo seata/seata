@@ -50,6 +50,18 @@ public class OracleLogStoreSqls extends AbstractLogStoreSqls {
             + "  order by " + ServerTableColumnsName.GLOBAL_TABLE_GMT_MODIFIED
             + " ) A"
             + " where ROWNUM <= ?";
+    
+    /**
+     * The constant QUERY_REMOVED_GLOBAL_TRANSACTION_ORACLE.
+     */
+    public static final String QUERY_REMOVED_GLOBAL_TRANSACTION_ORACLE = "select A.* from ("
+            + " select " + ALL_GLOBAL_COLUMNS
+            + "   from " + GLOBAL_TABLE_PLACEHOLD
+            + "  where " + ServerTableColumnsName.GLOBAL_TABLE_STATUS + " = 16"
+            + "    and " + ServerTableColumnsName.GLOBAL_TABLE_GMT_MODIFIED + " < ?"
+            + "  order by " + ServerTableColumnsName.GLOBAL_TABLE_GMT_MODIFIED
+            + " ) A"
+            + " where ROWNUM <= ?";
 
     /**
      * The constant QUERY_GLOBAL_TRANSACTION_FOR_RECOVERY_ORACLE.
@@ -107,5 +119,10 @@ public class OracleLogStoreSqls extends AbstractLogStoreSqls {
     @Override
     public String getUpdateBranchTransactionStatusSQL(String branchTable) {
         return UPDATE_BRANCH_TRANSACTION_STATUS_ORACLE.replace(BRANCH_TABLE_PLACEHOLD, branchTable);
+    }
+
+    @Override
+    public String getQueryRemovedGlobalTransactionSQL(String globalTable) {
+        return QUERY_REMOVED_GLOBAL_TRANSACTION_ORACLE.replace(GLOBAL_TABLE_PLACEHOLD, globalTable);
     }
 }

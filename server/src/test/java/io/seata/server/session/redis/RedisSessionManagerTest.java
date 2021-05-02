@@ -31,6 +31,8 @@ import io.seata.server.session.SessionManager;
 import io.seata.server.storage.redis.JedisPooledFactory;
 import io.seata.server.storage.redis.session.RedisSessionManager;
 import io.seata.server.storage.redis.store.RedisTransactionStoreManager;
+
+import java.util.ArrayList;
 import java.util.List;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Assertions;
@@ -71,7 +73,9 @@ public class RedisSessionManagerTest {
         session.setStatus(GlobalStatus.Begin);
         sessionManager.addGlobalSession(session);
 
-        sessionManager.removeGlobalSession(session);
+        List<GlobalSession> list = new ArrayList<>();
+        list.add(session);
+        sessionManager.cleanGlobalSession(list);
     }
 
     //Cause the jedismock can not mock the watch command,so I annotation it after I had tested this method and had successed.
@@ -111,8 +115,13 @@ public class RedisSessionManagerTest {
         branchSession.setApplicationData("{\"data\":\"test\"}");
         branchSession.setClientId("storage-server:192.168.158.80:11934");
         sessionManager.addBranchSession(session, branchSession);
-        sessionManager.removeBranchSession(session, branchSession);
-        sessionManager.removeGlobalSession(session);
+        
+        List<BranchSession> branchSessions = new ArrayList<>();
+        branchSessions.add(branchSession);
+        sessionManager.cleanBranchSession(branchSessions);
+        List<GlobalSession> globalSessions = new ArrayList<>();
+        globalSessions.add(session);
+        sessionManager.cleanGlobalSession(globalSessions);
     }
 
     @Test
@@ -139,8 +148,12 @@ public class RedisSessionManagerTest {
         branchSession.setClientId("storage-server:192.168.158.80:11934");
         sessionManager.addBranchSession(globalSession,branchSession);
 
-        sessionManager.removeBranchSession(globalSession,branchSession);
-        sessionManager.removeGlobalSession(globalSession);
+        List<BranchSession> branchSessions = new ArrayList<>();
+        branchSessions.add(branchSession);
+        sessionManager.cleanBranchSession(branchSessions);
+        List<GlobalSession> globalSessions = new ArrayList<>();
+        globalSessions.add(globalSession);
+        sessionManager.cleanGlobalSession(globalSessions);
     }
 
     @Test
@@ -169,8 +182,12 @@ public class RedisSessionManagerTest {
         branchSession.setStatus(BranchStatus.PhaseOne_Timeout);
         sessionManager.updateBranchSessionStatus(branchSession, BranchStatus.PhaseOne_Timeout);
 
-        sessionManager.removeBranchSession(globalSession,branchSession);
-        sessionManager.removeGlobalSession(globalSession);
+        List<BranchSession> branchSessions = new ArrayList<>();
+        branchSessions.add(branchSession);
+        sessionManager.cleanBranchSession(branchSessions);
+        List<GlobalSession> globalSessions = new ArrayList<>();
+        globalSessions.add(globalSession);
+        sessionManager.cleanGlobalSession(globalSessions);
     }
 
     @Test
@@ -203,8 +220,12 @@ public class RedisSessionManagerTest {
         Assertions.assertEquals(branchSession.getBranchId(),globalSession.getBranchSessions().get(0).getBranchId());
         Assertions.assertEquals(branchSession.getClientId(),globalSession.getBranchSessions().get(0).getClientId());
 
-        sessionManager.removeBranchSession(globalSession,branchSession);
-        sessionManager.removeGlobalSession(globalSession);
+        List<BranchSession> branchSessions = new ArrayList<>();
+        branchSessions.add(branchSession);
+        sessionManager.cleanBranchSession(branchSessions);
+        List<GlobalSession> globalSessions = new ArrayList<>();
+        globalSessions.add(globalSession);
+        sessionManager.cleanGlobalSession(globalSessions);
     }
 
     @Test
@@ -253,8 +274,12 @@ public class RedisSessionManagerTest {
         globalSessions = sessionManager.findGlobalSessions(condition);
         Assertions.assertNull(globalSessions);
 
-        sessionManager.removeBranchSession(session,branchSession);
-        sessionManager.removeGlobalSession(session);
+        List<BranchSession> branchSessions = new ArrayList<>();
+        branchSessions.add(branchSession);
+        sessionManager.cleanBranchSession(branchSessions);
+        List<GlobalSession> list = new ArrayList<>();
+        list.add(session);
+        sessionManager.cleanGlobalSession(list);
     }
 
     @Test
@@ -289,8 +314,12 @@ public class RedisSessionManagerTest {
         condition.setStatuses(statuses);
         sessionManager.findGlobalSessions(condition);
 
-        sessionManager.removeBranchSession(session,branchSession);
-        sessionManager.removeGlobalSession(session);
+        List<BranchSession> branchSessions = new ArrayList<>();
+        branchSessions.add(branchSession);
+        sessionManager.cleanBranchSession(branchSessions);
+        List<GlobalSession> globalSessions = new ArrayList<>();
+        globalSessions.add(session);
+        sessionManager.cleanGlobalSession(globalSessions);
     }
 
     @Test
@@ -326,8 +355,12 @@ public class RedisSessionManagerTest {
         Assertions.assertEquals(branchSession.getBranchId(),globalSession.getBranchSessions().get(0).getBranchId());
         Assertions.assertEquals(branchSession.getClientId(),globalSession.getBranchSessions().get(0).getClientId());
 
-        sessionManager.removeBranchSession(session,branchSession);
-        sessionManager.removeGlobalSession(session);
+        List<BranchSession> branchSessions = new ArrayList<>();
+        branchSessions.add(branchSession);
+        sessionManager.cleanBranchSession(branchSessions);
+        List<GlobalSession> globalSessions = new ArrayList<>();
+        globalSessions.add(session);
+        sessionManager.cleanGlobalSession(globalSessions);
     }
 
     @AfterAll

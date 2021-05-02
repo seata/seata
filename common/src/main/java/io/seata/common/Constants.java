@@ -156,5 +156,10 @@ public interface Constants {
      * The constant UNDOLOG_DELETE
      */
     String UNDOLOG_DELETE = "UndologDelete";
+    
+    /**
+     * The constant STORE_LOG_DELETE
+     */
+    String STORE_LOG_DELETE = "StoreLogDelete";
 
 }

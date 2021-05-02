@@ -15,6 +15,7 @@
  */
 package io.seata.server.storage.file.store;
 
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.RandomAccessFile;
@@ -175,6 +176,34 @@ public class FileTransactionStoreManager extends AbstractTransactionStoreManager
         long curFileTrxNum;
         try {
             if (!writeDataFile(new TransactionWriteStore(session, logOperation).encode())) {
+                return false;
+            }
+            lastModifiedTime = System.currentTimeMillis();
+            curFileTrxNum = FILE_TRX_NUM.incrementAndGet();
+            if (curFileTrxNum % PER_FILE_BLOCK_SIZE == 0
+                && (System.currentTimeMillis() - trxStartTimeMills) > MAX_TRX_TIMEOUT_MILLS) {
+                return saveHistory();
+            }
+        } catch (Exception exx) {
+            LOGGER.error("writeSession error, {}", exx.getMessage(), exx);
+            return false;
+        } finally {
+            writeSessionLock.unlock();
+        }
+        flushDisk(curFileTrxNum, currFileChannel);
+        return true;
+    }
+    
+    @Override
+    public boolean writeSession(LogOperation logOperation, List<SessionStorable> sessions) {
+        writeSessionLock.lock();
+        long curFileTrxNum;
+        try {
+            ByteArrayOutputStream os = new ByteArrayOutputStream();
+            for (SessionStorable session : sessions) {
+                os.write(new TransactionWriteStore(session, logOperation).encode());
+            }
+            if (!writeDataFile(os.toByteArray())) {
                 return false;
             }
             lastModifiedTime = System.currentTimeMillis();

@@ -34,6 +34,7 @@ import io.seata.common.util.StringUtils;
 import io.seata.common.exception.RedisException;
 import io.seata.common.util.BeanUtils;
 import io.seata.common.XID;
+import io.seata.core.model.BranchStatus;
 import io.seata.core.model.GlobalStatus;
 import io.seata.core.store.BranchTransactionDO;
 import io.seata.core.store.GlobalTransactionDO;
@@ -99,13 +100,34 @@ public class RedisTransactionStoreManager extends AbstractTransactionStoreManage
         } else if (LogOperation.GLOBAL_UPDATE.equals(logOperation)) {
             return updateGlobalTransactionDO(SessionConverter.convertGlobalTransactionDO(session));
         } else if (LogOperation.GLOBAL_REMOVE.equals(logOperation)) {
-            return deleteGlobalTransactionDO(SessionConverter.convertGlobalTransactionDO(session));
+            // Marked as removed
+            GlobalTransactionDO globalTransactionDO = SessionConverter.convertGlobalTransactionDO(session);
+            globalTransactionDO.setStatus(GlobalStatus.Removed.getCode());
+            return updateGlobalTransactionDO(globalTransactionDO);
         } else if (LogOperation.BRANCH_ADD.equals(logOperation)) {
             return insertBranchTransactionDO(SessionConverter.convertBranchTransactionDO(session));
         } else if (LogOperation.BRANCH_UPDATE.equals(logOperation)) {
             return updateBranchTransactionDO(SessionConverter.convertBranchTransactionDO(session));
         } else if (LogOperation.BRANCH_REMOVE.equals(logOperation)) {
-            return deleteBranchTransactionDO(SessionConverter.convertBranchTransactionDO(session));
+            // Marked as removed
+            BranchTransactionDO branchTransactionDO = SessionConverter.convertBranchTransactionDO(session);
+            branchTransactionDO.setStatus(BranchStatus.Removed.getCode());
+            return updateBranchTransactionDO(branchTransactionDO);
+        } else {
+            throw new StoreException("Unknown LogOperation:" + logOperation.name());
+        }
+    }
+    
+    @Override
+    public boolean writeSession(LogOperation logOperation, List<SessionStorable> sessions) {
+        if (LogOperation.GLOBAL_CLEAN.equals(logOperation)) {
+            List<GlobalTransactionDO> globalTransactionDOs = new ArrayList<>();
+            sessions.stream().forEach(s -> globalTransactionDOs.add(SessionConverter.convertGlobalTransactionDO(s)));
+            return deleteGlobalTransactionDO(globalTransactionDOs);
+        } else if (LogOperation.BRANCH_CLEAN.equals(logOperation)) {
+            List<BranchTransactionDO> branchTransactionDOs = new ArrayList<>();
+            sessions.stream().forEach(s -> branchTransactionDOs.add(SessionConverter.convertBranchTransactionDO(s)));
+            return deleteBranchTransactionDO(branchTransactionDOs);
         } else {
             throw new StoreException("Unknown LogOperation:" + logOperation.name());
         }
@@ -150,6 +172,32 @@ public class RedisTransactionStoreManager extends AbstractTransactionStoreManage
             Pipeline pipelined = jedis.pipelined();
             pipelined.lrem(branchListKey, 0, branchKey);
             pipelined.del(branchKey);
+            pipelined.sync();
+            return true;
+        } catch (Exception ex) {
+            throw new RedisException(ex);
+        }
+    }
+    
+    /**
+     * Batch delete the branch transaction
+     * @param branchTransactionDO
+     * @return
+     */
+    private boolean deleteBranchTransactionDO(List<BranchTransactionDO> branchTransactionDOs) {
+        try (Jedis jedis = JedisPooledFactory.getJedisInstance()) {
+            Pipeline pipelined = jedis.pipelined();
+            for (BranchTransactionDO branchTransactionDO : branchTransactionDOs) {
+                String branchKey = buildBranchKey(branchTransactionDO.getBranchId());
+                Map<String, String> branchTransactionDOMap = jedis.hgetAll(branchKey);
+                String xid = branchTransactionDOMap.get(REDIS_KEY_BRANCH_XID);
+                if (StringUtils.isEmpty(xid)) {
+                    continue;
+                }
+                String branchListKey = buildBranchListKeyByXid(branchTransactionDO.getXid());
+                pipelined.lrem(branchListKey, 0, branchKey);
+                pipelined.del(branchKey);
+            }
             pipelined.sync();
             return true;
         } catch (Exception ex) {
@@ -222,6 +270,28 @@ public class RedisTransactionStoreManager extends AbstractTransactionStoreManage
             Pipeline pipelined = jedis.pipelined();
             pipelined.lrem(buildGlobalStatus(globalTransactionDO.getStatus()), 0, globalTransactionDO.getXid());
             pipelined.del(globalKey);
+            pipelined.sync();
+            return true;
+        } catch (Exception ex) {
+            throw new RedisException(ex);
+        }
+    }
+    
+    private boolean deleteGlobalTransactionDO(List<GlobalTransactionDO> globalTransactionDOs) {
+        try (Jedis jedis = JedisPooledFactory.getJedisInstance()) {
+            Pipeline pipelined = jedis.pipelined();
+            for (GlobalTransactionDO globalTransactionDO : globalTransactionDOs) {
+                String globalKey = buildGlobalKeyByTransactionId(globalTransactionDO.getTransactionId());
+                Map<String, String> globalTransactionDoMap = jedis.hgetAll(globalKey);
+                String xid = globalTransactionDoMap.get(REDIS_KEY_GLOBAL_XID);
+                if (StringUtils.isEmpty(xid)) {
+                    LOGGER.warn("Global transaction is not exist,xid = {}.Maybe has been deleted by another tc server",
+                            globalTransactionDO.getXid());
+                    continue;
+                }
+                pipelined.lrem(buildGlobalStatus(globalTransactionDO.getStatus()), 0, globalTransactionDO.getXid());
+                pipelined.del(globalKey);
+            }
             pipelined.sync();
             return true;
         } catch (Exception ex) {
@@ -317,8 +387,32 @@ public class RedisTransactionStoreManager extends AbstractTransactionStoreManage
             List<BranchTransactionDO> branchTransactionDOs = null;
             if (withBranchSessions) {
                 branchTransactionDOs = this.readBranchSessionByXid(jedis,xid);
+                // filter removed branch transactions
+                branchTransactionDOs = branchTransactionDOs.stream()
+                        .filter(b -> BranchStatus.Removed.getCode() != b.getStatus())
+                        .collect(Collectors.toList());
             }
             return getGlobalSession(globalTransactionDO,branchTransactionDOs);
+        }
+    }
+    
+    private GlobalSession readSession(String xid, boolean withBranchSessions, long expiredTime) {
+        String transactionId = String.valueOf(XID.getTransactionId(xid));
+        String globalKey = buildGlobalKeyByTransactionId(transactionId);
+        try (Jedis jedis = JedisPooledFactory.getJedisInstance()) {
+            Map<String, String> map  = jedis.hgetAll(globalKey);
+            if (CollectionUtils.isEmpty(map)) {
+                return null;
+            }
+            GlobalTransactionDO globalTransactionDO = (GlobalTransactionDO)BeanUtils.mapToObject(map, GlobalTransactionDO.class);
+            if (globalTransactionDO.getGmtModified().before(new Date(expiredTime))) {
+                List<BranchTransactionDO> branchTransactionDOs = null;
+                if (withBranchSessions) {
+                    branchTransactionDOs = this.readBranchSessionByXid(jedis,xid);
+                }
+                return getGlobalSession(globalTransactionDO,branchTransactionDOs);
+            }
+            return null;
         }
     }
 
@@ -363,6 +457,28 @@ public class RedisTransactionStoreManager extends AbstractTransactionStoreManage
             return globalSessions;
         }
     }
+    
+    public List<GlobalSession> readSession(long expiredTime) {
+        List<String> statusKeys = new ArrayList<>();
+        statusKeys.add(buildGlobalStatus(GlobalStatus.Removed.getCode()));
+        try (Jedis jedis = JedisPooledFactory.getJedisInstance()) {
+            Pipeline pipelined = jedis.pipelined();
+            statusKeys.stream().forEach(statusKey -> pipelined.lrange(statusKey,0,-1));
+            List<List<String>> list = (List<List<String>>)(List)pipelined.syncAndReturnAll();
+            List<String> xids = new ArrayList<>();
+            if (CollectionUtils.isNotEmpty(list)) {
+                xids = list.stream().flatMap(ll -> ll.stream()).collect(Collectors.toList());
+            }
+            List<GlobalSession> globalSessions = new ArrayList<>();
+            xids.parallelStream().forEach(xid -> {
+                GlobalSession globalSession = this.readSession(xid, true, expiredTime);
+                if (globalSession != null) {
+                    globalSessions.add(globalSession);
+                }
+            });
+            return globalSessions;
+        }
+    }
 
     /**
      * read the global session list by different condition
@@ -387,6 +503,8 @@ public class RedisTransactionStoreManager extends AbstractTransactionStoreManage
             return globalSessions;
         } else if (CollectionUtils.isNotEmpty(sessionCondition.getStatuses())) {
             return readSession(sessionCondition.getStatuses());
+        } else if (GlobalStatus.Removed.equals(sessionCondition.getStatus()) && null != sessionCondition.getExpiredTime()) {
+            return readSession(sessionCondition.getExpiredTime());
         } else if (sessionCondition.getStatus() != null) {
             return readSession(new GlobalStatus[]{sessionCondition.getStatus()});
         }
