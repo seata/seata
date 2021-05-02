@@ -24,6 +24,7 @@ import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
 import com.google.common.eventbus.Subscribe;
+import io.seata.common.exception.NotSupportYetException;
 import io.seata.common.exception.ShouldNeverHappenException;
 import io.seata.common.thread.NamedThreadFactory;
 import io.seata.common.util.StringUtils;
@@ -32,6 +33,7 @@ import io.seata.config.ConfigurationChangeEvent;
 import io.seata.config.ConfigurationChangeListener;
 import io.seata.config.ConfigurationFactory;
 import io.seata.core.constants.ConfigurationKeys;
+import io.seata.core.constants.Isolation;
 import io.seata.core.event.EventBus;
 import io.seata.core.event.GuavaEventBus;
 import io.seata.core.model.GlobalLockConfig;
@@ -169,6 +171,11 @@ public class GlobalTransactionalInterceptor implements ConfigurationChangeListen
                 GlobalLockConfig config = new GlobalLockConfig();
                 config.setLockRetryInternal(globalLockAnno.lockRetryInternal());
                 config.setLockRetryTimes(globalLockAnno.lockRetryTimes());
+                if (!Isolation.isSupport(globalLockAnno.isolation())) {
+                    throw new NotSupportYetException("Seata is not support the isolation " + globalLockAnno.isolation().name() + " yet");
+                }
+                
+                config.setIsolation(globalLockAnno.isolation());
                 return config;
             }
         });

@@ -21,9 +21,12 @@ import com.alibaba.druid.sql.ast.statement.SQLDeleteStatement;
 import com.alibaba.druid.sql.ast.statement.SQLInsertStatement;
 import com.alibaba.druid.sql.ast.statement.SQLSelectStatement;
 import com.alibaba.druid.sql.ast.statement.SQLUpdateStatement;
+import com.alibaba.druid.sql.dialect.postgresql.ast.stmt.PGSelectQueryBlock;
+import io.seata.common.exception.ShouldNeverHappenException;
 import io.seata.common.util.CollectionUtils;
 import io.seata.sqlparser.SQLRecognizer;
 import io.seata.sqlparser.SQLRecognizerFactory;
+import io.seata.sqlparser.util.JdbcConstants;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -57,7 +60,11 @@ class DruidSQLRecognizerFactoryImpl implements SQLRecognizerFactory {
             } else if (ast instanceof SQLDeleteStatement) {
                 recognizer = recognizerHolder.getDeleteRecognizer(sql, ast);
             } else if (ast instanceof SQLSelectStatement) {
-                recognizer = recognizerHolder.getSelectForUpdateRecognizer(sql, ast);
+                if (isForUpdate(ast, dbType)) {
+                    recognizer = recognizerHolder.getSelectForUpdateRecognizer(sql, ast);
+                } else {
+                    recognizer = recognizerHolder.getSelectRecognizer(sql, ast);
+                }
             }
             if (recognizer != null) {
                 if (recognizers == null) {
@@ -67,5 +74,19 @@ class DruidSQLRecognizerFactoryImpl implements SQLRecognizerFactory {
             }
         }
         return recognizers;
+    }
+
+    private boolean isForUpdate(SQLStatement ast, String dbType) {
+        switch (dbType) {
+            case JdbcConstants.MYSQL:
+            case JdbcConstants.ORACLE:
+                return ((SQLSelectStatement) ast).getSelect().getFirstQueryBlock().isForUpdate();
+            case JdbcConstants.POSTGRESQL:
+                PGSelectQueryBlock selectQueryBlock = (PGSelectQueryBlock) ((SQLSelectStatement) ast).getSelect().getFirstQueryBlock();
+                return selectQueryBlock.getForClause() != null
+                        && selectQueryBlock.getForClause().getOption().equals(PGSelectQueryBlock.ForClause.Option.UPDATE);
+            default:
+                throw new ShouldNeverHappenException("Unsupported DB type " + dbType);
+        }
     }
 }

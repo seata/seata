@@ -47,7 +47,7 @@ public class OracleUpdateRecognizer extends BaseOracleRecognizer implements SQLU
     private OracleUpdateStatement ast;
 
     /**
-     * Instantiates a new My sql update recognizer.
+     * Instantiates a new oracle update recognizer.
      *
      * @param originalSQL the original sql
      * @param ast         the ast

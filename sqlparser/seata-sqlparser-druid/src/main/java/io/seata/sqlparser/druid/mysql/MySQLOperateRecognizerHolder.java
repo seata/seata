@@ -16,7 +16,6 @@
 package io.seata.sqlparser.druid.mysql;
 
 import com.alibaba.druid.sql.ast.SQLStatement;
-import com.alibaba.druid.sql.ast.statement.SQLSelectStatement;
 import io.seata.common.loader.LoadLevel;
 import io.seata.sqlparser.SQLRecognizer;
 import io.seata.sqlparser.druid.SQLOperateRecognizerHolder;
@@ -47,9 +46,11 @@ public class MySQLOperateRecognizerHolder implements SQLOperateRecognizerHolder 
 
     @Override
     public SQLRecognizer getSelectForUpdateRecognizer(String sql, SQLStatement ast) {
-        if (((SQLSelectStatement) ast).getSelect().getFirstQueryBlock().isForUpdate()) {
-            return new MySQLSelectForUpdateRecognizer(sql, ast);
-        }
-        return null;
+        return new MySQLSelectForUpdateRecognizer(sql, ast);
+    }
+
+    @Override
+    public SQLRecognizer getSelectRecognizer(String sql, SQLStatement ast) {
+        return new MySQLSelectRecognizer(sql, ast);
     }
 }

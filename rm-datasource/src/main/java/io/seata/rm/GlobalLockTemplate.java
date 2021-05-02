@@ -33,10 +33,12 @@ public class GlobalLockTemplate {
 
         // set my config to config holder so that it can be access in further execution
         // for example, LockRetryController can access it with config holder
-        GlobalLockConfig myConfig = executor.getGlobalLockConfig();
-        GlobalLockConfig previousConfig = GlobalLockConfigHolder.setAndReturnPrevious(myConfig);
+        GlobalLockConfig myConfig = null;
+        GlobalLockConfig previousConfig = null;
 
         try {
+            myConfig = executor.getGlobalLockConfig();
+            previousConfig = GlobalLockConfigHolder.setAndReturnPrevious(myConfig);
             return executor.execute();
         } finally {
             // only unbind when this is the root caller.

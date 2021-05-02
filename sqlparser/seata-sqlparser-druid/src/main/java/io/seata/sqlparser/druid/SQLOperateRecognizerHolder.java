@@ -61,4 +61,12 @@ public interface SQLOperateRecognizerHolder {
      */
     SQLRecognizer getSelectForUpdateRecognizer(String sql, SQLStatement ast);
 
+    /**
+     * Get select recognizer
+     *
+     * @param sql the sql
+     * @param ast the ast
+     * @return the SelectForUpdate recognizer
+     */
+    SQLRecognizer getSelectRecognizer(String sql, SQLStatement ast);
 }

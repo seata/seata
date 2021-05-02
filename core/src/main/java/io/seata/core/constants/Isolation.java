@@ -13,28 +13,30 @@
  *  See the License for the specific language governing permissions and
  *  limitations under the License.
  */
-package io.seata.sqlparser.druid.postgresql;
-
-import com.alibaba.druid.sql.ast.SQLStatement;
-import io.seata.sqlparser.SQLType;
+package io.seata.core.constants;
 
 /**
- * @author japsercloud
+ * @author chd
  */
-public class PostgresqlSelectForUpdateRecognizer extends PostgresqlSelectRecognizer {
-
+public enum Isolation {
     /**
-     * Instantiates a new Postgresql select recognizer.
-     *
-     * @param originalSQL the original sql
-     * @param ast the ast
+     * the isolation read uncommitted
      */
-    public PostgresqlSelectForUpdateRecognizer(String originalSQL, SQLStatement ast) {
-        super(originalSQL, ast);
-    }
+    READ_UNCOMMITTED,
+    /**
+     * the isolation read commit
+     */
+    READ_COMMITTED,
+    /**
+     * the isolation repeatable read
+     */
+    REPEATABLE_READ,
+    /**
+     * the isolation serializable
+     */
+    SERIALIZABLE;
 
-    @Override
-    public SQLType getSQLType() {
-        return SQLType.SELECT_FOR_UPDATE;
+    public static boolean isSupport(Isolation isolation) {
+        return isolation == READ_UNCOMMITTED || isolation == READ_COMMITTED;
     }
 }

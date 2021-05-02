@@ -35,5 +35,15 @@ public class DruidSQLRecognizerFactoryTest {
         Assertions.assertNotNull(recognizers);
         Assertions.assertEquals(recognizers.size(),1);
         Assertions.assertEquals(SQLType.DELETE, recognizers.get(0).getSQLType());
+
+        recognizers = recognizerFactory.create("select * from table where id=1 for update", JdbcConstants.MYSQL);
+        Assertions.assertNotNull(recognizers);
+        Assertions.assertEquals(recognizers.size(),1);
+        Assertions.assertEquals(SQLType.SELECT_FOR_UPDATE, recognizers.get(0).getSQLType());
+
+        recognizers = recognizerFactory.create("select * from table where id=1", JdbcConstants.MYSQL);
+        Assertions.assertNotNull(recognizers);
+        Assertions.assertEquals(recognizers.size(),1);
+        Assertions.assertEquals(SQLType.SELECT, recognizers.get(0).getSQLType());
     }
 }
