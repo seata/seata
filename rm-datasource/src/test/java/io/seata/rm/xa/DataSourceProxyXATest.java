@@ -16,6 +16,7 @@
 package io.seata.rm.xa;
 
 import com.alibaba.druid.pool.DruidDataSource;
+import com.microsoft.sqlserver.jdbc.SQLServerXADataSource;
 import com.mysql.jdbc.JDBC4MySQLConnection;
 import com.mysql.jdbc.jdbc2.optional.JDBC4ConnectionWrapper;
 import io.seata.core.context.RootContext;
@@ -86,6 +87,26 @@ public class DataSourceProxyXATest {
         XAConnection xaConnection = connectionProxyXA.getWrappedXAConnection();
         Connection connectionInXA = xaConnection.getConnection();
         Assertions.assertTrue(connectionInXA instanceof JDBC4ConnectionWrapper);
+    }
+
+    @Test
+    public void testGetSqlServerXADataSource() throws SQLException {
+        // Mock
+        Driver driver = Mockito.mock(Driver.class);
+        JDBC4MySQLConnection connection = Mockito.mock(JDBC4MySQLConnection.class);
+        Mockito.when(connection.getAutoCommit()).thenReturn(true);
+        DatabaseMetaData metaData = Mockito.mock(DatabaseMetaData.class);
+        Mockito.when(metaData.getURL()).thenReturn("jdbc:sqlserver://127.0.0.1:1433;DatabaseName=test");
+        Mockito.when(metaData.getUserName()).thenReturn("sqlserver");
+        Mockito.when(connection.getMetaData()).thenReturn(metaData);
+        Mockito.when(driver.connect(any(), any())).thenReturn(connection);
+
+        DruidDataSource druidDataSource = new DruidDataSource();
+        druidDataSource.setDriver(driver);
+        druidDataSource.setPassword("123456");
+        DataSourceProxyXA dataSourceProxyXA = new DataSourceProxyXA(druidDataSource);
+
+        Assertions.assertTrue(dataSourceProxyXA.getTargetDataSource() instanceof SQLServerXADataSource);
     }
 
     @AfterAll

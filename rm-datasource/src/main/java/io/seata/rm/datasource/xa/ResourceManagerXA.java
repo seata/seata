@@ -15,6 +15,9 @@
  */
 package io.seata.rm.datasource.xa;
 
+import java.sql.SQLException;
+import javax.transaction.xa.XAException;
+
 import io.seata.core.exception.TransactionException;
 import io.seata.core.model.BranchStatus;
 import io.seata.core.model.BranchType;
@@ -22,9 +25,6 @@ import io.seata.core.model.Resource;
 import io.seata.rm.datasource.AbstractDataSourceCacheResourceManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import javax.transaction.xa.XAException;
-import java.sql.SQLException;
 
 /**
  * RM for XA mode.
@@ -75,7 +75,11 @@ public class ResourceManagerXA extends AbstractDataSourceCacheResourceManager {
                 }
             } catch (XAException | SQLException sqle) {
                 if (sqle instanceof XAException) {
-                    if (((XAException)sqle).errorCode == XAException.XAER_NOTA) {
+                    int errorCode = ((XAException)sqle).errorCode;
+                    // -3 An XA control connection could not be created; -4 The XA transaction has ended
+                    boolean rationalFail =
+                        errorCode == XAException.XAER_NOTA || errorCode == XAException.XAER_RMERR;
+                    if (rationalFail) {
                         if (committed) {
                             return BranchStatus.PhaseTwo_Committed;
                         } else {

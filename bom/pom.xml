@@ -126,6 +126,7 @@
         <hessian.version>4.0.63</hessian.version>
         <fst.version>2.57</fst.version>
         <groovy.version>2.4.4</groovy.version>
+        <mssql.version>8.4.1.jre8</mssql.version>
     </properties>
 
     <dependencyManagement>
@@ -537,6 +538,11 @@
                         <artifactId>junit-platform-launcher</artifactId>
                     </exclusion>
                 </exclusions>
+            </dependency>
+            <dependency>
+                <groupId>com.microsoft.sqlserver</groupId>
+                <artifactId>mssql-jdbc</artifactId>
+                <version>${mssql.version}</version>
             </dependency>
         </dependencies>
     </dependencyManagement>
