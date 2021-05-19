@@ -11,6 +11,8 @@ CREATE TABLE IF NOT EXISTS public.global_table
     timeout                   INT,
     begin_time                BIGINT,
     application_data          VARCHAR(2000),
+    suspended_end_time        BIGINT       NOT NULL,
+    stopped_reason            SMALLINT     NOT NULL,
     gmt_create                TIMESTAMP(0),
     gmt_modified              TIMESTAMP(0),
     CONSTRAINT pk_global_table PRIMARY KEY (xid)
@@ -31,6 +33,8 @@ CREATE TABLE IF NOT EXISTS public.branch_table
     status            SMALLINT,
     client_id         VARCHAR(64),
     application_data  VARCHAR(2000),
+    retry_strategy    VARCHAR(256),
+    retry_count       INT,
     gmt_create        TIMESTAMP(6),
     gmt_modified      TIMESTAMP(6),
     CONSTRAINT pk_branch_table PRIMARY KEY (branch_id)

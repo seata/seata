@@ -16,6 +16,8 @@
 package io.seata.core.store;
 
 import io.seata.common.util.StringUtils;
+import io.seata.core.model.GlobalStatus;
+import io.seata.core.model.GlobalStoppedReason;
 
 import java.util.Date;
 
@@ -28,9 +30,9 @@ public class GlobalTransactionDO {
 
     private String xid;
 
-    private Long transactionId;
+    private long transactionId;
 
-    private Integer status;
+    private int status = GlobalStatus.UnKnown.getCode();
 
     private String applicationId;
 
@@ -38,11 +40,15 @@ public class GlobalTransactionDO {
 
     private String transactionName;
 
-    private Integer timeout;
+    private int timeout;
 
-    private Long beginTime;
+    private long beginTime;
 
     private String applicationData;
+
+    private long suspendedEndTime;
+
+    private int stoppedReason = GlobalStoppedReason.Empty.getCode();
 
     private Date gmtCreate;
 
@@ -208,6 +214,42 @@ public class GlobalTransactionDO {
      */
     public void setApplicationData(String applicationData) {
         this.applicationData = applicationData;
+    }
+
+    /**
+     * Gets suspended end time.
+     *
+     * @return the suspended end time
+     */
+    public long getSuspendedEndTime() {
+        return suspendedEndTime;
+    }
+
+    /**
+     * Sets suspended end time.
+     *
+     * @param suspendedEndTime the suspended end time
+     */
+    public void setSuspendedEndTime(long suspendedEndTime) {
+        this.suspendedEndTime = suspendedEndTime;
+    }
+
+    /**
+     * Gets stopped reason.
+     *
+     * @return the stopped reason
+     */
+    public int getStoppedReason() {
+        return stoppedReason;
+    }
+
+    /**
+     * Sets stopped reason.
+     *
+     * @param stoppedReason the stopped reason
+     */
+    public void setStoppedReason(int stoppedReason) {
+        this.stoppedReason = stoppedReason;
     }
 
     /**

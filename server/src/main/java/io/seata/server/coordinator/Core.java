@@ -17,6 +17,7 @@ package io.seata.server.coordinator;
 
 import io.seata.core.exception.TransactionException;
 import io.seata.core.model.GlobalStatus;
+import io.seata.server.session.BranchSession;
 import io.seata.server.session.GlobalSession;
 
 /**
@@ -55,5 +56,13 @@ public interface Core extends TransactionCoordinatorInbound, TransactionCoordina
      * @throws TransactionException the transaction exception
      */
     void doGlobalReport(GlobalSession globalSession, String xid, GlobalStatus param) throws TransactionException;
+
+    /**
+     * Do retry strategy.
+     *
+     * @param globalSession the global session
+     * @param branchSession the branch session
+     */
+    void doRetryStrategy(GlobalSession globalSession, BranchSession branchSession) throws TransactionException;
 
 }

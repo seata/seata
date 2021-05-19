@@ -233,6 +233,11 @@ public abstract class AbstractCore implements Core {
     }
 
     @Override
+    public void doRetryStrategy(GlobalSession globalSession, BranchSession branchSession) throws TransactionException {
+
+    }
+
+    @Override
     public GlobalStatus getStatus(String xid) throws TransactionException {
         return null;
     }

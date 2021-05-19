@@ -29,9 +29,9 @@ public class BranchTransactionDO implements Comparable<BranchTransactionDO> {
 
     private String xid;
 
-    private Long transactionId;
+    private long transactionId;
 
-    private Long branchId;
+    private long branchId;
 
     private String resourceGroupId;
 
@@ -39,11 +39,15 @@ public class BranchTransactionDO implements Comparable<BranchTransactionDO> {
 
     private String branchType;
 
-    private Integer status = BranchStatus.Unknown.getCode();
+    private int status = BranchStatus.Unknown.getCode();
 
     private String clientId;
 
     private String applicationData;
+
+    private String retryStrategy;
+
+    private int retryCount;
 
     private Date gmtCreate;
 
@@ -209,6 +213,42 @@ public class BranchTransactionDO implements Comparable<BranchTransactionDO> {
      */
     public void setApplicationData(String applicationData) {
         this.applicationData = applicationData;
+    }
+
+    /**
+     * Gets retry strategy.
+     *
+     * @return the retry strategy
+     */
+    public String getRetryStrategy() {
+        return retryStrategy;
+    }
+
+    /**
+     * Sets retry strategy.
+     *
+     * @param retryStrategy the retry strategy
+     */
+    public void setRetryStrategy(String retryStrategy) {
+        this.retryStrategy = retryStrategy;
+    }
+
+    /**
+     * Gets retry count.
+     *
+     * @return the retry count
+     */
+    public int getRetryCount() {
+        return retryCount;
+    }
+
+    /**
+     * Sets retry count.
+     *
+     * @param retryCount the retry count
+     */
+    public void setRetryCount(int retryCount) {
+        this.retryCount = retryCount;
     }
 
     /**

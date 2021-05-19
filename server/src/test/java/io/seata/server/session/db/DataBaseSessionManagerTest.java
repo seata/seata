@@ -17,10 +17,12 @@ package io.seata.server.session.db;
 
 import io.seata.common.XID;
 import io.seata.common.util.IOUtil;
+import io.seata.core.constants.ServerTableColumnsName;
 import io.seata.core.exception.TransactionException;
 import io.seata.core.model.BranchStatus;
 import io.seata.core.model.BranchType;
 import io.seata.core.model.GlobalStatus;
+import io.seata.core.model.GlobalStoppedReason;
 import io.seata.server.storage.db.store.LogStoreDataBaseDAO;
 import io.seata.server.UUIDGenerator;
 import io.seata.server.session.BranchSession;
@@ -90,14 +92,14 @@ public class DataBaseSessionManagerTest {
                 s.execute("drop table global_table");
             } catch (Exception e) {
             }
-            s.execute("CREATE TABLE global_table ( xid varchar(96),  transaction_id long , STATUS int,  application_id varchar(32), transaction_service_group varchar(32) ,transaction_name varchar(128) ,timeout int,  begin_time long, application_data varchar(500), gmt_create TIMESTAMP(6) ,gmt_modified TIMESTAMP(6) ) ");
+            s.execute("CREATE TABLE global_table ( xid varchar(96),  transaction_id long , STATUS int,  application_id varchar(32), transaction_service_group varchar(32) ,transaction_name varchar(128) ,timeout int,  begin_time long, application_data varchar(500), suspended_end_time long, stopped_reason int, gmt_create TIMESTAMP(6) ,gmt_modified TIMESTAMP(6) ) ");
             System.out.println("create table global_table success.");
 
             try {
                 s.execute("drop table branch_table");
             } catch (Exception e) {
             }
-            s.execute("CREATE TABLE branch_table ( xid varchar(96),  transaction_id long , branch_id long, resource_group_id varchar(32), resource_id varchar(32) ,lock_key varchar(64) ,branch_type varchar(32) ,  status int , client_id varchar(128),  application_data varchar(500),  gmt_create TIMESTAMP(6) ,gmt_modified TIMESTAMP(6) ) ");
+            s.execute("CREATE TABLE branch_table ( xid varchar(96),  transaction_id long , branch_id long, resource_group_id varchar(32), resource_id varchar(32) ,lock_key varchar(64) ,branch_type varchar(32) ,  status int , client_id varchar(128),  application_data varchar(500), retry_strategy varchar(256), retry_count int, gmt_create TIMESTAMP(6), gmt_modified TIMESTAMP(6) ) ");
             System.out.println("create table branch_table success.");
 
         } catch (Exception e) {
@@ -143,7 +145,7 @@ public class DataBaseSessionManagerTest {
 
 
     @Test
-    public void test_updateGlobalSessionStatus() throws TransactionException, SQLException {
+    public void test_updateGlobalSession() throws TransactionException, SQLException {
         GlobalSession session = GlobalSession.createGlobalSession("test",
                 "test", "test123", 100);
         String xid = XID.generateXID(session.getTransactionId());
@@ -155,8 +157,8 @@ public class DataBaseSessionManagerTest {
 
         sessionManager.addGlobalSession(session);
 
-        session.setStatus(GlobalStatus.Committing);
-        sessionManager.updateGlobalSessionStatus(session, GlobalStatus.Committing);
+        sessionManager.updateGlobalSession(session, GlobalStatus.Committing, session.getBeginTime() + 1,
+            GlobalStoppedReason.Triggered_Retry_Strategy_Expire);
 
         String sql = "select * from global_table where xid= '"+xid+"'";
         String delSql = "delete from global_table where xid= '"+xid+"'";
@@ -166,7 +168,12 @@ public class DataBaseSessionManagerTest {
             ResultSet rs = conn.createStatement().executeQuery(sql);
             if(rs.next()){
                 Assertions.assertTrue(true);
-                Assertions.assertEquals(rs.getInt("status"), GlobalStatus.Committing.getCode());
+                Assertions.assertEquals(rs.getInt(ServerTableColumnsName.GLOBAL_TABLE_STATUS),
+                    GlobalStatus.Committing.getCode());
+                Assertions.assertEquals(rs.getLong(ServerTableColumnsName.GLOBAL_TABLE_SUSPENDED_END_TIME),
+                        session.getBeginTime() + 1);
+                Assertions.assertEquals(rs.getInt(ServerTableColumnsName.GLOBAL_TABLE_STOPPED_REASON),
+                    GlobalStoppedReason.Triggered_Retry_Strategy_Expire.getCode());
             }else{
                 Assertions.assertTrue(false);
             }
@@ -309,7 +316,7 @@ public class DataBaseSessionManagerTest {
 
 
     @Test
-    public void test_updateBranchSessionStatus() throws Exception {
+    public void test_updateBranchSession() throws Exception {
         GlobalSession globalSession = GlobalSession.createGlobalSession("test",
                 "test", "test123", 100);
         String xid = XID.generateXID(globalSession.getTransactionId());
@@ -334,7 +341,7 @@ public class DataBaseSessionManagerTest {
         sessionManager.addBranchSession(globalSession, branchSession);
 
         branchSession.setStatus(BranchStatus.PhaseOne_Timeout);
-        sessionManager.updateBranchSessionStatus(branchSession, BranchStatus.PhaseOne_Timeout);
+        sessionManager.updateBranchSession(branchSession, BranchStatus.PhaseOne_Timeout, "{\"b\":1}", 3);
 
         String sql = "select * from branch_table where xid= '"+xid+"'";
         String delSql = "delete from branch_table where xid= '"+xid+"'" + ";" + "delete from global_table where xid= '"+xid+"'";
@@ -344,7 +351,12 @@ public class DataBaseSessionManagerTest {
             ResultSet rs = conn.createStatement().executeQuery(sql);
             if(rs.next()){
                 Assertions.assertTrue(true);
-                Assertions.assertEquals(rs.getInt("status"), BranchStatus.PhaseOne_Timeout.getCode());
+                Assertions.assertEquals(rs.getInt(ServerTableColumnsName.BRANCH_TABLE_STATUS),
+                    BranchStatus.PhaseOne_Timeout.getCode());
+                Assertions.assertEquals(rs.getString(ServerTableColumnsName.BRANCH_TABLE_APPLICATION_DATA),
+                    "{\"b\":1}");
+                Assertions.assertEquals(rs.getInt(ServerTableColumnsName.BRANCH_TABLE_RETRY_COUNT),
+                    3);
             }else{
                 Assertions.assertTrue(false);
             }

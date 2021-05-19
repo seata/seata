@@ -87,6 +87,8 @@ public interface DefaultValues {
 
     boolean DEFAULT_DISABLE_GLOBAL_TRANSACTION = false;
 
+    String DEFAULT_RETRY_STRATEGY = "I,5s,5m|-,7d";
+
     int SERVER_DEFAULT_PORT = 8091;
     String SERVER_DEFAULT_STORE_MODE = "file";
 

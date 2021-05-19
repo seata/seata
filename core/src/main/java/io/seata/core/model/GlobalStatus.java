@@ -117,7 +117,25 @@ public enum GlobalStatus {
      * The Finished.
      */
     // Not managed in session MAP any more
-    Finished(15);
+    Finished(15),
+
+    /**
+     * The Commit Retrying Suspended.
+     * Used for retry strategy.
+     */
+    CommitRetrying_Suspended(23),
+
+    /**
+     * The Rollback Retrying Suspended.
+     * Used for retry strategy.
+     */
+    RollbackRetrying_Suspended(25),
+
+    /**
+     * The Stopped.
+     */
+    // Stopped and processing it manually
+    Stopped(30);
 
     private int code;
 

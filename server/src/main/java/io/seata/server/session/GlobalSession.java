@@ -36,6 +36,7 @@ import io.seata.core.exception.TransactionExceptionCode;
 import io.seata.core.model.BranchStatus;
 import io.seata.core.model.BranchType;
 import io.seata.core.model.GlobalStatus;
+import io.seata.core.model.GlobalStoppedReason;
 import io.seata.server.UUIDGenerator;
 import io.seata.server.lock.LockerManagerFactory;
 import io.seata.server.store.SessionStorable;
@@ -72,7 +73,11 @@ public class GlobalSession implements SessionLifecycle, SessionStorable {
 
     private long transactionId;
 
-    private volatile GlobalStatus status;
+    private volatile GlobalStatus status = GlobalStatus.UnKnown;
+
+    private long suspendedEndTime;
+
+    private GlobalStoppedReason stoppedReason = GlobalStoppedReason.Empty;
 
     private String applicationId;
 
@@ -167,6 +172,24 @@ public class GlobalSession implements SessionLifecycle, SessionStorable {
     }
 
     /**
+     * Is suspended boolean.
+     *
+     * @return the boolean
+     */
+    public boolean isSuspended() {
+        return suspendedEndTime > beginTime ? suspendedEndTime > System.currentTimeMillis() : false;
+    }
+
+    /**
+     * Is stopped boolean.
+     *
+     * @return the boolean
+     */
+    public boolean isStopped() {
+        return GlobalStatus.Stopped == this.status;
+    }
+
+    /**
      * prevent could not handle committing and rollbacking transaction
      * @return if true retry commit or roll back
      */
@@ -185,19 +208,45 @@ public class GlobalSession implements SessionLifecycle, SessionStorable {
     }
 
     @Override
-    public void changeStatus(GlobalStatus status) throws TransactionException {
-        this.status = status;
+    public void update(GlobalStatus status, long suspendedEndTime, GlobalStoppedReason stoppedReason) throws TransactionException {
+        if (status != null) {
+            this.setStatus(status);
+        }
+        if (suspendedEndTime >= 0) {
+            this.setSuspendedEndTime(suspendedEndTime);
+        }
+        if (stoppedReason != null) {
+            this.setStoppedReason(stoppedReason);
+        }
         for (SessionLifecycleListener lifecycleListener : lifecycleListeners) {
-            lifecycleListener.onStatusChange(this, status);
+            lifecycleListener.onUpdate(this, status, suspendedEndTime, stoppedReason);
         }
     }
 
     @Override
-    public void changeBranchStatus(BranchSession branchSession, BranchStatus status)
-        throws TransactionException {
-        branchSession.setStatus(status);
+    public void suspend(long retryInterval) throws TransactionException {
+        long suspendedEndTime = System.currentTimeMillis() + retryInterval;
+        if (this.status.name().contains("Commit")) {
+            this.update(GlobalStatus.CommitRetrying_Suspended, suspendedEndTime, null);
+        } else {
+            this.update(GlobalStatus.RollbackRetrying_Suspended, suspendedEndTime, null);
+        }
+    }
+
+    @Override
+    public void updateBranch(BranchSession branchSession, BranchStatus status,
+                             String applicationData, int retryCount) throws TransactionException {
+        if (status != null) {
+            branchSession.setStatus(status);
+        }
+        if (StringUtils.isNotBlank(applicationData)) {
+            branchSession.setApplicationData(applicationData);
+        }
+        if (retryCount >= 0) {
+            branchSession.setRetryCount(retryCount);
+        }
         for (SessionLifecycleListener lifecycleListener : lifecycleListeners) {
-            lifecycleListener.onBranchStatusChange(this, branchSession, status);
+            lifecycleListener.onBranchUpdate(this, branchSession, status, applicationData, retryCount);
         }
     }
 
@@ -223,14 +272,12 @@ public class GlobalSession implements SessionLifecycle, SessionStorable {
         for (SessionLifecycleListener lifecycleListener : lifecycleListeners) {
             lifecycleListener.onEnd(this);
         }
+
     }
 
     public void clean() throws TransactionException {
-        if (this.hasATBranch()) {
-            if (!LockerManagerFactory.getLockManager().releaseGlobalSessionLock(this)) {
-                throw new TransactionException("UnLock globalSession error, xid = " + this.xid);
-            }
-        }
+        LockerManagerFactory.getLockManager().releaseGlobalSessionLock(this);
+
     }
 
     /**
@@ -241,6 +288,7 @@ public class GlobalSession implements SessionLifecycle, SessionStorable {
     public void closeAndClean() throws TransactionException {
         close();
         clean();
+
     }
 
     /**
@@ -272,12 +320,8 @@ public class GlobalSession implements SessionLifecycle, SessionStorable {
 
     @Override
     public void removeBranch(BranchSession branchSession) throws TransactionException {
-        // do not unlock if global status in (Committing, CommitRetrying, AsyncCommitting),
-        // because it's already unlocked in 'DefaultCore.commit()'
-        if (status != Committing && status != CommitRetrying && status != AsyncCommitting) {
-            if (!branchSession.unlock()) {
-                throw new TransactionException("Unlock branch lock failed, xid = " + this.xid + ", branchId = " + branchSession.getBranchId());
-            }
+        if (!branchSession.unlock()) {
+            throw new TransactionException("Unlock branch lock failed!");
         }
         for (SessionLifecycleListener lifecycleListener : lifecycleListeners) {
             lifecycleListener.onRemoveBranch(this, branchSession);
@@ -301,6 +345,7 @@ public class GlobalSession implements SessionLifecycle, SessionStorable {
 
             return null;
         }
+
     }
 
     /**
@@ -381,6 +426,42 @@ public class GlobalSession implements SessionLifecycle, SessionStorable {
      */
     public void setStatus(GlobalStatus status) {
         this.status = status;
+    }
+
+    /**
+     * Gets suspended end time.
+     *
+     * @return the suspended end time
+     */
+    public long getSuspendedEndTime() {
+        return suspendedEndTime;
+    }
+
+    /**
+     * Sets suspended end time.
+     *
+     * @param suspendedEndTime the suspended end time
+     */
+    public void setSuspendedEndTime(long suspendedEndTime) {
+        this.suspendedEndTime = suspendedEndTime;
+    }
+
+    /**
+     * Gets stopped reason.
+     *
+     * @return the stopped reason
+     */
+    public GlobalStoppedReason getStoppedReason() {
+        return stoppedReason;
+    }
+
+    /**
+     * Sets stopped reason.
+     *
+     * @param stoppedReason the stopped reason
+     */
+    public void setStoppedReason(GlobalStoppedReason stoppedReason) {
+        this.stoppedReason = stoppedReason;
     }
 
     /**
@@ -541,10 +622,10 @@ public class GlobalSession implements SessionLifecycle, SessionStorable {
             byteBuffer.putShort((short)0);
         }
         if (xidBytes != null) {
-            byteBuffer.putInt(xidBytes.length);
+            byteBuffer.putShort((short)xidBytes.length);
             byteBuffer.put(xidBytes);
         } else {
-            byteBuffer.putInt(0);
+            byteBuffer.putShort((short)0);
         }
         if (applicationDataBytes != null) {
             byteBuffer.putInt(applicationDataBytes.length);
@@ -555,6 +636,8 @@ public class GlobalSession implements SessionLifecycle, SessionStorable {
 
         byteBuffer.putLong(beginTime);
         byteBuffer.put((byte)status.getCode());
+        byteBuffer.putLong(suspendedEndTime > beginTime ? suspendedEndTime : 0L);
+        byteBuffer.put((byte)stoppedReason.getCode());
         byteBuffer.flip();
         byte[] result = new byte[byteBuffer.limit()];
         byteBuffer.get(result);
@@ -568,7 +651,7 @@ public class GlobalSession implements SessionLifecycle, SessionStorable {
             + 2 // byApplicationIdBytes.length
             + 2 // byServiceGroupBytes.length
             + 2 // byTxNameBytes.length
-            + 4 // xidBytes.length
+            + 2 // xidBytes.length
             + 4 // applicationDataBytes.length
             + 8 // beginTime
             + 1 // statusCode
@@ -576,7 +659,9 @@ public class GlobalSession implements SessionLifecycle, SessionStorable {
             + (byServiceGroupBytes == null ? 0 : byServiceGroupBytes.length)
             + (byTxNameBytes == null ? 0 : byTxNameBytes.length)
             + (xidBytes == null ? 0 : xidBytes.length)
-            + (applicationDataBytes == null ? 0 : applicationDataBytes.length);
+            + (applicationDataBytes == null ? 0 : applicationDataBytes.length)
+            + 8 // suspendedEndTime
+            + 1;// stoppedReason
         return size;
     }
 
@@ -603,7 +688,7 @@ public class GlobalSession implements SessionLifecycle, SessionStorable {
             byteBuffer.get(byTxName);
             this.transactionName = new String(byTxName);
         }
-        int xidLen = byteBuffer.getInt();
+        short xidLen = byteBuffer.getShort();
         if (xidLen > 0) {
             byte[] xidBytes = new byte[xidLen];
             byteBuffer.get(xidBytes);
@@ -618,6 +703,8 @@ public class GlobalSession implements SessionLifecycle, SessionStorable {
 
         this.beginTime = byteBuffer.getLong();
         this.status = GlobalStatus.get(byteBuffer.get());
+        this.suspendedEndTime = byteBuffer.getLong();
+        this.stoppedReason = GlobalStoppedReason.get(byteBuffer.get());
     }
 
     /**

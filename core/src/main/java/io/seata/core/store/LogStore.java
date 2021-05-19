@@ -44,11 +44,11 @@ public interface LogStore {
     /**
      * Query global transaction do list.
      *
-     * @param status the status
-     * @param limit  the limit
+     * @param statuses the statuses
+     * @param limit    the limit
      * @return the list
      */
-    List<GlobalTransactionDO> queryGlobalTransactionDO(int[] status, int limit);
+    List<GlobalTransactionDO> queryGlobalTransactionDO(int[] statuses, int limit);
 
     /**
      * Insert global transaction do boolean.

@@ -314,6 +314,11 @@ public interface ConfigurationKeys {
     String ROLLBACKING_RETRY_PERIOD = RECOVERY_PREFIX + "rollbackingRetryPeriod";
 
     /**
+     * The constant STATUS_CHANGE_RETRY_PERIOD.
+     */
+    String STATUS_CHANGE_RETRY_PERIOD = RECOVERY_PREFIX + "statusChangeRetryPeriod";
+
+    /**
      * The constant TIMEOUT_RETRY_PERIOD.
      */
     String TIMEOUT_RETRY_PERIOD = RECOVERY_PREFIX + "timeoutRetryPeriod";
@@ -454,6 +459,11 @@ public interface ConfigurationKeys {
      * The constant KEEP_ALIVE_TIME.
      */
     String KEEP_ALIVE_TIME = TRANSPORT_PREFIX + "keepAliveTime";
+
+    /**
+     * The constant SERVER_RETRY_STRATEGY.
+     */
+    String SERVER_RETRY_STRATEGY = SERVER_PREFIX + "retryStrategy";
 
     /**
      * The constant TRANSPORT_TYPE

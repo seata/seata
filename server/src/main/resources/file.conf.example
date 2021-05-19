@@ -77,6 +77,8 @@ server {
     asynCommittingRetryPeriod = 1000
     #schedule rollbacking retry period in milliseconds
     rollbackingRetryPeriod = 1000
+    #schedule status change retry period in milliseconds
+    statusChangeRetryPeriod = 1000
     #schedule timeout retry period in milliseconds
     timeoutRetryPeriod = 1000
   }
@@ -94,6 +96,7 @@ server {
   retryDeadThreshold = 130000
   #the expire time of distributed lock,time unit is milliseconds
   distributedLockExpireTime = 10000
+  retryStrategy = "I,5s,5m|-,7d"
 }
 
 ## metrics configuration, only used in server side

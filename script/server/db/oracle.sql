@@ -11,6 +11,8 @@ CREATE TABLE global_table
     timeout                   NUMBER(10),
     begin_time                NUMBER(19),
     application_data          VARCHAR2(2000),
+    suspended_end_time        NUMBER(19)    NOT NULL,
+    stopped_reason            NUMBER(3)     NOT NULL,
     gmt_create                TIMESTAMP(0),
     gmt_modified              TIMESTAMP(0),
     PRIMARY KEY (xid)
@@ -31,6 +33,8 @@ CREATE TABLE branch_table
     status            NUMBER(3),
     client_id         VARCHAR2(64),
     application_data  VARCHAR2(2000),
+    retry_strategy    VARCHAR(256),
+    retry_count       NUMBER(11),
     gmt_create        TIMESTAMP(6),
     gmt_modified      TIMESTAMP(6),
     PRIMARY KEY (branch_id)

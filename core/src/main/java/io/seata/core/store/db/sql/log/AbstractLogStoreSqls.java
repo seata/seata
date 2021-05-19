@@ -35,6 +35,12 @@ public abstract class AbstractLogStoreSqls implements LogStoreSqls {
     public static final String BRANCH_TABLE_PLACEHOLD = " #branch_table# ";
 
     /**
+     * The constant SETS_PLACEHOLD.
+     * format: xxx = ?, yyy = ?, zzz = ?,
+     */
+    public static final String SETS_PLACEHOLD = " #SETS_PLACEHOLD# ";
+
+    /**
      * The constant PRAMETER_PLACEHOLD.
      * format: ?, ?, ?
      */
@@ -50,6 +56,7 @@ public abstract class AbstractLogStoreSqls implements LogStoreSqls {
             + ServerTableColumnsName.GLOBAL_TABLE_TRANSACTION_SERVICE_GROUP + ", " + ServerTableColumnsName.GLOBAL_TABLE_TRANSACTION_NAME + ", "
             + ServerTableColumnsName.GLOBAL_TABLE_TIMEOUT + ", " + ServerTableColumnsName.GLOBAL_TABLE_BEGIN_TIME + ", "
             + ServerTableColumnsName.GLOBAL_TABLE_APPLICATION_DATA + ", "
+            + ServerTableColumnsName.GLOBAL_TABLE_SUSPENDED_END_TIME + ", " + ServerTableColumnsName.GLOBAL_TABLE_STOPPED_REASON + ", "
             + ServerTableColumnsName.GLOBAL_TABLE_GMT_CREATE + ", " + ServerTableColumnsName.GLOBAL_TABLE_GMT_MODIFIED;
 
     /**
@@ -62,6 +69,7 @@ public abstract class AbstractLogStoreSqls implements LogStoreSqls {
             + ServerTableColumnsName.BRANCH_TABLE_RESOURCE_ID + ", "
             + ServerTableColumnsName.BRANCH_TABLE_BRANCH_TYPE + ", " + ServerTableColumnsName.BRANCH_TABLE_STATUS + ", "
             + ServerTableColumnsName.BRANCH_TABLE_CLIENT_ID + ", " + ServerTableColumnsName.BRANCH_TABLE_APPLICATION_DATA + ", "
+            + ServerTableColumnsName.BRANCH_TABLE_RETRY_STRATEGY + ", " + ServerTableColumnsName.BRANCH_TABLE_RETRY_COUNT + ", "
             + ServerTableColumnsName.BRANCH_TABLE_GMT_CREATE + ", " + ServerTableColumnsName.BRANCH_TABLE_GMT_MODIFIED;
 
     /**
@@ -134,7 +142,7 @@ public abstract class AbstractLogStoreSqls implements LogStoreSqls {
     public abstract String getInsertGlobalTransactionSQL(String globalTable);
 
     @Override
-    public abstract String getUpdateGlobalTransactionStatusSQL(String globalTable);
+    public abstract String getUpdateGlobalTransactionSQL(String globalTable, String setsPlaceHolder);
 
     @Override
     public String getDeleteGlobalTransactionSQL(String globalTable) {
@@ -162,7 +170,7 @@ public abstract class AbstractLogStoreSqls implements LogStoreSqls {
     public abstract String getInsertBranchTransactionSQL(String branchTable);
 
     @Override
-    public abstract String getUpdateBranchTransactionStatusSQL(String branchTable);
+    public abstract String getUpdateBranchTransactionSQL(String branchTable, String setsPlaceHolder);
 
     @Override
     public String getDeleteBranchTransactionByBranchIdSQL(String branchTable) {

@@ -20,6 +20,7 @@ import java.util.Collection;
 import java.util.Map;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
+
 import io.netty.channel.Channel;
 import io.seata.common.thread.NamedThreadFactory;
 import io.seata.common.util.CollectionUtils;
@@ -62,6 +63,7 @@ import io.seata.server.AbstractTCInboundHandler;
 import io.seata.server.event.EventBusManager;
 import io.seata.server.session.GlobalSession;
 import io.seata.server.session.SessionHelper;
+import io.seata.server.session.SessionCondition;
 import io.seata.server.session.SessionHolder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -93,6 +95,12 @@ public class DefaultCoordinator extends AbstractTCInboundHandler implements Tran
      */
     protected static final long ROLLBACKING_RETRY_PERIOD = CONFIG.getLong(ConfigurationKeys.ROLLBACKING_RETRY_PERIOD,
         1000L);
+
+    /**
+     * The constant STATUS_CHANGE_RETRY_PERIOD.
+     */
+    protected static final long STATUS_CHANGE_RETRY_PERIOD = CONFIG.getLong(
+            ConfigurationKeys.STATUS_CHANGE_RETRY_PERIOD, 1000L);
 
     /**
      * The constant TIMEOUT_RETRY_PERIOD.
@@ -132,6 +140,9 @@ public class DefaultCoordinator extends AbstractTCInboundHandler implements Tran
 
     private ScheduledThreadPoolExecutor timeoutCheck = new ScheduledThreadPoolExecutor(1,
         new NamedThreadFactory("TxTimeoutCheck", 1));
+
+    private ScheduledThreadPoolExecutor statusChange = new ScheduledThreadPoolExecutor(1,
+            new NamedThreadFactory("StatusChange", 1));
 
     private ScheduledThreadPoolExecutor undoLogDelete = new ScheduledThreadPoolExecutor(1,
         new NamedThreadFactory("UndoLogDelete", 1));
@@ -268,6 +279,39 @@ public class DefaultCoordinator extends AbstractTCInboundHandler implements Tran
     }
 
     /**
+     * Handle status change.
+     *
+     * @throws TransactionException the transaction exception
+     */
+    protected void handleStatusChange() throws TransactionException {
+        Collection<GlobalSession> suspendedSessions = SessionHolder.getRootSessionManager().findGlobalSessions(
+                new SessionCondition(new GlobalStatus[]{GlobalStatus.CommitRetrying_Suspended, GlobalStatus.RollbackRetrying_Suspended}));
+        if (CollectionUtils.isEmpty(suspendedSessions)) {
+            return;
+        }
+        if (LOGGER.isDebugEnabled()) {
+            LOGGER.debug("Global transaction status change begin, size: {}", suspendedSessions.size());
+        }
+        for (GlobalSession globalSession : suspendedSessions) {
+            // suspended to retrying
+            if (!globalSession.isSuspended()) {
+                if (GlobalStatus.CommitRetrying_Suspended == globalSession.getStatus()) {
+                    globalSession.addSessionLifecycleListener(SessionHolder.getRootSessionManager());
+                    globalSession.changeStatus(GlobalStatus.CommitRetrying);
+                    LOGGER.info("Suspended to CommitRetrying: xid=" + globalSession.getXid());
+                } else if (GlobalStatus.RollbackRetrying_Suspended == globalSession.getStatus()) {
+                    globalSession.addSessionLifecycleListener(SessionHolder.getRootSessionManager());
+                    globalSession.changeStatus(GlobalStatus.RollbackRetrying);
+                    LOGGER.info("Suspended to RollbackRetrying: xid=" + globalSession.getXid());
+                }
+            }
+        }
+        if (LOGGER.isDebugEnabled()) {
+            LOGGER.debug("Global transaction status change end.");
+        }
+    }
+
+    /**
      * Handle retry rollbacking.
      */
     protected void handleRetryRollbacking() {
@@ -278,6 +322,10 @@ public class DefaultCoordinator extends AbstractTCInboundHandler implements Tran
         long now = System.currentTimeMillis();
         SessionHelper.forEach(rollbackingSessions, rollbackingSession -> {
             try {
+                // skip stopped and suspended
+                if (rollbackingSession.isStopped() || rollbackingSession.isSuspended()) {
+                    return;
+                }
                 // prevent repeated rollback
                 if (rollbackingSession.getStatus().equals(GlobalStatus.Rollbacking) && !rollbackingSession.isDeadSession()) {
                     //The function of this 'return' is 'continue'.
@@ -317,6 +365,10 @@ public class DefaultCoordinator extends AbstractTCInboundHandler implements Tran
                 // prevent repeated commit
                 if (committingSession.getStatus().equals(GlobalStatus.Committing) && !committingSession.isDeadSession()) {
                     //The function of this 'return' is 'continue'.
+                    return;
+                }
+                // skip stopped and suspended
+                if (committingSession.isStopped() || committingSession.isSuspended()) {
                     return;
                 }
                 if (isRetryTimeout(now, MAX_COMMIT_RETRY_TIMEOUT.toMillis(), committingSession.getBeginTime())) {
@@ -433,6 +485,14 @@ public class DefaultCoordinator extends AbstractTCInboundHandler implements Tran
             }
         }, 0, ASYNC_COMMITTING_RETRY_PERIOD, TimeUnit.MILLISECONDS);
 
+        statusChange.scheduleAtFixedRate(() -> {
+            try {
+                handleStatusChange();
+            } catch (Exception e) {
+                LOGGER.info("Exception handle status change ... ", e);
+            }
+        }, 0, STATUS_CHANGE_RETRY_PERIOD, TimeUnit.MILLISECONDS);
+
         timeoutCheck.scheduleAtFixedRate(() -> {
             boolean lock = SessionHolder.txTimeoutCheckLock();
             if (lock) {
@@ -485,11 +545,13 @@ public class DefaultCoordinator extends AbstractTCInboundHandler implements Tran
         retryRollbacking.shutdown();
         retryCommitting.shutdown();
         asyncCommitting.shutdown();
+        statusChange.shutdown();
         timeoutCheck.shutdown();
         try {
             retryRollbacking.awaitTermination(TIMED_TASK_SHUTDOWN_MAX_WAIT_MILLS, TimeUnit.MILLISECONDS);
             retryCommitting.awaitTermination(TIMED_TASK_SHUTDOWN_MAX_WAIT_MILLS, TimeUnit.MILLISECONDS);
             asyncCommitting.awaitTermination(TIMED_TASK_SHUTDOWN_MAX_WAIT_MILLS, TimeUnit.MILLISECONDS);
+            statusChange.awaitTermination(TIMED_TASK_SHUTDOWN_MAX_WAIT_MILLS, TimeUnit.MILLISECONDS);
             timeoutCheck.awaitTermination(TIMED_TASK_SHUTDOWN_MAX_WAIT_MILLS, TimeUnit.MILLISECONDS);
         } catch (InterruptedException ignore) {
 

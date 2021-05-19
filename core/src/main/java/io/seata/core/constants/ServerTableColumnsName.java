@@ -68,6 +68,16 @@ public interface ServerTableColumnsName {
     String GLOBAL_TABLE_APPLICATION_DATA = "application_data";
 
     /**
+     * The constant global_table column name suspended_end_time
+     */
+    public static final String GLOBAL_TABLE_SUSPENDED_END_TIME = "suspended_end_time";
+
+    /**
+     * The constant global_table column name stopped_reason
+     */
+    public static final String GLOBAL_TABLE_STOPPED_REASON = "stopped_reason";
+
+    /**
      * The constant global_table column name gmt_create
      */
     String GLOBAL_TABLE_GMT_CREATE = "gmt_create";
@@ -131,6 +141,16 @@ public interface ServerTableColumnsName {
      * The constant branch_table column name client_id
      */
     String BRANCH_TABLE_CLIENT_ID = "client_id";
+
+    /**
+     * The constant branch_table column name retry_strategy
+     */
+    public static final String BRANCH_TABLE_RETRY_STRATEGY = "retry_strategy";
+
+    /**
+     * The constant branch_table column name retry_count
+     */
+    public static final String BRANCH_TABLE_RETRY_COUNT = "retry_count";
 
     /**
      * The constant branch_table column name gmt_create

@@ -70,7 +70,7 @@ public class LogStoreDataBaseDAOTest {
             } catch (Exception e) {
             }
 //            xid, transaction_id, status, application_id, transaction_service_group, transaction_name, timeout, begin_time, application_data, gmt_create, gmt_modified
-            s.execute("CREATE TABLE global_table ( xid varchar(96) primary key,  transaction_id long , STATUS int,  application_id varchar(32), transaction_service_group varchar(32) ,transaction_name varchar(128) ,timeout int,  begin_time long, application_data varchar(500), gmt_create TIMESTAMP(6) ,gmt_modified TIMESTAMP(6) ) ");
+            s.execute("CREATE TABLE global_table ( xid varchar(96) ,  transaction_id long , STATUS int,  application_id varchar(32), transaction_service_group varchar(32) ,transaction_name varchar(128) ,timeout int,  begin_time long, application_data varchar(500), suspended_end_time long, stopped_reason int, gmt_create TIMESTAMP(6) ,gmt_modified TIMESTAMP(6) ) ");
             System.out.println("create table global_table success.");
 
             try {
@@ -78,7 +78,7 @@ public class LogStoreDataBaseDAOTest {
             } catch (Exception e) {
             }
 //            xid, transaction_id, branch_id, resource_group_id, resource_id, lock_key, branch_type, status, client_id, application_data, gmt_create, gmt_modified
-            s.execute("CREATE TABLE branch_table ( xid varchar(96),  transaction_id long , branch_id long primary key, resource_group_id varchar(32), resource_id varchar(32) ,lock_key varchar(64) ,branch_type varchar(32) ,  status int , client_id varchar(128),  application_data varchar(500),  gmt_create TIMESTAMP(6) ,gmt_modified TIMESTAMP(6) ) ");
+            s.execute("CREATE TABLE branch_table ( xid varchar(96),  transaction_id long , branch_id long primary key, resource_group_id varchar(32), resource_id varchar(32) ,lock_key varchar(64) ,branch_type varchar(32) ,  status int , client_id varchar(128),  application_data varchar(500), retry_strategy varchar(256), retry_count int, gmt_create TIMESTAMP(6) ,gmt_modified TIMESTAMP(6) ) ");
             System.out.println("create table branch_table success.");
 
         } catch (Exception e) {
