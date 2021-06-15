@@ -20,6 +20,7 @@ import java.util.Map;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
+import io.seata.common.exception.FrameworkException;
 import io.seata.rm.tcc.interceptor.ActionContextUtil;
 
 /**
@@ -96,7 +97,13 @@ public class BusinessActionContext implements Serializable {
     @Nullable
     public <T> T getActionContext(String key, @Nonnull Class<T> targetClazz) {
         Object value = actionContext.get(key);
-        return ActionContextUtil.convertActionContext(key, value, targetClazz);
+        try {
+            return ActionContextUtil.convertActionContext(value, targetClazz);
+        } catch (RuntimeException e) {
+            String errorMsg = String.format("Failed to convert the action context with key '%s' from '%s' to '%s'.",
+                    key, value.getClass().getName(), targetClazz.getName());
+            throw new FrameworkException(e, errorMsg);
+        }
     }
 
     /**

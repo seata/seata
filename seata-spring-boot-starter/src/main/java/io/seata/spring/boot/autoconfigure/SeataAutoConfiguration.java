@@ -21,13 +21,16 @@ import io.seata.common.loader.EnhancedServiceLoader;
 import io.seata.spring.annotation.GlobalTransactionScanner;
 import io.seata.spring.annotation.ScannerChecker;
 import io.seata.spring.boot.autoconfigure.properties.SeataProperties;
+import io.seata.spring.proxy.SeataProxyBeanRegister;
+import io.seata.spring.proxy.SeataProxyConfig;
+import io.seata.spring.proxy.SeataProxyHandler;
 import io.seata.tm.api.DefaultFailureHandlerImpl;
 import io.seata.tm.api.FailureHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.boot.autoconfigure.AutoConfigureAfter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.config.ConfigurableListableBeanFactory;
+import org.springframework.boot.autoconfigure.AutoConfigureAfter;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
@@ -58,7 +61,9 @@ public class SeataAutoConfiguration {
     @ConditionalOnMissingBean(GlobalTransactionScanner.class)
     public GlobalTransactionScanner globalTransactionScanner(SeataProperties seataProperties, FailureHandler failureHandler,
             ConfigurableListableBeanFactory beanFactory,
-            @Autowired(required = false) List<ScannerChecker> scannerCheckers) {
+            @Autowired(required = false) List<ScannerChecker> scannerCheckers,
+            @Autowired(required = false) SeataProxyConfig config, @Autowired(required = false) SeataProxyHandler seataProxyHandler,
+            @Autowired(required = false) List<SeataProxyBeanRegister> registers) {
         if (LOGGER.isInfoEnabled()) {
             LOGGER.info("Automatically configure Seata");
         }
@@ -78,7 +83,8 @@ public class SeataAutoConfiguration {
         GlobalTransactionScanner.addScannerExcludeBeanNames(seataProperties.getExcludesForScanning());
 
         // create global transaction scanner
-        return new GlobalTransactionScanner(seataProperties.getApplicationId(), seataProperties.getTxServiceGroup(), failureHandler);
+        return new GlobalTransactionScanner(seataProperties.getApplicationId(), seataProperties.getTxServiceGroup(),
+                failureHandler, config, registers);
     }
 
 

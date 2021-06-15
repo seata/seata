@@ -70,6 +70,10 @@ public final class StackTraceLogger {
     }
 
     private static boolean needToPrintStackTrace() {
+        return needToPrintLog();
+    }
+
+    public static boolean needToPrintLog() {
         int rate = getRate();
         return ThreadLocalRandom.current().nextInt(rate) == 0;
     }

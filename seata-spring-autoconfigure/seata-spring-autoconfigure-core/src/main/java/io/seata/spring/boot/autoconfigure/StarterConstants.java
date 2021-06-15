@@ -37,8 +37,9 @@ public interface StarterConstants {
     String LOAD_BALANCE_PREFIX = CLIENT_PREFIX + ".loadBalance";
     String LOG_PREFIX = SEATA_PREFIX + ".log";
     String COMPRESS_PREFIX = UNDO_PREFIX + ".compress";
-    String TCC_FENCE_PREFIX_KEBAB_STYLE = SEATA_PREFIX + ".tcc-fence";
-    String TCC_FENCE_CONFIG_PREFIX_KEBAB_STYLE = TCC_FENCE_PREFIX_KEBAB_STYLE + ".config";
+    String TCC_PREFIX = SEATA_PREFIX + ".tcc";
+    String TCC_FENCE_PREFIX = TCC_PREFIX + ".fence";
+    String PROXY_PREFIX = SEATA_PREFIX + ".proxy";
 
     String REGISTRY_PREFIX = SEATA_PREFIX + ".registry";
     String REGISTRY_NACOS_PREFIX = REGISTRY_PREFIX + ".nacos";

@@ -16,6 +16,7 @@
 package io.seata.common.util;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
@@ -275,6 +276,32 @@ public class CollectionUtils {
             } catch (IndexOutOfBoundsException ex) {
                 // catch the exception and continue to retry
             }
+        }
+    }
+
+    /**
+     * add all items of the collection to target collection
+     *
+     * @param targetColl
+     * @param additionalColl
+     * @param <T>
+     */
+    public static <T> void addAll(Collection<T> targetColl, Collection<T> additionalColl) {
+        if (isNotEmpty(additionalColl)) {
+            targetColl.addAll(additionalColl);
+        }
+    }
+
+    /**
+     * add all items of the array to target collection
+     *
+     * @param targetColl
+     * @param additionalArr
+     * @param <T>
+     */
+    public static <T> void addAll(Collection<T> targetColl, T... additionalArr) {
+        if (isNotEmpty(additionalArr)) {
+            targetColl.addAll(Arrays.asList(additionalArr));
         }
     }
 }

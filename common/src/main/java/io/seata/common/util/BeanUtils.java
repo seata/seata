@@ -45,9 +45,9 @@ public class BeanUtils {
         for (Field field : fields) {
             Object val = null;
             try {
-                val = ReflectionUtil.getFieldValue(o, field.getName());
-            } catch (NoSuchFieldException e) {
-                LOGGER.warn(e.getMessage(), e);
+                val = ReflectionUtil.getFieldValue(o, field);
+            } catch (RuntimeException e) {
+                LOGGER.warn("get field value failed", e);
             }
             if (val != null) {
                 buffer.append(field.getName()).append("=").append(val).append(", ");
