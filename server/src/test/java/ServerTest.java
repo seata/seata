@@ -13,15 +13,15 @@
  *  See the License for the specific language governing permissions and
  *  limitations under the License.
  */
+
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 import io.seata.common.XID;
 import io.seata.common.util.NetUtil;
 import io.seata.core.rpc.netty.NettyRemotingServer;
 import io.seata.server.UUIDGenerator;
 import io.seata.server.coordinator.DefaultCoordinator;
-
-import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.ThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
 
 /**
  * The type Server test.

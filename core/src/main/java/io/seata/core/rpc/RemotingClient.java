@@ -15,14 +15,13 @@
  */
 package io.seata.core.rpc;
 
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.TimeoutException;
 import io.netty.channel.Channel;
 import io.seata.core.protocol.AbstractMessage;
 import io.seata.core.protocol.RpcMessage;
 import io.seata.core.rpc.netty.NettyClientConfig;
 import io.seata.core.rpc.processor.RemotingProcessor;
-
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.TimeoutException;
 
 /**
  * The interface remoting client.
@@ -43,6 +42,18 @@ public interface RemotingClient {
      * @throws TimeoutException TimeoutException
      */
     Object sendSyncRequest(Object msg) throws TimeoutException;
+
+    /**
+     * client send sync request.
+     * In this request, if {@link NettyClientConfig#isEnableClientBatchSendRequest} is enabled,
+     * the message will be sent in batches.
+     *
+     * @param msg transaction message {@link io.seata.core.protocol}
+     * @param retrying rpc retry {@link io.seata.core.protocol}
+     * @return server result message
+     * @throws TimeoutException
+     */
+    Object sendSyncRequest(Object msg, boolean retrying) throws TimeoutException;
 
     /**
      * client send sync request.

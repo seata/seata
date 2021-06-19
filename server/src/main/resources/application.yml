@@ -24,5 +24,5 @@ seata:
     # support: nacos 、 eureka 、 redis 、 zk  、 consul 、 etcd3 、 sofa
     type: file
   store:
-    # support: file 、 db 、 redis
+    # support: file 、 db 、 redis 、 raft
     mode: file

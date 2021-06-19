@@ -15,13 +15,15 @@
  */
 package io.seata.core.exception;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import io.seata.config.Configuration;
 import io.seata.config.ConfigurationFactory;
 import io.seata.core.protocol.ResultCode;
 import io.seata.core.protocol.transaction.AbstractTransactionRequest;
 import io.seata.core.protocol.transaction.AbstractTransactionResponse;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import io.seata.core.raft.RaftServerFactory;
 
 /**
  * The type Abstract exception handler.
@@ -33,9 +35,40 @@ public abstract class AbstractExceptionHandler {
     private static final Logger LOGGER = LoggerFactory.getLogger(AbstractExceptionHandler.class);
 
     /**
+     * The constant RAFT_SERVER_FACTORY.
+     */
+    private static final RaftServerFactory RAFT_SERVER_FACTORY = RaftServerFactory.getInstance();
+
+    /**
      * The constant CONFIG.
      */
     protected static final Configuration CONFIG = ConfigurationFactory.getInstance();
+
+    /**
+     * Exception handle template.
+     *
+     * @param <T>      the type parameter
+     * @param <S>      the type parameter
+     * @param callback the callback
+     * @param request  the request
+     * @param response the response
+     */
+    public <T extends AbstractTransactionRequest, S extends AbstractTransactionResponse> void exceptionHandleTemplate(Callback<T, S> callback, T request, S response) {
+        try {
+            if (RAFT_SERVER_FACTORY.isNotRaftModeLeader()) {
+                throw new TransactionException(TransactionExceptionCode.NotRaftLeader,
+                    " The current TC is not a leader node, interrupt processing !");
+            }
+            callback.execute(request, response);
+            callback.onSuccess(request, response);
+        } catch (TransactionException tex) {
+            LOGGER.error("Catch TransactionException while do RPC, request: {}", request, tex);
+            callback.onTransactionException(request, response, tex);
+        } catch (RuntimeException rex) {
+            LOGGER.error("Catch RuntimeException while do RPC, request: {}", request, rex);
+            callback.onException(request, response, rex);
+        }
+    }
 
     /**
      * The interface Callback.
@@ -107,28 +140,6 @@ public abstract class AbstractExceptionHandler {
         public void onException(T request, S response, Exception rex) {
             response.setResultCode(ResultCode.Failed);
             response.setMsg("RuntimeException[" + rex.getMessage() + "]");
-        }
-    }
-
-    /**
-     * Exception handle template.
-     *
-     * @param <T>      the type parameter
-     * @param <S>      the type parameter
-     * @param callback the callback
-     * @param request  the request
-     * @param response the response
-     */
-    public <T extends AbstractTransactionRequest, S extends AbstractTransactionResponse> void exceptionHandleTemplate(Callback<T, S> callback, T request, S response) {
-        try {
-            callback.execute(request, response);
-            callback.onSuccess(request, response);
-        } catch (TransactionException tex) {
-            LOGGER.error("Catch TransactionException while do RPC, request: {}", request, tex);
-            callback.onTransactionException(request, response, tex);
-        } catch (RuntimeException rex) {
-            LOGGER.error("Catch RuntimeException while do RPC, request: {}", request, rex);
-            callback.onException(request, response, rex);
         }
     }
 

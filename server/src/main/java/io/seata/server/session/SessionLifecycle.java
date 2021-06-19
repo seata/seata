@@ -67,6 +67,14 @@ public interface SessionLifecycle {
     void removeBranch(BranchSession branchSession) throws TransactionException;
 
     /**
+     * Remove branch.
+     *
+     * @param branchId the branch id
+     * @throws TransactionException the transaction exception
+     */
+    void removeBranch(Long branchId) throws TransactionException;
+
+    /**
      * Is active boolean.
      *
      * @return the boolean

@@ -67,7 +67,7 @@
         <dubbo.alibaba.version>2.6.5</dubbo.alibaba.version>
         <sofa.rpc.version>5.5.3</sofa.rpc.version>
         <fastjson.version>1.2.73</fastjson.version>
-        <protostuff.version>1.5.9</protostuff.version>
+        <protostuff.version>1.6.0</protostuff.version>
         <config.version>1.2.1</config.version>
         <slf4j-api.version>1.7.22</slf4j-api.version>
         <logback-classic.version>1.2.0</logback-classic.version>
@@ -126,6 +126,7 @@
         <hessian.version>4.0.63</hessian.version>
         <fst.version>2.57</fst.version>
         <groovy.version>2.4.4</groovy.version>
+        <jraft.version>1.3.7</jraft.version>
         <mariadb.version>2.7.2</mariadb.version>
     </properties>
 
@@ -538,6 +539,11 @@
                         <artifactId>junit-platform-launcher</artifactId>
                     </exclusion>
                 </exclusions>
+            </dependency>
+            <dependency>
+                <groupId>com.alipay.sofa</groupId>
+                <artifactId>jraft-core</artifactId>
+                <version>${jraft.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.mariadb.jdbc</groupId>

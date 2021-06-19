@@ -32,9 +32,13 @@ public interface DefaultValues {
     long DEFAULT_TABLE_META_CHECKER_INTERVAL = 60000L;
     boolean DEFAULT_TM_DEGRADE_CHECK = false;
     boolean DEFAULT_CLIENT_SAGA_BRANCH_REGISTER_ENABLE = false;
+    int DEFAULT_RAFT_PORT_INTERVAL = 1000;
+    /**
+     * The default session store dir
+     */
+    String DEFAULT_SESSION_STORE_FILE_DIR = "sessionStore";
     boolean DEFAULT_CLIENT_SAGA_RETRY_PERSIST_MODE_UPDATE = false;
     boolean DEFAULT_CLIENT_SAGA_COMPENSATE_PERSIST_MODE_UPDATE = false;
-
     /**
      * Shutdown timeout default 3s
      */
@@ -97,6 +101,8 @@ public interface DefaultValues {
     String DEFAULT_LOAD_BALANCE = "RandomLoadBalance";
     int VIRTUAL_NODES_DEFAULT = 10;
 
+    String SEATA_RAFT_GROUP = "SEATA";
+
     /**
      * the constant DEFAULT_CLIENT_UNDO_COMPRESS_ENABLE
      */
@@ -111,6 +117,7 @@ public interface DefaultValues {
      * the constant DEFAULT_CLIENT_UNDO_COMPRESS_THRESHOLD
      */
     String DEFAULT_CLIENT_UNDO_COMPRESS_THRESHOLD = "64k";
+
 
     /**
      * the constant DEFAULT_RETRY_DEAD_THRESHOLD

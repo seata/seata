@@ -175,7 +175,7 @@ public class FileLocker extends AbstractLocker {
         private final ConcurrentHashMap<String/* pk */, Long/* transactionId */> bucketLockMap
             = new ConcurrentHashMap<>();
 
-        ConcurrentHashMap<String, Long> get() {
+        public ConcurrentHashMap<String, Long> get() {
             return bucketLockMap;
         }
 

@@ -66,6 +66,11 @@
             <artifactId>fastjson</artifactId>
             <scope>test</scope>
         </dependency>
+        <!-- jraft  -->
+        <dependency>
+            <groupId>com.alipay.sofa</groupId>
+            <artifactId>jraft-core</artifactId>
+        </dependency>
     </dependencies>
 
 </project>

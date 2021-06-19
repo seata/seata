@@ -15,10 +15,12 @@
  */
 package io.seata.spring.boot.autoconfigure;
 
+import io.seata.spring.boot.autoconfigure.properties.LogProperties;
+import io.seata.spring.boot.autoconfigure.properties.ServerRaftProperties;
+import io.seata.spring.boot.autoconfigure.properties.ShutdownProperties;
+import io.seata.spring.boot.autoconfigure.properties.StoreProperties;
 import io.seata.spring.boot.autoconfigure.properties.ThreadFactoryProperties;
 import io.seata.spring.boot.autoconfigure.properties.TransportProperties;
-import io.seata.spring.boot.autoconfigure.properties.ShutdownProperties;
-import io.seata.spring.boot.autoconfigure.properties.LogProperties;
 import io.seata.spring.boot.autoconfigure.properties.config.ConfigApolloProperties;
 import io.seata.spring.boot.autoconfigure.properties.config.ConfigConsulProperties;
 import io.seata.spring.boot.autoconfigure.properties.config.ConfigCustomProperties;
@@ -37,37 +39,39 @@ import io.seata.spring.boot.autoconfigure.properties.registry.RegistryRedisPrope
 import io.seata.spring.boot.autoconfigure.properties.registry.RegistrySofaProperties;
 import io.seata.spring.boot.autoconfigure.properties.registry.RegistryZooKeeperProperties;
 import io.seata.spring.boot.autoconfigure.provider.SpringApplicationContextProvider;
-
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
 
+
 import static io.seata.common.Constants.BEAN_NAME_SPRING_APPLICATION_CONTEXT_PROVIDER;
-import static io.seata.spring.boot.autoconfigure.StarterConstants.PROPERTY_BEAN_MAP;
-import static io.seata.spring.boot.autoconfigure.StarterConstants.SEATA_PREFIX;
-import static io.seata.spring.boot.autoconfigure.StarterConstants.CONFIG_PREFIX;
-import static io.seata.spring.boot.autoconfigure.StarterConstants.CONFIG_FILE_PREFIX;
-import static io.seata.spring.boot.autoconfigure.StarterConstants.REGISTRY_PREFIX;
-import static io.seata.spring.boot.autoconfigure.StarterConstants.CONFIG_NACOS_PREFIX;
-import static io.seata.spring.boot.autoconfigure.StarterConstants.CONFIG_CONSUL_PREFIX;
-import static io.seata.spring.boot.autoconfigure.StarterConstants.CONFIG_ZK_PREFIX;
 import static io.seata.spring.boot.autoconfigure.StarterConstants.CONFIG_APOLLO_PREFIX;
-import static io.seata.spring.boot.autoconfigure.StarterConstants.CONFIG_ETCD3_PREFIX;
+import static io.seata.spring.boot.autoconfigure.StarterConstants.CONFIG_CONSUL_PREFIX;
 import static io.seata.spring.boot.autoconfigure.StarterConstants.CONFIG_CUSTOM_PREFIX;
+import static io.seata.spring.boot.autoconfigure.StarterConstants.CONFIG_ETCD3_PREFIX;
+import static io.seata.spring.boot.autoconfigure.StarterConstants.CONFIG_FILE_PREFIX;
+import static io.seata.spring.boot.autoconfigure.StarterConstants.CONFIG_NACOS_PREFIX;
+import static io.seata.spring.boot.autoconfigure.StarterConstants.CONFIG_PREFIX;
+import static io.seata.spring.boot.autoconfigure.StarterConstants.CONFIG_ZK_PREFIX;
+import static io.seata.spring.boot.autoconfigure.StarterConstants.LOG_PREFIX;
+import static io.seata.spring.boot.autoconfigure.StarterConstants.PROPERTY_BEAN_MAP;
 import static io.seata.spring.boot.autoconfigure.StarterConstants.REGISTRY_CONSUL_PREFIX;
+import static io.seata.spring.boot.autoconfigure.StarterConstants.REGISTRY_CUSTOM_PREFIX;
 import static io.seata.spring.boot.autoconfigure.StarterConstants.REGISTRY_ETCD3_PREFIX;
 import static io.seata.spring.boot.autoconfigure.StarterConstants.REGISTRY_EUREKA_PREFIX;
 import static io.seata.spring.boot.autoconfigure.StarterConstants.REGISTRY_NACOS_PREFIX;
+import static io.seata.spring.boot.autoconfigure.StarterConstants.REGISTRY_PREFIX;
 import static io.seata.spring.boot.autoconfigure.StarterConstants.REGISTRY_REDIS_PREFIX;
 import static io.seata.spring.boot.autoconfigure.StarterConstants.REGISTRY_SOFA_PREFIX;
 import static io.seata.spring.boot.autoconfigure.StarterConstants.REGISTRY_ZK_PREFIX;
-import static io.seata.spring.boot.autoconfigure.StarterConstants.REGISTRY_CUSTOM_PREFIX;
+import static io.seata.spring.boot.autoconfigure.StarterConstants.SEATA_PREFIX;
+import static io.seata.spring.boot.autoconfigure.StarterConstants.SERVER_RAFT_PREFIX;
+import static io.seata.spring.boot.autoconfigure.StarterConstants.SHUTDOWN_PREFIX;
+import static io.seata.spring.boot.autoconfigure.StarterConstants.STORE_PREFIX;
 import static io.seata.spring.boot.autoconfigure.StarterConstants.THREAD_FACTORY_PREFIX;
 import static io.seata.spring.boot.autoconfigure.StarterConstants.TRANSPORT_PREFIX;
-import static io.seata.spring.boot.autoconfigure.StarterConstants.SHUTDOWN_PREFIX;
-import static io.seata.spring.boot.autoconfigure.StarterConstants.LOG_PREFIX;
 
 /**
  * @author xingfudeshi@gmail.com
@@ -102,6 +106,8 @@ public class SeataCorePropertiesAutoConfiguration {
         PROPERTY_BEAN_MAP.put(TRANSPORT_PREFIX, TransportProperties.class);
         PROPERTY_BEAN_MAP.put(SHUTDOWN_PREFIX, ShutdownProperties.class);
         PROPERTY_BEAN_MAP.put(LOG_PREFIX, LogProperties.class);
+        PROPERTY_BEAN_MAP.put(SERVER_RAFT_PREFIX, ServerRaftProperties.class);
+        PROPERTY_BEAN_MAP.put(STORE_PREFIX, StoreProperties.class);
     }
 
     @Bean(BEAN_NAME_SPRING_APPLICATION_CONTEXT_PROVIDER)

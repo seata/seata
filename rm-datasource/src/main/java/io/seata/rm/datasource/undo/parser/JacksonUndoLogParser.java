@@ -120,42 +120,14 @@ public class JacksonUndoLogParser implements UndoLogParser, Initialize {
      */
     private final JsonDeserializer localDateTimeDeserializer = new LocalDateTimeDeserializer();
 
-    @Override
-    public void init() {
-        try {
-            List<JacksonSerializer> jacksonSerializers = EnhancedServiceLoader.loadAll(JacksonSerializer.class);
-            if (CollectionUtils.isNotEmpty(jacksonSerializers)) {
-                for (JacksonSerializer jacksonSerializer : jacksonSerializers) {
-                    Class type = jacksonSerializer.type();
-                    JsonSerializer ser = jacksonSerializer.ser();
-                    JsonDeserializer deser = jacksonSerializer.deser();
-                    if (type != null) {
-                        if (ser != null) {
-                            module.addSerializer(type, ser);
-                        }
-                        if (deser != null) {
-                            module.addDeserializer(type, deser);
-                        }
-                        LOGGER.info("jackson undo log parser load [{}].", jacksonSerializer.getClass().getName());
-                    }
-                }
-            }
-        } catch (EnhancedServiceNotFoundException e) {
-            LOGGER.warn("JacksonSerializer not found children class.", e);
-        }
-
-        module.addSerializer(Timestamp.class, timestampSerializer);
-        module.addDeserializer(Timestamp.class, timestampDeserializer);
-        module.addSerializer(SerialBlob.class, blobSerializer);
-        module.addDeserializer(SerialBlob.class, blobDeserializer);
-        module.addSerializer(SerialClob.class, clobSerializer);
-        module.addDeserializer(SerialClob.class, clobDeserializer);
-        module.addSerializer(LocalDateTime.class, localDateTimeSerializer);
-        module.addDeserializer(LocalDateTime.class, localDateTimeDeserializer);
-        mapper.registerModule(module);
-        mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
-        mapper.enableDefaultTyping(ObjectMapper.DefaultTyping.NON_FINAL, JsonTypeInfo.As.PROPERTY);
-        mapper.enable(MapperFeature.PROPAGATE_TRANSIENT_MARKER);
+    /**
+     * set zone id
+     *
+     * @param zoneId the zoneId
+     */
+    public static void setZoneOffset(ZoneId zoneId) {
+        Objects.requireNonNull(zoneId, "zoneId must be not null");
+        JacksonUndoLogParser.zoneId = zoneId;
     }
 
     @Override
@@ -194,6 +166,44 @@ public class JacksonUndoLogParser implements UndoLogParser, Initialize {
         }
     }
 
+    @Override
+    public void init() {
+        try {
+            List<JacksonSerializer> jacksonSerializers = EnhancedServiceLoader.loadAll(JacksonSerializer.class);
+            if (CollectionUtils.isNotEmpty(jacksonSerializers)) {
+                for (JacksonSerializer jacksonSerializer : jacksonSerializers) {
+                    Class type = jacksonSerializer.type();
+                    JsonSerializer ser = jacksonSerializer.ser();
+                    JsonDeserializer deser = jacksonSerializer.deser();
+                    if (type != null) {
+                        if (ser != null) {
+                            module.addSerializer(type, ser);
+                        }
+                        if (deser != null) {
+                            module.addDeserializer(type, deser);
+                        }
+                        LOGGER.info("jackson undo log parser load [{}].", jacksonSerializer.getClass().getName());
+                    }
+                }
+            }
+        } catch (EnhancedServiceNotFoundException e) {
+            LOGGER.warn("JacksonSerializer not found children class.", e);
+        }
+
+        module.addSerializer(Timestamp.class, timestampSerializer);
+        module.addDeserializer(Timestamp.class, timestampDeserializer);
+        module.addSerializer(SerialBlob.class, blobSerializer);
+        module.addDeserializer(SerialBlob.class, blobDeserializer);
+        module.addSerializer(SerialClob.class, clobSerializer);
+        module.addDeserializer(SerialClob.class, clobDeserializer);
+        module.addSerializer(LocalDateTime.class, localDateTimeSerializer);
+        module.addDeserializer(LocalDateTime.class, localDateTimeDeserializer);
+        mapper.registerModule(module);
+        mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+        mapper.enableDefaultTyping(ObjectMapper.DefaultTyping.NON_FINAL, JsonTypeInfo.As.PROPERTY);
+        mapper.enable(MapperFeature.PROPAGATE_TRANSIENT_MARKER);
+    }
+
     /**
      * if necessary
      * extend {@link ArraySerializerBase}
@@ -226,31 +236,6 @@ public class JacksonUndoLogParser implements UndoLogParser, Initialize {
             } catch (IOException e) {
                 LOGGER.error("serialize java.sql.Timestamp error : {}", e.getMessage(), e);
             }
-        }
-    }
-
-    /**
-     * if necessary
-     * extend {@link JsonNodeDeserializer}
-     */
-    private static class TimestampDeserializer extends JsonDeserializer<Timestamp> {
-
-        @Override
-        public Timestamp deserialize(JsonParser p, DeserializationContext ctxt) {
-            try {
-                if (p.isExpectedStartArrayToken()) {
-                    ArrayNode arrayNode = p.getCodec().readTree(p);
-                    Timestamp timestamp = new Timestamp(arrayNode.get(0).asLong());
-                    timestamp.setNanos(arrayNode.get(1).asInt());
-                    return timestamp;
-                } else {
-                    long timestamp = p.getLongValue();
-                    return new Timestamp(timestamp);
-                }
-            } catch (IOException e) {
-                LOGGER.error("deserialize java.sql.Timestamp error : {}", e.getMessage(), e);
-            }
-            return null;
         }
     }
 
@@ -295,6 +280,44 @@ public class JacksonUndoLogParser implements UndoLogParser, Initialize {
     }
 
     /**
+     * if necessary
+     * extend {@link JsonNodeDeserializer}
+     */
+    private static class TimestampDeserializer extends JsonDeserializer<Timestamp> {
+
+        @Override
+        public Timestamp deserialize(JsonParser p, DeserializationContext ctxt) {
+            try {
+                if (p.isExpectedStartArrayToken()) {
+                    ArrayNode arrayNode = p.getCodec().readTree(p);
+                    Timestamp timestamp = new Timestamp(arrayNode.get(0).asLong());
+                    timestamp.setNanos(arrayNode.get(1).asInt());
+                    return timestamp;
+                } else {
+                    long timestamp = p.getLongValue();
+                    return new Timestamp(timestamp);
+                }
+            } catch (IOException e) {
+                LOGGER.error("deserialize java.sql.Timestamp error : {}", e.getMessage(), e);
+            }
+            return null;
+        }
+    }
+
+    private static class ClobDeserializer extends JsonDeserializer<SerialClob> {
+
+        @Override
+        public SerialClob deserialize(JsonParser p, DeserializationContext ctxt) throws IOException {
+            try {
+                return new SerialClob(p.getValueAsString().toCharArray());
+            } catch (SQLException e) {
+                LOGGER.error("deserialize java.sql.Clob error : {}", e.getMessage(), e);
+            }
+            return null;
+        }
+    }
+
+    /**
      * the class of serialize clob type
      */
     private static class ClobSerializer extends JsonSerializer<SerialClob> {
@@ -315,19 +338,6 @@ public class JacksonUndoLogParser implements UndoLogParser, Initialize {
             } catch (SerialException e) {
                 LOGGER.error("serialize java.sql.Blob error : {}", e.getMessage(), e);
             }
-        }
-    }
-
-    private static class ClobDeserializer extends JsonDeserializer<SerialClob> {
-
-        @Override
-        public SerialClob deserialize(JsonParser p, DeserializationContext ctxt) throws IOException {
-            try {
-                return new SerialClob(p.getValueAsString().toCharArray());
-            } catch (SQLException e) {
-                LOGGER.error("deserialize java.sql.Clob error : {}", e.getMessage(), e);
-            }
-            return null;
         }
     }
 
@@ -393,16 +403,6 @@ public class JacksonUndoLogParser implements UndoLogParser, Initialize {
             }
             return null;
         }
-    }
-
-    /**
-     * set zone id
-     *
-     * @param zoneId the zoneId
-     */
-    public static void setZoneOffset(ZoneId zoneId) {
-        Objects.requireNonNull(zoneId, "zoneId must be not null");
-        JacksonUndoLogParser.zoneId = zoneId;
     }
 
 }

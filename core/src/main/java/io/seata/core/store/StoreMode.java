@@ -35,7 +35,12 @@ public enum StoreMode {
     /**
      * redis store
      */
-    REDIS("redis");
+    REDIS("redis"),
+
+    /**
+     * raft store
+     */
+    RAFT("raft");
 
     private String name;
 

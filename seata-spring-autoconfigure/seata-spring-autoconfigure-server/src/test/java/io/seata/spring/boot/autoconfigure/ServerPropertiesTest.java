@@ -21,7 +21,7 @@ import io.seata.spring.boot.autoconfigure.properties.server.ServerRecoveryProper
 import io.seata.spring.boot.autoconfigure.properties.server.ServerUndoProperties;
 import io.seata.spring.boot.autoconfigure.properties.server.store.StoreDBProperties;
 import io.seata.spring.boot.autoconfigure.properties.server.store.StoreFileProperties;
-import io.seata.spring.boot.autoconfigure.properties.server.store.StoreProperties;
+import io.seata.spring.boot.autoconfigure.properties.StoreProperties;
 import io.seata.spring.boot.autoconfigure.properties.server.store.StoreRedisProperties;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;

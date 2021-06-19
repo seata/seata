@@ -63,6 +63,11 @@ public class LockerManagerFactory {
                             CONFIG.getConfig(ConfigurationKeys.STORE_MODE, SERVER_DEFAULT_STORE_MODE));
                     }
                     if (StoreMode.contains(lockMode)) {
+                        if (StringUtils.equalsIgnoreCase(lockMode, StoreMode.FILE.getName())
+                            && StoreMode.RAFT.getName().equalsIgnoreCase(
+                                CONFIG.getConfig(ConfigurationKeys.STORE_MODE, SERVER_DEFAULT_STORE_MODE))) {
+                            lockMode = StoreMode.RAFT.getName();
+                        }
                         LOCK_MANAGER = EnhancedServiceLoader.load(LockManager.class, lockMode);
                     }
                 }

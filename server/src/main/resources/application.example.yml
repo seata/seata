@@ -91,6 +91,16 @@ seata:
       address-wait-time: 3000
 
   server:
+    raft:
+      cluster:
+      snapshotInterval: 600
+      applyBatch: 32
+      maxAppendBufferSize: 262144
+      maxReplicatorInflightMsgs: 256
+      disruptorBufferSize: 16384
+      electionTimeoutMs: 1000
+      reporterEnabled: false
+      reporterInitialDelay: 30
     max-commit-retry-timeout: -1
     max-rollback-retry-timeout: -1
     rollback-retry-timeout-unlock-enable: false

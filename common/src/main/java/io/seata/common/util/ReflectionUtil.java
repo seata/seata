@@ -33,23 +33,22 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public final class ReflectionUtil {
 
-    private ReflectionUtil() {
-    }
-
-    /**
-     * The constant MAX_NEST_DEPTH.
-     */
-    public static final int MAX_NEST_DEPTH = 20;
-
     /**
      * The EMPTY_FIELD_ARRAY
      */
     public static final Field[] EMPTY_FIELD_ARRAY = new Field[0];
 
     /**
+     * The constant MAX_NEST_DEPTH.
+     */
+    public static final int MAX_NEST_DEPTH = 20;
+    /**
      * The cache CLASS_FIELDS_CACHE
      */
     private static final Map<Class<?>, Field[]> CLASS_FIELDS_CACHE = new ConcurrentHashMap<>();
+
+    private ReflectionUtil() {
+    }
 
     /**
      * Gets class by name.

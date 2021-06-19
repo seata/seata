@@ -20,10 +20,12 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
-
+import com.alipay.sofa.jraft.Closure;
 import io.seata.common.Constants;
 import io.seata.common.DefaultValues;
 import io.seata.common.XID;
@@ -36,16 +38,27 @@ import io.seata.core.exception.TransactionExceptionCode;
 import io.seata.core.model.BranchStatus;
 import io.seata.core.model.BranchType;
 import io.seata.core.model.GlobalStatus;
+import io.seata.core.raft.RaftServerFactory;
+import io.seata.core.store.BranchTransactionDO;
+import io.seata.core.store.GlobalTransactionDO;
 import io.seata.server.UUIDGenerator;
 import io.seata.server.lock.LockerManagerFactory;
+import io.seata.server.storage.SessionConverter;
+import io.seata.server.storage.raft.RaftSessionSyncMsg;
+import io.seata.server.storage.raft.RaftTaskUtil;
 import io.seata.server.store.SessionStorable;
 import io.seata.server.store.StoreConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+
 import static io.seata.core.model.GlobalStatus.AsyncCommitting;
 import static io.seata.core.model.GlobalStatus.CommitRetrying;
 import static io.seata.core.model.GlobalStatus.Committing;
+import static io.seata.core.raft.msg.RaftSyncMsg.MsgType.ADD_BRANCH_SESSION;
+import static io.seata.core.raft.msg.RaftSyncMsg.MsgType.REMOVE_BRANCH_SESSION;
+import static io.seata.core.raft.msg.RaftSyncMsg.MsgType.UPDATE_BRANCH_SESSION_STATUS;
+import static io.seata.core.raft.msg.RaftSyncMsg.MsgType.UPDATE_GLOBAL_SESSION_STATUS;
 
 /**
  * The type Global session.
@@ -111,6 +124,16 @@ public class GlobalSession implements SessionLifecycle, SessionStorable {
      */
     public boolean remove(BranchSession branchSession) {
         return branchSessions.remove(branchSession);
+    }
+
+    /**
+     * Remove boolean.
+     *
+     * @param branchId the long
+     * @return the boolean
+     */
+    public boolean remove(Long branchId) {
+        return this.remove(this.getBranch(branchId));
     }
 
     private Set<SessionLifecycleListener> lifecycleListeners = new HashSet<>();
@@ -186,15 +209,34 @@ public class GlobalSession implements SessionLifecycle, SessionStorable {
 
     @Override
     public void changeStatus(GlobalStatus status) throws TransactionException {
-        this.status = status;
+        this.setStatus(status);
         for (SessionLifecycleListener lifecycleListener : lifecycleListeners) {
             lifecycleListener.onStatusChange(this, status);
         }
     }
 
     @Override
-    public void changeBranchStatus(BranchSession branchSession, BranchStatus status)
-        throws TransactionException {
+    public void changeBranchStatus(BranchSession branchSession, BranchStatus status) throws TransactionException {
+        if (RaftServerFactory.getInstance().isRaftMode()) {
+            Closure closure = closureStatus -> {
+                if (closureStatus.isOk()) {
+                    try {
+                        this.localChangeBranchStatus(branchSession, status);
+                    } catch (TransactionException e) {
+                        e.printStackTrace();
+                    }
+                }
+            };
+            BranchTransactionDO branchTransactionDO = new BranchTransactionDO(xid, branchSession.getBranchId());
+            RaftSessionSyncMsg raftSyncMsg =
+                new RaftSessionSyncMsg(UPDATE_BRANCH_SESSION_STATUS, branchTransactionDO, status);
+            RaftTaskUtil.createTask(closure, raftSyncMsg);
+        } else {
+            this.localChangeBranchStatus(branchSession, status);
+        }
+    }
+
+    public void localChangeBranchStatus(BranchSession branchSession, BranchStatus status) throws TransactionException {
         branchSession.setStatus(status);
         for (SessionLifecycleListener lifecycleListener : lifecycleListeners) {
             lifecycleListener.onBranchStatusChange(this, branchSession, status);
@@ -249,7 +291,9 @@ public class GlobalSession implements SessionLifecycle, SessionStorable {
      * @param sessionLifecycleListener the session lifecycle listener
      */
     public void addSessionLifecycleListener(SessionLifecycleListener sessionLifecycleListener) {
-        lifecycleListeners.add(sessionLifecycleListener);
+        if (!lifecycleListeners.contains(sessionLifecycleListener)) {
+            lifecycleListeners.add(sessionLifecycleListener);
+        }
     }
 
     /**
@@ -263,6 +307,25 @@ public class GlobalSession implements SessionLifecycle, SessionStorable {
 
     @Override
     public void addBranch(BranchSession branchSession) throws TransactionException {
+        if (RaftServerFactory.getInstance().isRaftMode()) {
+            Closure closure = status -> {
+                if (status.isOk()) {
+                    try {
+                        this.localAddBranch(branchSession);
+                    } catch (TransactionException e) {
+                        e.printStackTrace();
+                    }
+                }
+            };
+            BranchTransactionDO branchTransactionDO = SessionConverter.convertBranchTransactionDO(branchSession);
+            RaftSessionSyncMsg raftSyncMsg = new RaftSessionSyncMsg(ADD_BRANCH_SESSION, branchTransactionDO);
+            RaftTaskUtil.createTask(closure, raftSyncMsg);
+        } else {
+            this.localAddBranch(branchSession);
+        }
+    }
+
+    public void localAddBranch(BranchSession branchSession) throws TransactionException {
         for (SessionLifecycleListener lifecycleListener : lifecycleListeners) {
             lifecycleListener.onAddBranch(this, branchSession);
         }
@@ -271,18 +334,50 @@ public class GlobalSession implements SessionLifecycle, SessionStorable {
     }
 
     @Override
+    public void removeBranch(Long branchId) throws TransactionException {
+        removeBranch(getBranch(branchId));
+    }
+
+    @Override
     public void removeBranch(BranchSession branchSession) throws TransactionException {
+        if (RaftServerFactory.getInstance().isRaftMode()) {
+            CompletableFuture<Boolean> completableFuture = new CompletableFuture<>();
+            Closure closure = closureStatus -> {
+                if (closureStatus.isOk()) {
+                    try {
+                        completableFuture.complete(this.localRemoveBranch(branchSession));
+                    } catch (TransactionException e) {
+                        e.printStackTrace();
+                    }
+                }
+            };
+            BranchTransactionDO branchTransactionDO = new BranchTransactionDO(this.xid, branchSession.getBranchId());
+            RaftSessionSyncMsg raftSyncMsg = new RaftSessionSyncMsg(REMOVE_BRANCH_SESSION, branchTransactionDO);
+            RaftTaskUtil.createTask(closure, raftSyncMsg);
+            try {
+                completableFuture.get();
+            } catch (InterruptedException | ExecutionException e) {
+                throw new TransactionException(
+                    "remove branch failed, xid = " + this.xid + ", branchId = " + branchSession.getBranchId());
+            }
+        } else {
+            this.localRemoveBranch(branchSession);
+        }
+    }
+
+    public boolean localRemoveBranch(BranchSession branchSession) throws TransactionException {
         // do not unlock if global status in (Committing, CommitRetrying, AsyncCommitting),
         // because it's already unlocked in 'DefaultCore.commit()'
-        if (status != Committing && status != CommitRetrying && status != AsyncCommitting) {
+        if (this.status != Committing && this.status != CommitRetrying && this.status != AsyncCommitting) {
             if (!branchSession.unlock()) {
-                throw new TransactionException("Unlock branch lock failed, xid = " + this.xid + ", branchId = " + branchSession.getBranchId());
+                throw new TransactionException(
+                    "Unlock branch lock failed, xid = " + this.xid + ", branchId = " + branchSession.getBranchId());
             }
         }
         for (SessionLifecycleListener lifecycleListener : lifecycleListeners) {
             lifecycleListener.onRemoveBranch(this, branchSession);
         }
-        remove(branchSession);
+        return this.remove(branchSession);
     }
 
     /**
@@ -379,7 +474,28 @@ public class GlobalSession implements SessionLifecycle, SessionStorable {
      *
      * @param status the status
      */
-    public void setStatus(GlobalStatus status) {
+    public void setStatus(GlobalStatus status) throws TransactionException {
+        if (RaftServerFactory.getInstance().isRaftMode()) {
+            Closure closure = closureStatus -> {
+                if (closureStatus.isOk()) {
+                    this.setLocalStatus(status);
+                }
+            };
+            GlobalTransactionDO globalTransactionDO = new GlobalTransactionDO(this.xid);
+            RaftSessionSyncMsg raftSyncMsg =
+                new RaftSessionSyncMsg(UPDATE_GLOBAL_SESSION_STATUS, globalTransactionDO, status);
+            RaftTaskUtil.createTask(closure, raftSyncMsg);
+        } else {
+            this.setLocalStatus(status);
+        }
+    }
+
+    /**
+     * Sets local status.
+     *
+     * @param status the status
+     */
+    public void setLocalStatus(GlobalStatus status) {
         this.status = status;
     }
 

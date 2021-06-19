@@ -396,7 +396,7 @@ public class FileConfiguration extends AbstractConfiguration {
                 for (String dataId : dataIdMap.keySet()) {
                     try {
                         String currentConfig =
-                                ConfigurationFactory.getInstance().getLatestConfig(dataId, null, DEFAULT_CONFIG_TIMEOUT);
+                            ConfigurationFactory.getInstance().getLatestConfig(dataId, null, DEFAULT_CONFIG_TIMEOUT);
                         if (StringUtils.isNotBlank(currentConfig)) {
                             String oldConfig = listenedConfigMap.get(dataId);
                             if (ObjectUtils.notEqual(currentConfig, oldConfig)) {

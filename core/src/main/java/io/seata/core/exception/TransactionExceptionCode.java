@@ -115,7 +115,12 @@ public enum TransactionExceptionCode {
     /**
      * Failed to store exception code
      */
-    FailedStore
+    FailedStore,
+
+    /**
+     * not raft leader exception code
+     */
+    NotRaftLeader
     ;
 
 

@@ -19,6 +19,9 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import io.seata.common.XID;
 import io.seata.common.thread.NamedThreadFactory;
 import io.seata.common.util.NetUtil;
@@ -31,8 +34,6 @@ import io.seata.server.env.ContainerHelper;
 import io.seata.server.lock.LockerManagerFactory;
 import io.seata.server.metrics.MetricsManager;
 import io.seata.server.session.SessionHolder;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * The type Server.
@@ -70,6 +71,13 @@ public class Server {
         NettyRemotingServer nettyRemotingServer = new NettyRemotingServer(workingThreads);
         //server port
         nettyRemotingServer.setListenPort(parameterParser.getPort());
+        //127.0.0.1 and 0.0.0.0 are not valid here.
+        if (NetUtil.isValidIp(parameterParser.getHost(), false)) {
+            XID.setIpAddress(parameterParser.getHost());
+        } else {
+            XID.setIpAddress(NetUtil.getLocalIp());
+        }
+        XID.setPort(nettyRemotingServer.getListenPort());
         UUIDGenerator.init(parameterParser.getServerNode());
         //log store mode : file, db, redis
         SessionHolder.init(parameterParser.getSessionStoreMode());
@@ -80,14 +88,7 @@ public class Server {
         // register ShutdownHook
         ShutdownHook.getInstance().addDisposable(coordinator);
         ShutdownHook.getInstance().addDisposable(nettyRemotingServer);
-
         //127.0.0.1 and 0.0.0.0 are not valid here.
-        if (NetUtil.isValidIp(parameterParser.getHost(), false)) {
-            XID.setIpAddress(parameterParser.getHost());
-        } else {
-            XID.setIpAddress(NetUtil.getLocalIp());
-        }
-        XID.setPort(nettyRemotingServer.getListenPort());
 
         nettyRemotingServer.init();
     }

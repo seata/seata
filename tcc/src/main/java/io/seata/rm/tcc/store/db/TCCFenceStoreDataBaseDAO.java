@@ -40,12 +40,11 @@ import java.util.Date;
  */
 public class TCCFenceStoreDataBaseDAO implements TCCFenceStore {
 
+    private static volatile TCCFenceStoreDataBaseDAO instance = null;
     /**
      * TCC fence log table name
      */
     private String logTableName = TCCFenceConstant.DEFAULT_LOG_TABLE_NAME;
-
-    private static volatile TCCFenceStoreDataBaseDAO instance = null;
 
     private TCCFenceStoreDataBaseDAO() {}
 
