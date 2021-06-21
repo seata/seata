@@ -41,7 +41,7 @@ public class SessionConverterTest {
         long now = date.getTime();
         globalTransactionDO.setXid("192.168.158.80:8091:39372760251957248");
         globalTransactionDO.setTransactionId(39372760251957248L);
-        globalTransactionDO.setStatus(1);
+        globalTransactionDO.setStatus(GlobalStatus.Begin);
         globalTransactionDO.setApplicationId("credit");
         globalTransactionDO.setTransactionServiceGroup("fsp_tx");
         globalTransactionDO.setTransactionName("createOrder");
@@ -54,7 +54,7 @@ public class SessionConverterTest {
         GlobalSession globalSession = SessionConverter.convertGlobalSession(globalTransactionDO);
         Assertions.assertEquals(globalTransactionDO.getXid(),globalSession.getXid());
         Assertions.assertEquals(globalTransactionDO.getTransactionId(),globalSession.getTransactionId());
-        Assertions.assertEquals(globalTransactionDO.getStatus(),globalSession.getStatus().getCode());
+        Assertions.assertEquals(globalTransactionDO.getStatusCode(),globalSession.getStatus().getCode());
         Assertions.assertEquals(globalTransactionDO.getApplicationId(),globalSession.getApplicationId());
         Assertions.assertEquals(globalTransactionDO.getTransactionServiceGroup(),globalSession.getTransactionServiceGroup());
         Assertions.assertEquals(globalTransactionDO.getTransactionName(),globalSession.getTransactionName());
@@ -80,7 +80,7 @@ public class SessionConverterTest {
         branchTransactionDO.setResourceGroupId("t1");
         branchTransactionDO.setResourceId("jdbc:mysql://116.62.62.62/seata-storage");
         branchTransactionDO.setBranchType(BranchType.AT.name());
-        branchTransactionDO.setStatus(1);
+        branchTransactionDO.setStatus(BranchStatus.Registered);
         branchTransactionDO.setClientId("storage-server:192.168.158.80:11934");
         branchTransactionDO.setApplicationData("");
         branchTransactionDO.setGmtCreate(date);
@@ -93,7 +93,7 @@ public class SessionConverterTest {
         Assertions.assertEquals(branchTransactionDO.getResourceGroupId(),branchSession.getResourceGroupId());
         Assertions.assertEquals(branchTransactionDO.getResourceId(),branchSession.getResourceId());
         Assertions.assertEquals(branchTransactionDO.getBranchType(),branchSession.getBranchType().name());
-        Assertions.assertEquals(branchTransactionDO.getStatus(),branchSession.getStatus().getCode());
+        Assertions.assertEquals(branchTransactionDO.getStatusCode(),branchSession.getStatus().getCode());
         Assertions.assertEquals(branchTransactionDO.getClientId(),branchSession.getClientId());
         Assertions.assertEquals(branchTransactionDO.getApplicationData(),branchSession.getApplicationData());
     }
@@ -119,7 +119,7 @@ public class SessionConverterTest {
 
         Assertions.assertEquals(globalSession.getXid(),globalTransactionDO.getXid());
         Assertions.assertEquals(globalSession.getTransactionId(),globalTransactionDO.getTransactionId());
-        Assertions.assertEquals(globalSession.getStatus().getCode(),globalTransactionDO.getStatus());
+        Assertions.assertEquals(globalSession.getStatus().getCode(),globalTransactionDO.getStatusCode());
         Assertions.assertEquals(globalSession.getTransactionName(),globalTransactionDO.getTransactionName());
         Assertions.assertEquals(globalSession.getApplicationId(),globalTransactionDO.getApplicationId());
         Assertions.assertEquals(globalSession.getTransactionServiceGroup(),globalTransactionDO.getTransactionServiceGroup());
@@ -160,7 +160,7 @@ public class SessionConverterTest {
         Assertions.assertEquals(branchSession.getBranchType().name(),branchTransactionDO.getBranchType());
         Assertions.assertEquals(branchSession.getResourceGroupId(),branchTransactionDO.getResourceGroupId());
         Assertions.assertEquals(branchSession.getClientId(),branchTransactionDO.getClientId());
-        Assertions.assertEquals(branchSession.getStatus().getCode(),branchTransactionDO.getStatus());
+        Assertions.assertEquals(branchSession.getStatus().getCode(),branchTransactionDO.getStatusCode());
         Assertions.assertEquals(branchSession.getApplicationData(),branchTransactionDO.getApplicationData());
     }
 

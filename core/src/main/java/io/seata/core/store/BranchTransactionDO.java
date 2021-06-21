@@ -19,13 +19,14 @@ import java.util.Date;
 
 import io.seata.common.util.StringUtils;
 import io.seata.core.model.BranchStatus;
+import io.seata.core.store.standard.BranchTransactionModel;
 
 /**
  * branch transaction data object
  *
  * @author zhangsen
  */
-public class BranchTransactionDO implements Comparable<BranchTransactionDO> {
+public class BranchTransactionDO implements Comparable<BranchTransactionDO>, BranchTransactionModel {
 
     private String xid;
 
@@ -54,6 +55,7 @@ public class BranchTransactionDO implements Comparable<BranchTransactionDO> {
      *
      * @return the xid
      */
+    @Override
     public String getXid() {
         return xid;
     }
@@ -63,6 +65,7 @@ public class BranchTransactionDO implements Comparable<BranchTransactionDO> {
      *
      * @param xid the xid
      */
+    @Override
     public void setXid(String xid) {
         this.xid = xid;
     }
@@ -72,6 +75,7 @@ public class BranchTransactionDO implements Comparable<BranchTransactionDO> {
      *
      * @return the transaction id
      */
+    @Override
     public long getTransactionId() {
         return transactionId;
     }
@@ -81,6 +85,7 @@ public class BranchTransactionDO implements Comparable<BranchTransactionDO> {
      *
      * @param transactionId the transaction id
      */
+    @Override
     public void setTransactionId(long transactionId) {
         this.transactionId = transactionId;
     }
@@ -90,6 +95,7 @@ public class BranchTransactionDO implements Comparable<BranchTransactionDO> {
      *
      * @return the branch id
      */
+    @Override
     public long getBranchId() {
         return branchId;
     }
@@ -99,6 +105,7 @@ public class BranchTransactionDO implements Comparable<BranchTransactionDO> {
      *
      * @param branchId the branch id
      */
+    @Override
     public void setBranchId(long branchId) {
         this.branchId = branchId;
     }
@@ -108,6 +115,7 @@ public class BranchTransactionDO implements Comparable<BranchTransactionDO> {
      *
      * @return the resource group id
      */
+    @Override
     public String getResourceGroupId() {
         return resourceGroupId;
     }
@@ -117,6 +125,7 @@ public class BranchTransactionDO implements Comparable<BranchTransactionDO> {
      *
      * @param resourceGroupId the resource group id
      */
+    @Override
     public void setResourceGroupId(String resourceGroupId) {
         this.resourceGroupId = resourceGroupId;
     }
@@ -126,6 +135,7 @@ public class BranchTransactionDO implements Comparable<BranchTransactionDO> {
      *
      * @return the resource id
      */
+    @Override
     public String getResourceId() {
         return resourceId;
     }
@@ -135,6 +145,7 @@ public class BranchTransactionDO implements Comparable<BranchTransactionDO> {
      *
      * @param resourceId the resource id
      */
+    @Override
     public void setResourceId(String resourceId) {
         this.resourceId = resourceId;
     }
@@ -144,6 +155,7 @@ public class BranchTransactionDO implements Comparable<BranchTransactionDO> {
      *
      * @return the branch type
      */
+    @Override
     public String getBranchType() {
         return branchType;
     }
@@ -153,26 +165,29 @@ public class BranchTransactionDO implements Comparable<BranchTransactionDO> {
      *
      * @param branchType the branch type
      */
+    @Override
     public void setBranchType(String branchType) {
         this.branchType = branchType;
     }
 
     /**
-     * Gets status.
+     * Gets status code.
      *
-     * @return the status
+     * @return the status code
      */
-    public int getStatus() {
+    @Override
+    public int getStatusCode() {
         return status;
     }
 
     /**
-     * Sets status.
+     * Sets status code.
      *
-     * @param status the status
+     * @param statusCode the status code
      */
-    public void setStatus(int status) {
-        this.status = status;
+    @Override
+    public void setStatusCode(int statusCode) {
+        this.status = statusCode;
     }
 
     /**
@@ -180,6 +195,7 @@ public class BranchTransactionDO implements Comparable<BranchTransactionDO> {
      *
      * @return the client id
      */
+    @Override
     public String getClientId() {
         return clientId;
     }
@@ -189,6 +205,7 @@ public class BranchTransactionDO implements Comparable<BranchTransactionDO> {
      *
      * @param clientId the client id
      */
+    @Override
     public void setClientId(String clientId) {
         this.clientId = clientId;
     }
@@ -198,6 +215,7 @@ public class BranchTransactionDO implements Comparable<BranchTransactionDO> {
      *
      * @return the application data
      */
+    @Override
     public String getApplicationData() {
         return applicationData;
     }
@@ -207,6 +225,7 @@ public class BranchTransactionDO implements Comparable<BranchTransactionDO> {
      *
      * @param applicationData the application data
      */
+    @Override
     public void setApplicationData(String applicationData) {
         this.applicationData = applicationData;
     }
@@ -216,6 +235,7 @@ public class BranchTransactionDO implements Comparable<BranchTransactionDO> {
      *
      * @return the gmt create
      */
+    @Override
     public Date getGmtCreate() {
         return gmtCreate;
     }
@@ -225,6 +245,7 @@ public class BranchTransactionDO implements Comparable<BranchTransactionDO> {
      *
      * @param gmtCreate the gmt create
      */
+    @Override
     public void setGmtCreate(Date gmtCreate) {
         this.gmtCreate = gmtCreate;
     }
@@ -234,6 +255,7 @@ public class BranchTransactionDO implements Comparable<BranchTransactionDO> {
      *
      * @return the gmt modified
      */
+    @Override
     public Date getGmtModified() {
         return gmtModified;
     }
@@ -243,6 +265,7 @@ public class BranchTransactionDO implements Comparable<BranchTransactionDO> {
      *
      * @param gmtModified the gmt modified
      */
+    @Override
     public void setGmtModified(Date gmtModified) {
         this.gmtModified = gmtModified;
     }

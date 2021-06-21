@@ -75,6 +75,11 @@ public interface DefaultValues {
      */
     String DEFAULT_LOCK_DB_TABLE = "lock_table";
 
+    /**
+     * The constant FIRST_PAGE_NUMBER
+     */
+    int FIRST_PAGE_NUMBER = 1;
+
     int DEFAULT_TM_COMMIT_RETRY_COUNT = 5;
     int DEFAULT_TM_ROLLBACK_RETRY_COUNT = 5;
     int DEFAULT_GLOBAL_TRANSACTION_TIMEOUT = 60000;

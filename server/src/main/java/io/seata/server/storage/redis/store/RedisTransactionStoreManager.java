@@ -171,7 +171,7 @@ public class RedisTransactionStoreManager extends AbstractTransactionStoreManage
                 throw new StoreException("Branch transaction is not exist, update branch transaction failed.");
             }
             Map<String, String> map = new HashMap<>(3, 1);
-            map.put(REDIS_KEY_BRANCH_STATUS, String.valueOf(branchTransactionDO.getStatus()));
+            map.put(REDIS_KEY_BRANCH_STATUS, String.valueOf(branchTransactionDO.getStatusCode()));
             map.put(REDIS_KEY_BRANCH_GMT_MODIFIED, String.valueOf((new Date()).getTime()));
             if (StringUtils.isNotBlank(branchTransactionDO.getApplicationData())) {
                 map.put(REDIS_KEY_BRANCH_APPLICATION_DATA, String.valueOf(branchTransactionDO.getApplicationData()));
@@ -196,7 +196,7 @@ public class RedisTransactionStoreManager extends AbstractTransactionStoreManage
             globalTransactionDO.setGmtModified(now);
             Pipeline pipelined = jedis.pipelined();
             pipelined.hmset(globalKey, BeanUtils.objectToMap(globalTransactionDO));
-            pipelined.rpush(buildGlobalStatus(globalTransactionDO.getStatus()), globalTransactionDO.getXid());
+            pipelined.rpush(buildGlobalStatus(globalTransactionDO.getStatusCode()), globalTransactionDO.getXid());
             pipelined.sync();
             return true;
         } catch (Exception ex) {
@@ -223,7 +223,7 @@ public class RedisTransactionStoreManager extends AbstractTransactionStoreManage
                 return true;
             }
             Pipeline pipelined = jedis.pipelined();
-            pipelined.lrem(buildGlobalStatus(globalTransactionDO.getStatus()), 0, globalTransactionDO.getXid());
+            pipelined.lrem(buildGlobalStatus(globalTransactionDO.getStatusCode()), 0, globalTransactionDO.getXid());
             pipelined.del(globalKey);
             pipelined.sync();
             return true;
@@ -253,7 +253,7 @@ public class RedisTransactionStoreManager extends AbstractTransactionStoreManage
                 jedis.unwatch();
                 throw new StoreException("Global transaction is not exist, update global transaction failed.");
             }
-            if (previousStatus.equals(String.valueOf(globalTransactionDO.getStatus()))) {
+            if (previousStatus.equals(String.valueOf(globalTransactionDO.getStatusCode()))) {
                 jedis.unwatch();
                 return true;
             }
@@ -261,11 +261,11 @@ public class RedisTransactionStoreManager extends AbstractTransactionStoreManage
             String previousGmtModified = statusAndGmtModified.get(1);
             Transaction multi = jedis.multi();
             Map<String,String> map = new HashMap<>(2);
-            map.put(REDIS_KEY_GLOBAL_STATUS,String.valueOf(globalTransactionDO.getStatus()));
+            map.put(REDIS_KEY_GLOBAL_STATUS,String.valueOf(globalTransactionDO.getStatusCode()));
             map.put(REDIS_KEY_GLOBAL_GMT_MODIFIED,String.valueOf((new Date()).getTime()));
             multi.hmset(globalKey,map);
             multi.lrem(buildGlobalStatus(Integer.valueOf(previousStatus)),0, xid);
-            multi.rpush(buildGlobalStatus(globalTransactionDO.getStatus()), xid);
+            multi.rpush(buildGlobalStatus(globalTransactionDO.getStatusCode()), xid);
             List<Object> exec = multi.exec();
             String hmset = exec.get(0).toString();
             long lrem  = (long)exec.get(1);
@@ -291,7 +291,7 @@ public class RedisTransactionStoreManager extends AbstractTransactionStoreManage
                     jedis.rpush(buildGlobalStatus(Integer.valueOf(previousStatus)),xid);
                 }
                 if (rpush > 0) {
-                    jedis.lrem(buildGlobalStatus(globalTransactionDO.getStatus()),0,xid);
+                    jedis.lrem(buildGlobalStatus(globalTransactionDO.getStatusCode()),0,xid);
                 }
                 return false;
             }

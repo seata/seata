@@ -42,7 +42,7 @@ public class SessionConverter {
                 globalTransactionDO.getTimeout());
         session.setXid(globalTransactionDO.getXid());
         session.setTransactionId(globalTransactionDO.getTransactionId());
-        session.setStatus(GlobalStatus.get(globalTransactionDO.getStatus()));
+        session.setStatus(GlobalStatus.get(globalTransactionDO.getStatusCode()));
         session.setApplicationData(globalTransactionDO.getApplicationData());
         session.setBeginTime(globalTransactionDO.getBeginTime());
         return session;
@@ -61,12 +61,12 @@ public class SessionConverter {
         branchSession.setResourceId(branchTransactionDO.getResourceId());
         branchSession.setClientId(branchTransactionDO.getClientId());
         branchSession.setResourceGroupId(branchTransactionDO.getResourceGroupId());
-        branchSession.setStatus(BranchStatus.get(branchTransactionDO.getStatus()));
+        branchSession.setStatus(BranchStatus.get(branchTransactionDO.getStatusCode()));
         return branchSession;
     }
 
     public static GlobalTransactionDO convertGlobalTransactionDO(SessionStorable session) {
-        if (session == null || !(session instanceof GlobalSession)) {
+        if (!(session instanceof GlobalSession)) {
             throw new IllegalArgumentException(
                     "The parameter of SessionStorable is not available, SessionStorable:" + StringUtils.toString(session));
         }
@@ -74,7 +74,7 @@ public class SessionConverter {
 
         GlobalTransactionDO globalTransactionDO = new GlobalTransactionDO();
         globalTransactionDO.setXid(globalSession.getXid());
-        globalTransactionDO.setStatus(globalSession.getStatus().getCode());
+        globalTransactionDO.setStatus(globalSession.getStatus());
         globalTransactionDO.setApplicationId(globalSession.getApplicationId());
         globalTransactionDO.setBeginTime(globalSession.getBeginTime());
         globalTransactionDO.setTimeout(globalSession.getTimeout());
@@ -86,7 +86,7 @@ public class SessionConverter {
     }
 
     public static BranchTransactionDO convertBranchTransactionDO(SessionStorable session) {
-        if (session == null || !(session instanceof BranchSession)) {
+        if (!(session instanceof BranchSession)) {
             throw new IllegalArgumentException(
                     "The parameter of SessionStorable is not available, SessionStorable:" + StringUtils.toString(session));
         }
@@ -100,7 +100,7 @@ public class SessionConverter {
         branchTransactionDO.setTransactionId(branchSession.getTransactionId());
         branchTransactionDO.setApplicationData(branchSession.getApplicationData());
         branchTransactionDO.setResourceId(branchSession.getResourceId());
-        branchTransactionDO.setStatus(branchSession.getStatus().getCode());
+        branchTransactionDO.setStatus(branchSession.getStatus());
         return branchTransactionDO;
     }
 
