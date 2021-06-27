@@ -21,6 +21,11 @@ import java.lang.reflect.InvocationTargetException;
 import java.util.Arrays;
 import java.util.List;
 
+import io.seata.common.testmodel.NotExistsNoArgsConstructorTestClass;
+import io.seata.common.testmodel.TestClass;
+import io.seata.common.testmodel.TestEmptyClass;
+import io.seata.common.testmodel.TestInterface;
+import io.seata.common.testmodel.TestSuperClass;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
@@ -108,19 +113,54 @@ public class ReflectionUtilTest {
         this.testGetAllFieldsInternal(TestClass.class, "f1", "f2");
         // TestSuperClass
         this.testGetAllFieldsInternal(TestSuperClass.class, "f2");
-        // EmptyClass
-        this.testGetAllFieldsInternal(EmptyClass.class);
+        // TestEmptyClass
+        this.testGetAllFieldsInternal(TestEmptyClass.class);
         // TestInterface
         this.testGetAllFieldsInternal(TestInterface.class);
         // Object
         this.testGetAllFieldsInternal(Object.class);
 
-        // case: The fields of EmptyClass is `EMPTY_FIELD_ARRAY`
-        Assertions.assertTrue(ReflectionUtil.getAllFields(EmptyClass.class) == ReflectionUtil.EMPTY_FIELD_ARRAY);
+        // case: The fields of TestEmptyClass is `EMPTY_FIELD_ARRAY`
+        Assertions.assertTrue(ReflectionUtil.getAllFields(TestEmptyClass.class) == ReflectionUtil.EMPTY_FIELD_ARRAY);
         // case: The fields of TestInterface is `EMPTY_FIELD_ARRAY`
         Assertions.assertTrue(ReflectionUtil.getAllFields(TestInterface.class) == ReflectionUtil.EMPTY_FIELD_ARRAY);
         // case: The fields of Object is `EMPTY_FIELD_ARRAY`
         Assertions.assertTrue(ReflectionUtil.getAllFields(Object.class) == ReflectionUtil.EMPTY_FIELD_ARRAY);
+    }
+
+    @Test
+    public void testGetSingleton() {
+        // case: normal Class
+        TestClass testClass = ReflectionUtil.getSingleton(TestClass.class);
+        Assertions.assertNotNull(testClass);
+
+        // case: null
+        Assertions.assertThrows(IllegalArgumentException.class, () -> {
+            ReflectionUtil.getSingleton(null);
+        });
+
+        // case: Interface
+        Assertions.assertThrows(IllegalArgumentException.class, () -> {
+            ReflectionUtil.getSingleton(TestInterface.class);
+        });
+
+        // case: not Exists No-Args Constructor Class
+        try {
+            ReflectionUtil.getSingleton(NotExistsNoArgsConstructorTestClass.class);
+        } catch (RuntimeException e) {
+            Assertions.assertEquals(IllegalArgumentException.class, e.getClass());
+            Assertions.assertEquals(InstantiationException.class, e.getCause().getClass());
+            Assertions.assertEquals(NoSuchMethodException.class, e.getCause().getCause().getClass());
+        }
+
+        // case: Inner class
+        try {
+            ReflectionUtil.getSingleton(TestClass.TestInnerClass.class);
+        } catch (RuntimeException e) {
+            Assertions.assertEquals(IllegalArgumentException.class, e.getClass());
+            Assertions.assertEquals(InstantiationException.class, e.getCause().getClass());
+            Assertions.assertEquals(NoSuchMethodException.class, e.getCause().getCause().getClass());
+        }
     }
 
     private void testGetAllFieldsInternal(Class<?> clazz, String... fieldNames) {
@@ -139,41 +179,6 @@ public class ReflectionUtilTest {
             Assertions.assertTrue(fieldNameList.contains(field.getName()));
         }
     }
-
-    //region the test class and interface
-
-    class EmptyClass {
-    }
-
-    class TestClass extends TestSuperClass implements TestInterface {
-
-        private String f1;
-
-        public String getF1() {
-            return f1;
-        }
-
-        public void setF1(String f1) {
-            this.f1 = f1;
-        }
-    }
-
-    class TestSuperClass implements TestInterface {
-        private String f2;
-
-        public String getF2() {
-            return f2;
-        }
-
-        public void setF2(String f2) {
-            this.f2 = f2;
-        }
-    }
-
-    interface TestInterface {
-    }
-
-    //endregion
 
     //endregion
 }

@@ -15,12 +15,14 @@
  */
 package io.seata.rm.tcc;
 
+import java.util.List;
+
 import io.seata.rm.tcc.api.BusinessActionContext;
 import io.seata.rm.tcc.api.BusinessActionContextParameter;
 import io.seata.rm.tcc.api.LocalTCC;
 import io.seata.rm.tcc.api.TwoPhaseBusinessAction;
-
-import java.util.List;
+import io.seata.rm.tcc.parameterfetcher.MockBooleanParameterFetcher;
+import io.seata.rm.tcc.parameterfetcher.MockObjectParameterFetcher;
 
 /**
  * The interface Tcc action.
@@ -34,16 +36,26 @@ public interface TccAction {
      * Prepare boolean.
      *
      * @param actionContext the action context
-     * @param a             the a
-     * @param b             the b
-     * @param tccParam      the tcc param
+     * @param a             the int a
+     * @param b             the list b
+     * @param c             the array c
+     * @param d             the object d
+     * @param e             the object e
+     * @param f             the object f
+     * @param g             the boolean g
+     * @param h             the boolean h
      * @return the boolean
      */
     @TwoPhaseBusinessAction(name = "tccActionForTest", commitMethod = "commit", rollbackMethod = "rollback")
     boolean prepare(BusinessActionContext actionContext,
                     @BusinessActionContextParameter("a") int a,
                     @BusinessActionContextParameter(paramName = "b", index = 0) List b,
-                    @BusinessActionContextParameter(isParamInProperty = true) TccParam tccParam);
+                    @BusinessActionContextParameter(value = "c", index = 1) long[] c,
+                    @BusinessActionContextParameter(isParamInProperty = true) TccParam d,
+                    @BusinessActionContextParameter(paramName = "e", isParamInProperty = true) TccParam e,
+                    @BusinessActionContextParameter(paramName = "f", isParamInProperty = true, fetcher = MockObjectParameterFetcher.class) TccParam f,
+                    @BusinessActionContextParameter(paramName = "g", isParamInProperty = true, fetcher = MockBooleanParameterFetcher.class) boolean g,
+                    @BusinessActionContextParameter(paramName = "h", isParamInProperty = true, fetcher = MockBooleanParameterFetcher.class) boolean h);
 
     /**
      * Commit boolean.

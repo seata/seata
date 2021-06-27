@@ -15,7 +15,9 @@
  */
 package io.seata.rm.tcc.interceptor;
 
+import java.lang.reflect.Array;
 import java.lang.reflect.Field;
+import java.lang.reflect.Method;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -30,8 +32,11 @@ import io.seata.common.util.ReflectionUtil;
 import io.seata.common.util.StringUtils;
 import io.seata.rm.tcc.api.BusinessActionContext;
 import io.seata.rm.tcc.api.BusinessActionContextParameter;
+import io.seata.rm.tcc.api.ParamType;
+import io.seata.rm.tcc.api.ParameterFetcher;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.core.DefaultParameterNameDiscoverer;
 
 /**
  * Extracting TCC Context from Method
@@ -45,6 +50,19 @@ public final class ActionContextUtil {
     }
 
     private static final Logger LOGGER = LoggerFactory.getLogger(ActionContextUtil.class);
+
+    public static final DefaultParameterNameDiscoverer PARAMETER_NAME_DISCOVERER = new DefaultParameterNameDiscoverer();
+
+    /**
+     * Get parameter names of the method
+     *
+     * @param method the method
+     * @return the parameter names
+     */
+    @Nullable
+    public static String[] getParameterNames(Method method) {
+        return PARAMETER_NAME_DISCOVERER.getParameterNames(method);
+    }
 
     /**
      * Extracting context data from parameters
@@ -77,85 +95,139 @@ public final class ActionContextUtil {
                 f.setAccessible(true);
                 Object fieldValue = f.get(targetParam);
 
-                // load param by the config of annotation, and then put to the context
+                // load param by the config of annotation, and then put into the context
                 String fieldName = f.getName();
-                loadParamByAnnotationAndPutToContext("field", fieldName, fieldValue, annotation, context);
+                loadParamByAnnotationAndPutToContext(ParamType.FIELD, fieldName, fieldValue, annotation, context);
             }
             return context;
-        } catch (Throwable t) {
-            throw new FrameworkException(t, "fetchContextFromObject failover");
+        } catch (Exception e) {
+            throw new FrameworkException(e, "fetchContextFromObject failover");
         }
     }
 
     /**
-     * load param by the config of annotation, and then put to the context
+     * load param by the config of annotation, and then put into the action context
      *
-     * @param objType    the object type, 'param' or 'field'
-     * @param objName    the object key
-     * @param objValue   the object value
-     * @param annotation the annotation on the param or field
-     * @param context    the action context
+     * @param paramType     the param type, 'param' or 'field'
+     * @param paramName     the param name
+     * @param paramValue    the param value
+     * @param annotation    the annotation on the param or field
+     * @param actionContext the action context
      */
-    public static void loadParamByAnnotationAndPutToContext(@Nonnull final String objType, @Nonnull String objName, Object objValue,
-            @Nonnull final BusinessActionContextParameter annotation, @Nonnull final Map<String, Object> context) {
-        if (objValue == null) {
+    public static void loadParamByAnnotationAndPutToContext(@Nonnull final ParamType paramType, @Nonnull String paramName, Object paramValue,
+            @Nonnull final BusinessActionContextParameter annotation, @Nonnull final Map<String, Object> actionContext) {
+        if (paramValue == null) {
             return;
         }
 
-        // If {@code index >= 0}, get by index from the list param or field
+        // If {@code index >= 0}, get by index from the list/array param or field
         int index = annotation.index();
         if (index >= 0) {
-            objValue = getByIndex(objType, objName, objValue, index);
-            if (objValue == null) {
+            paramValue = getByIndex(paramType, paramName, paramValue, index);
+            if (paramValue == null) {
                 return;
             }
         }
 
-        // if {@code isParamInProperty == true}, fetch context from objValue
+        // if {@code isParamInProperty == true}, fetch context from paramValue
         if (annotation.isParamInProperty()) {
-            Map<String, Object> paramContext = fetchContextFromObject(objValue);
-            if (CollectionUtils.isNotEmpty(paramContext)) {
-                context.putAll(paramContext);
+            // get the class of the parameter fetcher
+            // @since above 1.4.2
+            Class<? extends ParameterFetcher> fetcherClazz = annotation.fetcher();
+            if (fetcherClazz.isInterface()) {
+                throw new FrameworkException("the parameter fetcher must be not an interface, fetcher = " + fetcherClazz.getName());
             }
+
+            // get the singleton of the parameter fetcher
+            ParameterFetcher fetcher = ReflectionUtil.getSingleton(fetcherClazz);
+
+            // fetch context from the param or field, and put into the action context
+            fetcher.fetchContext(paramType, paramName, paramValue, annotation, actionContext);
         } else {
-            String paramName = getParamName(annotation);
-            if (StringUtils.isNotBlank(paramName)) {
-                objName = paramName;
-            }
-            context.put(objName, objValue);
+            putObjectByParamName(paramName, paramValue, annotation, actionContext);
         }
     }
 
     @Nullable
-    private static Object getByIndex(String objType, String objName, Object objValue, int index) {
-        if (objValue instanceof List) {
+    private static Object getByIndex(@Nonnull ParamType paramType, @Nonnull String paramName, @Nonnull Object paramValue, int index) {
+        if (paramValue instanceof List) {
             @SuppressWarnings("unchecked")
-            List<Object> list = (List<Object>)objValue;
+            List<Object> list = (List<Object>)paramValue;
             if (list.isEmpty()) {
                 return null;
             }
             if (list.size() <= index) {
                 if (LOGGER.isDebugEnabled()) {
                     LOGGER.debug("The index '{}' is out of bounds for the list {} named '{}'," +
-                            " whose size is '{}', so pass this {}", index, objType, objName, list.size(), objType);
+                            " whose size is '{}', so pass this {}", index, paramType.getCode(), paramName, list.size(), paramType.getCode());
                 }
                 return null;
             }
-            objValue = list.get(index);
+            paramValue = list.get(index);
+        } else if (paramValue.getClass().isArray()) {
+            // The `index` field supports `Array`
+            // @since above 1.4.2
+            Object array = paramValue;
+            int length = Array.getLength(array);
+            if (length == 0) {
+                return null;
+            }
+            if (length <= index) {
+                if (LOGGER.isDebugEnabled()) {
+                    LOGGER.debug("The index '{}' is out of bounds for the array {} named '{}'," +
+                        " whose size is '{}', so pass this {}", index, paramType.getCode(), paramName, length, paramType.getCode());
+                }
+                return null;
+            }
+            paramValue = Array.get(array, index);
         } else {
-            LOGGER.warn("the {} named '{}' is not a `List`, so the 'index' field of '@{}' cannot be used on it",
-                    objType, objName, BusinessActionContextParameter.class.getSimpleName());
+            LOGGER.warn("the {} named '{}' is not a `List` or `Array`, so the 'index' field of '@{}' cannot be used on it",
+                paramType.getCode(), paramName, BusinessActionContextParameter.class.getSimpleName());
         }
 
-        return objValue;
+        return paramValue;
     }
 
-    public static String getParamName(@Nonnull BusinessActionContextParameter annotation) {
+    public static String getParamNameFromAnnotation(@Nonnull BusinessActionContextParameter annotation) {
         String paramName = annotation.paramName();
         if (StringUtils.isBlank(paramName)) {
             paramName = annotation.value();
         }
         return paramName;
+    }
+
+    public static void putObjectByParamName(String paramName, Object paramValue, @Nonnull BusinessActionContextParameter annotation,
+            @Nonnull final Map<String, Object> actionContext) {
+        if (paramValue == null) {
+            return;
+        }
+
+        // get param name
+        String paramNameFromAnnotation = getParamNameFromAnnotation(annotation);
+        if (StringUtils.isNotBlank(paramNameFromAnnotation)) {
+            paramName = paramNameFromAnnotation;
+        }
+
+        // put into the context
+        actionContext.put(paramName, paramValue);
+    }
+
+    public static void putContextByParamName(Map<String, Object> paramContext, @Nonnull BusinessActionContextParameter annotation,
+            @Nonnull final Map<String, Object> actionContext) {
+        if (CollectionUtils.isEmpty(paramContext)) {
+            return;
+        }
+
+        String paramNameFromAnnotation = ActionContextUtil.getParamNameFromAnnotation(annotation);
+        if (StringUtils.isNotBlank(paramNameFromAnnotation)) {
+            // If the `paramName` of "@BusinessActionContextParameter" is not blank, put the param context in it
+            // @since: above 1.4.2
+            actionContext.put(paramNameFromAnnotation, paramContext);
+        } else {
+            // Merge the param context into context
+            // Warn: This may cause values with the same name to be overridden
+            actionContext.putAll(paramContext);
+        }
     }
 
     /**

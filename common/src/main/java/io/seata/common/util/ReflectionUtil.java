@@ -52,6 +52,11 @@ public final class ReflectionUtil {
     private static final Map<Class<?>, Field[]> CLASS_FIELDS_CACHE = new ConcurrentHashMap<>();
 
     /**
+     * The cache SINGLETON_CACHE
+     */
+    private static final Map<Class<?>, Object> SINGLETON_CACHE = new ConcurrentHashMap<>();
+
+    /**
      * Gets class by name.
      *
      * @param className the class name
@@ -242,5 +247,31 @@ public final class ReflectionUtil {
         CLASS_FIELDS_CACHE.put(targetClazz, resultFields);
 
         return resultFields;
+    }
+
+    /**
+     * get singleton for the class
+     *
+     * @param clazz the clazz
+     * @param <T>   the type
+     * @return the singleton
+     * @throws IllegalArgumentException
+     */
+    public static <T> T getSingleton(Class<T> clazz) {
+        if (clazz == null) {
+            throw new IllegalArgumentException("clazz must be not null");
+        }
+
+        if (clazz.isInterface()) {
+            throw new IllegalArgumentException("clazz must be not an interface: " + clazz);
+        }
+
+        return (T)CollectionUtils.computeIfAbsent(SINGLETON_CACHE, clazz, key -> {
+            try {
+                return clazz.newInstance();
+            } catch (InstantiationException | IllegalAccessException e) {
+                throw new IllegalArgumentException("new instance failed, the class is: " + clazz, e);
+            }
+        });
     }
 }
