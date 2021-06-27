@@ -30,6 +30,7 @@ import io.seata.common.util.ReflectionUtil;
 import io.seata.common.util.StringUtils;
 import io.seata.rm.tcc.api.BusinessActionContext;
 import io.seata.rm.tcc.api.BusinessActionContextParameter;
+import io.seata.rm.tcc.api.ParamType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -77,80 +78,81 @@ public final class ActionContextUtil {
                 f.setAccessible(true);
                 Object fieldValue = f.get(targetParam);
 
-                // load param by the config of annotation, and then put to the context
+                // load param by the config of annotation, and then put into the context
                 String fieldName = f.getName();
-                loadParamByAnnotationAndPutToContext("field", fieldName, fieldValue, annotation, context);
+                loadParamByAnnotationAndPutToContext(ParamType.FIELD, fieldName, fieldValue, annotation, context);
             }
             return context;
-        } catch (Throwable t) {
-            throw new FrameworkException(t, "fetchContextFromObject failover");
+        } catch (Exception e) {
+            throw new FrameworkException(e, "fetchContextFromObject failover");
         }
     }
 
     /**
-     * load param by the config of annotation, and then put to the context
+     * load param by the config of annotation, and then put into the action context
      *
-     * @param objType    the object type, 'param' or 'field'
-     * @param objName    the object key
-     * @param objValue   the object value
-     * @param annotation the annotation on the param or field
-     * @param context    the action context
+     * @param paramType     the param type, 'param' or 'field'
+     * @param paramName     the param name
+     * @param paramValue    the param value
+     * @param annotation    the annotation on the param or field
+     * @param actionContext the action context
      */
-    public static void loadParamByAnnotationAndPutToContext(@Nonnull final String objType, @Nonnull String objName, Object objValue,
-            @Nonnull final BusinessActionContextParameter annotation, @Nonnull final Map<String, Object> context) {
-        if (objValue == null) {
+    public static void loadParamByAnnotationAndPutToContext(@Nonnull final ParamType paramType, @Nonnull String paramName, Object paramValue,
+            @Nonnull final BusinessActionContextParameter annotation, @Nonnull final Map<String, Object> actionContext) {
+        if (paramValue == null) {
             return;
         }
 
         // If {@code index >= 0}, get by index from the list param or field
         int index = annotation.index();
         if (index >= 0) {
-            objValue = getByIndex(objType, objName, objValue, index);
-            if (objValue == null) {
+            paramValue = getByIndex(paramType, paramName, paramValue, index);
+            if (paramValue == null) {
                 return;
             }
         }
 
-        // if {@code isParamInProperty == true}, fetch context from objValue
+        // if {@code isParamInProperty == true}, fetch context from paramValue
         if (annotation.isParamInProperty()) {
-            Map<String, Object> paramContext = fetchContextFromObject(objValue);
+            Map<String, Object> paramContext = fetchContextFromObject(paramValue);
             if (CollectionUtils.isNotEmpty(paramContext)) {
-                context.putAll(paramContext);
+                actionContext.putAll(paramContext);
             }
         } else {
-            String paramName = getParamName(annotation);
-            if (StringUtils.isNotBlank(paramName)) {
-                objName = paramName;
+            // get param name
+            String paramNameFromAnnotation = getParamNameFromAnnotation(annotation);
+            if (StringUtils.isNotBlank(paramNameFromAnnotation)) {
+                paramName = paramNameFromAnnotation;
             }
-            context.put(objName, objValue);
+            putActionContextWithoutHandle(actionContext, paramName, paramValue);
         }
     }
 
     @Nullable
-    private static Object getByIndex(String objType, String objName, Object objValue, int index) {
-        if (objValue instanceof List) {
+    private static Object getByIndex(@Nonnull ParamType paramType, @Nonnull String paramName, @Nonnull Object paramValue, int index) {
+        if (paramValue instanceof List) {
             @SuppressWarnings("unchecked")
-            List<Object> list = (List<Object>)objValue;
+            List<Object> list = (List<Object>)paramValue;
             if (list.isEmpty()) {
                 return null;
             }
             if (list.size() <= index) {
                 if (LOGGER.isDebugEnabled()) {
                     LOGGER.debug("The index '{}' is out of bounds for the list {} named '{}'," +
-                            " whose size is '{}', so pass this {}", index, objType, objName, list.size(), objType);
+                            " whose size is '{}', so pass this {}", index, paramType.getCode(), paramName, list.size(), paramType.getCode());
                 }
                 return null;
             }
-            objValue = list.get(index);
+            paramValue = list.get(index);
         } else {
             LOGGER.warn("the {} named '{}' is not a `List`, so the 'index' field of '@{}' cannot be used on it",
-                    objType, objName, BusinessActionContextParameter.class.getSimpleName());
+                paramType.getCode(), paramName, BusinessActionContextParameter.class.getSimpleName());
         }
 
-        return objValue;
+        return paramValue;
     }
 
-    public static String getParamName(@Nonnull BusinessActionContextParameter annotation) {
+    public static String getParamNameFromAnnotation(@Nonnull BusinessActionContextParameter annotation) {
         String paramName = annotation.paramName();
         if (StringUtils.isBlank(paramName)) {
             paramName = annotation.value();
@@ -163,7 +165,7 @@ public final class ActionContextUtil {
      *
      * @param actionContext the action context
      * @param key           the actionContext's key
-     * @param value         the actionContext's key
+     * @param value         the actionContext's value
      * @return the action context is changed
      */
     public static boolean putActionContext(Map<String, Object> actionContext, String key, Object value) {
@@ -171,7 +173,10 @@ public final class ActionContextUtil {
             return false;
         }
 
+        // handle value
         value = handleActionContext(value);
+
+        // put value
         Object previousValue = actionContext.put(key, value);
         return !value.equals(previousValue);
     }
@@ -187,6 +192,41 @@ public final class ActionContextUtil {
         boolean isChanged = false;
         for (Map.Entry<String, Object> entry : actionContextMap.entrySet()) {
             if (putActionContext(actionContext, entry.getKey(), entry.getValue())) {
+                isChanged = true;
+            }
+        }
+        return isChanged;
+    }
+
+    /**
+     * put the action context without handle
+     *
+     * @param actionContext the action context
+     * @param key           the actionContext's key
+     * @param value         the actionContext's value
+     * @return the action context is changed
+     */
+    public static boolean putActionContextWithoutHandle(@Nonnull final Map<String, Object> actionContext, String key, Object value) {
+        if (value == null) {
+            return false;
+        }
+
+        // put value
+        Object previousValue = actionContext.put(key, value);
+        return !value.equals(previousValue);
+    }
+
+    /**
+     * put the action context without handle
+     *
+     * @param actionContext    the action context
+     * @param actionContextMap the actionContextMap
+     * @return the action context is changed
+     */
+    public static boolean putActionContextWithoutHandle(Map<String, Object> actionContext, @Nonnull Map<String, Object> actionContextMap) {
+        boolean isChanged = false;
+        for (Map.Entry<String, Object> entry : actionContextMap.entrySet()) {
+            if (putActionContextWithoutHandle(actionContext, entry.getKey(), entry.getValue())) {
                 isChanged = true;
             }
         }
