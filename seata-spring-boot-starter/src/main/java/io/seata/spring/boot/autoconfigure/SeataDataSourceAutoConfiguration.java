@@ -34,7 +34,7 @@ import static io.seata.spring.annotation.datasource.AutoDataSourceProxyRegistrar
  */
 @ConditionalOnBean(DataSource.class)
 @ConditionalOnExpression("${seata.enabled:true} && ${seata.enableAutoDataSourceProxy:true} && ${seata.enable-auto-data-source-proxy:true}")
-@AutoConfigureAfter({SeataCorePropertiesAutoConfiguration.class, SeataClientPropertiesAutoConfiguration.class})
+@AutoConfigureAfter({SeataCoreAutoConfiguration.class})
 public class SeataDataSourceAutoConfiguration {
 
     /**

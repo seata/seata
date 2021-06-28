@@ -89,6 +89,7 @@ public abstract class AbstractNettyRemoting implements Disposable {
      * The Now mills.
      */
     protected volatile long nowMills = 0;
+    private static int timeoutCheckInitialDelay = 10000;
     private static final int TIMEOUT_CHECK_INTERVAL = 3000;
     protected final Object lock = new Object();
     /**
@@ -106,22 +107,19 @@ public abstract class AbstractNettyRemoting implements Disposable {
     protected final List<RpcHook> rpcHooks = EnhancedServiceLoader.loadAll(RpcHook.class);
 
     public void init() {
-        timerExecutor.scheduleAtFixedRate(new Runnable() {
-            @Override
-            public void run() {
-                for (Map.Entry<Integer, MessageFuture> entry : futures.entrySet()) {
-                    if (entry.getValue().isTimeout()) {
-                        futures.remove(entry.getKey());
-                        entry.getValue().setResultMessage(null);
-                        if (LOGGER.isDebugEnabled()) {
-                            LOGGER.debug("timeout clear future: {}", entry.getValue().getRequestMessage().getBody());
-                        }
+        timerExecutor.scheduleAtFixedRate(() -> {
+            for (Map.Entry<Integer, MessageFuture> entry : futures.entrySet()) {
+                if (entry.getValue().isTimeout()) {
+                    futures.remove(entry.getKey());
+                    entry.getValue().setResultMessage(null);
+                    if (LOGGER.isDebugEnabled()) {
+                        LOGGER.debug("timeout clear future: {}", entry.getValue().getRequestMessage().getBody());
                     }
                 }
-
-                nowMills = System.currentTimeMillis();
             }
-        }, TIMEOUT_CHECK_INTERVAL, TIMEOUT_CHECK_INTERVAL, TimeUnit.MILLISECONDS);
+
+            nowMills = System.currentTimeMillis();
+        }, timeoutCheckInitialDelay, TIMEOUT_CHECK_INTERVAL, TimeUnit.MILLISECONDS);
     }
 
     public AbstractNettyRemoting(ThreadPoolExecutor messageExecutor) {
@@ -375,5 +373,9 @@ public abstract class AbstractNettyRemoting implements Disposable {
         for (RpcHook rpcHook: rpcHooks) {
             rpcHook.doAfterResponse(remoteAddr, request, response);
         }
+    }
+
+    public static void setTimeoutCheckInitialDelay(int timeoutCheckInitialDelay) {
+        AbstractNettyRemoting.timeoutCheckInitialDelay = timeoutCheckInitialDelay;
     }
 }

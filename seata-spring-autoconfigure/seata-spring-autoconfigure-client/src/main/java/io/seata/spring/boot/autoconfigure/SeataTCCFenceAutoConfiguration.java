@@ -15,6 +15,8 @@
  */
 package io.seata.spring.boot.autoconfigure;
 
+import javax.sql.DataSource;
+
 import io.seata.rm.tcc.config.TCCFenceConfig;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -28,15 +30,13 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.transaction.PlatformTransactionManager;
 
-import javax.sql.DataSource;
-
 /**
  * TCC fence auto configuration.
  *
  * @author kaka2code
  */
 @ConditionalOnExpression("${seata.enabled:true} && ${seata.tccFence.enabled:true} && ${seata.tcc-fence.enabled:true}")
-@AutoConfigureAfter({DataSourceAutoConfiguration.class, DataSourceTransactionManagerAutoConfiguration.class})
+@AutoConfigureAfter({SeataCoreAutoConfiguration.class, DataSourceAutoConfiguration.class, DataSourceTransactionManagerAutoConfiguration.class})
 public class SeataTCCFenceAutoConfiguration {
 
     public static final String TCC_FENCE_DATA_SOURCE_BEAN_NAME = "seataTCCFenceDataSource";
