@@ -17,6 +17,9 @@ package io.seata.core.store;
 
 import io.seata.common.util.StringUtils;
 
+
+import static io.seata.core.model.LockStatus.Locked;
+
 /**
  * The type Lock do.
  *
@@ -35,6 +38,8 @@ public class LockDO {
     private String tableName;
 
     private String pk;
+
+    private Integer status = Locked.getCode();
 
     private String rowKey;
 
@@ -168,6 +173,23 @@ public class LockDO {
      */
     public void setBranchId(Long branchId) {
         this.branchId = branchId;
+    }
+
+    /**
+     * Gets status.
+     *
+     * @return the status
+     */
+    public Integer getStatus() {
+        return status;
+    }
+
+    /**
+     * Set status
+     * @param status the status
+     */
+    public void setStatus(Integer status) {
+        this.status = status;
     }
 
     @Override

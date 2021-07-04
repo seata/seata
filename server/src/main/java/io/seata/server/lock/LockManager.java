@@ -16,6 +16,7 @@
 package io.seata.server.lock;
 
 import io.seata.core.exception.TransactionException;
+import io.seata.core.model.LockStatus;
 import io.seata.server.session.BranchSession;
 import io.seata.server.session.GlobalSession;
 
@@ -34,6 +35,16 @@ public interface LockManager {
      * @throws TransactionException the transaction exception
      */
     boolean acquireLock(BranchSession branchSession) throws TransactionException;
+
+    /**
+     * Acquire lock boolean.
+     *
+     * @param branchSession the branch session
+     * @param autoCommit the auto commit
+     * @return the boolean
+     * @throws TransactionException the transaction exception
+     */
+    boolean acquireLock(BranchSession branchSession, boolean autoCommit) throws TransactionException;
 
     /**
      * Un lock boolean.
@@ -70,5 +81,14 @@ public interface LockManager {
      * @throws TransactionException the transaction exception
      */
     void cleanAllLocks() throws TransactionException;
+
+    /**
+     * update lock status.
+     * @param xid the xid
+     * @param lockStatus the lock status
+     * @throws TransactionException the transaction exception
+     * @return the boolean
+     */
+    boolean updateLockStatus(String xid, LockStatus lockStatus) throws TransactionException;
 
 }

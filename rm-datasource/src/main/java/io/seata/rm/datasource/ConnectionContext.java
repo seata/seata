@@ -17,18 +17,21 @@ package io.seata.rm.datasource;
 
 import java.sql.SQLException;
 import java.sql.Savepoint;
-import java.util.Set;
-import java.util.Map;
-import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
-
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 import io.seata.common.exception.ShouldNeverHappenException;
 import io.seata.common.util.CollectionUtils;
 import io.seata.rm.datasource.undo.SQLUndoLog;
+
+
+import static io.seata.common.Constants.AUTO_COMMIT;
 
 /**
  * The type Connection context.
@@ -53,6 +56,7 @@ public class ConnectionContext {
     private boolean isGlobalLockRequire;
     private Savepoint currentSavepoint = DEFAULT_SAVEPOINT;
     private boolean autoCommitChanged;
+    private Map<String, Object> applicationData = new HashMap<>(2);
 
     /**
      * the lock keys buffer
@@ -254,9 +258,27 @@ public class ConnectionContext {
      * @param autoCommitChanged the boolean
      */
     public void setAutoCommitChanged(boolean autoCommitChanged) {
+        this.applicationData.put(AUTO_COMMIT, autoCommitChanged);
         this.autoCommitChanged = autoCommitChanged;
     }
 
+    /**
+     * Gets applicationData.
+     *
+     * @return the application data
+     */
+    public Map<String, Object> getApplicationData() {
+        return applicationData;
+    }
+
+    /**
+     * set seata application data
+     *
+     * @param applicationData the map
+     */
+    public void setApplicationData(Map<String, Object> applicationData) {
+        this.applicationData = applicationData;
+    }
 
     /**
      * Reset.
@@ -278,6 +300,7 @@ public class ConnectionContext {
         lockKeysBuffer.clear();
         sqlUndoItemsBuffer.clear();
         this.autoCommitChanged = false;
+        applicationData.clear();
     }
 
     /**
@@ -338,8 +361,10 @@ public class ConnectionContext {
 
     @Override
     public String toString() {
-        return "ConnectionContext [xid=" + xid + ", branchId=" + branchId + ", lockKeysBuffer=" + lockKeysBuffer
-            + ", sqlUndoItemsBuffer=" + sqlUndoItemsBuffer + "]";
+        return "ConnectionContext{" + "xid='" + xid + '\'' + ", branchId=" + branchId + ", isGlobalLockRequire="
+            + isGlobalLockRequire + ", currentSavepoint=" + currentSavepoint + ", autoCommitChanged="
+            + autoCommitChanged + ", applicationData=" + applicationData + ", lockKeysBuffer=" + lockKeysBuffer
+            + ", sqlUndoItemsBuffer=" + sqlUndoItemsBuffer + ", savepoints=" + savepoints + '}';
     }
 
 }

@@ -85,7 +85,7 @@
         <jacoco-maven-plugin.version>0.8.3</jacoco-maven-plugin.version>
         <apollo-client.version>1.6.0</apollo-client.version>
         <redis-clients.version>3.2.0</redis-clients.version>
-        <mock-jedis.version>0.1.16</mock-jedis.version>
+        <mock-jedis.version>0.1.18</mock-jedis.version>
         <eureka-clients.version>1.9.5</eureka-clients.version>
         <consul-clients.version>1.4.2</consul-clients.version>
         <nacos-client.version>1.3.3</nacos-client.version>

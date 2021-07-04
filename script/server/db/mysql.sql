@@ -48,6 +48,7 @@ CREATE TABLE IF NOT EXISTS `lock_table`
     `resource_id`    VARCHAR(256),
     `table_name`     VARCHAR(32),
     `pk`             VARCHAR(36),
+    `status`         TINYINT      NOT NULL DEFAULT '0' COMMENT '0:locked ,1:rollbacking',
     `gmt_create`     DATETIME,
     `gmt_modified`   DATETIME,
     PRIMARY KEY (`row_key`),

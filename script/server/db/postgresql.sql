@@ -48,9 +48,11 @@ CREATE TABLE IF NOT EXISTS public.lock_table
     resource_id    VARCHAR(256),
     table_name     VARCHAR(32),
     pk             VARCHAR(36),
+    status         SMALLINT     NOT NULL DEFAULT 0,
     gmt_create     TIMESTAMP(0),
     gmt_modified   TIMESTAMP(0),
     CONSTRAINT pk_lock_table PRIMARY KEY (row_key)
 );
 
+comment on column public.lock_table.status is '0:locked ,1:rollbacking';
 CREATE INDEX idx_branch_id ON public.lock_table (branch_id);

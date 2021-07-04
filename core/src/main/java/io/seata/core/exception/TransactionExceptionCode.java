@@ -115,7 +115,12 @@ public enum TransactionExceptionCode {
     /**
      * Failed to store exception code
      */
-    FailedStore
+    FailedStore,
+
+    /**
+     * Lock key conflict fail fast transaction exception code.
+     */
+    LockKeyConflictFailFast
     ;
 
 

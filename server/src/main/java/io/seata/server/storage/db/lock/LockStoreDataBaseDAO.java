@@ -15,7 +15,6 @@
  */
 package io.seata.server.storage.db.lock;
 
-import javax.sql.DataSource;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -26,7 +25,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.StringJoiner;
 import java.util.stream.Collectors;
-
+import javax.sql.DataSource;
 import io.seata.common.exception.DataAccessException;
 import io.seata.common.exception.StoreException;
 import io.seata.common.util.CollectionUtils;
@@ -37,13 +36,17 @@ import io.seata.config.Configuration;
 import io.seata.config.ConfigurationFactory;
 import io.seata.core.constants.ConfigurationKeys;
 import io.seata.core.constants.ServerTableColumnsName;
+import io.seata.core.exception.BranchTransactionException;
+import io.seata.core.model.LockStatus;
 import io.seata.core.store.LockDO;
 import io.seata.core.store.LockStore;
 import io.seata.core.store.db.sql.lock.LockStoreSqlFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+
 import static io.seata.common.DefaultValues.DEFAULT_LOCK_DB_TABLE;
+import static io.seata.core.exception.TransactionExceptionCode.LockKeyConflictFailFast;
 
 /**
  * The type Data base lock store.
@@ -98,6 +101,11 @@ public class LockStoreDataBaseDAO implements LockStore {
 
     @Override
     public boolean acquireLock(List<LockDO> lockDOs) {
+        return acquireLock(lockDOs, true);
+    }
+
+    @Override
+    public boolean acquireLock(List<LockDO> lockDOs, boolean autoCommit) {
         Connection conn = null;
         PreparedStatement ps = null;
         ResultSet rs = null;
@@ -125,6 +133,7 @@ public class LockStoreDataBaseDAO implements LockStore {
             }
             rs = ps.executeQuery();
             String currentXID = lockDOs.get(0).getXid();
+            boolean failFast = false;
             while (rs.next()) {
                 String dbXID = rs.getString(ServerTableColumnsName.LOCK_TABLE_XID);
                 if (!StringUtils.equals(dbXID, currentXID)) {
@@ -135,14 +144,23 @@ public class LockStoreDataBaseDAO implements LockStore {
                         LOGGER.info("Global lock on [{}:{}] is holding by xid {} branchId {}", dbTableName, dbPk, dbXID,
                             dbBranchId);
                     }
+                    if (!autoCommit) {
+                        Integer status = rs.getInt(ServerTableColumnsName.LOCK_TABLE_STATUS);
+                        if (status == LockStatus.Rollbacking.getCode()) {
+                            failFast = true;
+                        }
+                    }
                     canLock &= false;
                     break;
                 }
+
                 dbExistedRowKeys.add(rs.getString(ServerTableColumnsName.LOCK_TABLE_ROW_KEY));
             }
-
             if (!canLock) {
                 conn.rollback();
+                if (failFast) {
+                    throw new StoreException(new BranchTransactionException(LockKeyConflictFailFast));
+                }
                 return false;
             }
             List<LockDO> unrepeatedLockDOs = null;
@@ -290,6 +308,21 @@ public class LockStoreDataBaseDAO implements LockStore {
         }
     }
 
+    @Override
+    public boolean updateLockStatus(String xid, LockStatus lockStatus) {
+        String updateStatusLockByGlobalSql =
+            LockStoreSqlFactory.getLogStoreSql(dbType).getBatchUpdateStatusLockByGlobalSql(lockTable);
+        try (Connection conn = lockStoreDataSource.getConnection();
+            PreparedStatement ps = conn.prepareStatement(updateStatusLockByGlobalSql)) {
+            conn.setAutoCommit(true);
+            ps.setInt(1, lockStatus.getCode());
+            ps.setString(2, xid);
+            return ps.executeUpdate() > 0;
+        } catch (SQLException e) {
+            throw new DataAccessException(e);
+        }
+    }
+
     /**
      * Do acquire lock boolean.
      *
@@ -310,6 +343,7 @@ public class LockStoreDataBaseDAO implements LockStore {
             ps.setString(5, lockDO.getTableName());
             ps.setString(6, lockDO.getPk());
             ps.setString(7, lockDO.getRowKey());
+            ps.setInt(8, LockStatus.Locked.getCode());
             return ps.executeUpdate() > 0;
         } catch (SQLException e) {
             throw new StoreException(e);

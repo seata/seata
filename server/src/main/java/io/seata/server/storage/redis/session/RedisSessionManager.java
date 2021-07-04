@@ -105,7 +105,7 @@ public class RedisSessionManager extends AbstractSessionManager
     /**
      * remove globalSession 1. rootSessionManager remove normal globalSession 2. retryCommitSessionManager and
      * retryRollbackSessionManager remove retry expired globalSession
-     * 
+     *
      * @param session
      *            the session
      * @throws TransactionException

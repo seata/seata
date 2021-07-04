@@ -30,7 +30,7 @@ public class OceanbaseLockStoreSql extends AbstractLockStoreSql {
      * The constant INSERT_LOCK_SQL_OCEANBASE.
      */
     private static final String INSERT_LOCK_SQL_OCEANBASE = "insert into " + LOCK_TABLE_PLACE_HOLD + "(" + ALL_COLUMNS + ")"
-        + " values (?, ?, ?, ?, ?, ?, ?, now(), now())";
+        + " values (?, ?, ?, ?, ?, ?, ?, now(), now(), ?)";
 
     @Override
     public String getInsertLockSQL(String lockTable) {

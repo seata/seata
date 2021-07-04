@@ -29,60 +29,60 @@ public class PostgresqlLogStoreSqls extends AbstractLogStoreSqls {
      * The constant INSERT_GLOBAL_TRANSACTION_POSTGRESQL.
      */
     public static final String INSERT_GLOBAL_TRANSACTION_POSTGRESQL = "insert into " + GLOBAL_TABLE_PLACEHOLD
-            + "(" + ALL_GLOBAL_COLUMNS + ")"
-            + " values (?, ?, ?, ?, ?, ?, ?, ?, ?, now(), now())";
+        + "(" + ALL_GLOBAL_COLUMNS + ")"
+        + " values (?, ?, ?, ?, ?, ?, ?, ?, ?, now(), now())";
 
     /**
      * The constant UPDATE_GLOBAL_TRANSACTION_STATUS_POSTGRESQL.
      */
     public static final String UPDATE_GLOBAL_TRANSACTION_STATUS_POSTGRESQL = "update " + GLOBAL_TABLE_PLACEHOLD
-            + "   set " + ServerTableColumnsName.GLOBAL_TABLE_STATUS + " = ?,"
-            + "       " + ServerTableColumnsName.GLOBAL_TABLE_GMT_MODIFIED + " = now()"
-            + " where " + ServerTableColumnsName.GLOBAL_TABLE_XID + " = ?";
+        + "   set " + ServerTableColumnsName.GLOBAL_TABLE_STATUS + " = ?,"
+        + "       " + ServerTableColumnsName.GLOBAL_TABLE_GMT_MODIFIED + " = now()"
+        + " where " + ServerTableColumnsName.GLOBAL_TABLE_XID + " = ?";
 
     /**
      * This constant QUERY_GLOBAL_TRANSACTION_BY_STATUS_POSTGRESQL.
      */
     public static final String QUERY_GLOBAL_TRANSACTION_BY_STATUS_POSTGRESQL = "select " + ALL_GLOBAL_COLUMNS
-            + "  from " + GLOBAL_TABLE_PLACEHOLD
-            + " where " + ServerTableColumnsName.GLOBAL_TABLE_STATUS + " in (" + PRAMETER_PLACEHOLD + ")"
-            + " order by " + ServerTableColumnsName.GLOBAL_TABLE_GMT_MODIFIED
-            + " limit ?";
+        + "  from " + GLOBAL_TABLE_PLACEHOLD
+        + " where " + ServerTableColumnsName.GLOBAL_TABLE_STATUS + " in (" + PRAMETER_PLACEHOLD + ")"
+        + " order by " + ServerTableColumnsName.GLOBAL_TABLE_GMT_MODIFIED
+        + " limit ?";
 
     /**
      * The constant QUERY_GLOBAL_TRANSACTION_FOR_RECOVERY_POSTGRESQL.
      */
     public static final String QUERY_GLOBAL_TRANSACTION_FOR_RECOVERY_POSTGRESQL = "select " + ALL_GLOBAL_COLUMNS
-            + "  from " + GLOBAL_TABLE_PLACEHOLD
-            + " where " + ServerTableColumnsName.GLOBAL_TABLE_STATUS + " in (0, 2, 3, 4, 5, 6, 7, 8, 10 ,12, 14)"
-            + " order by " + ServerTableColumnsName.GLOBAL_TABLE_GMT_MODIFIED
-            + " limit ?";
+        + "  from " + GLOBAL_TABLE_PLACEHOLD
+        + " where " + ServerTableColumnsName.GLOBAL_TABLE_STATUS + " in (0, 2, 3, 4, 5, 6, 7, 8, 10 ,12, 14)"
+        + " order by " + ServerTableColumnsName.GLOBAL_TABLE_GMT_MODIFIED
+        + " limit ?";
 
     /**
      * The constant INSERT_BRANCH_TRANSACTION_POSTGRESQL.
      */
     public static final String INSERT_BRANCH_TRANSACTION_POSTGRESQL = "insert into " + BRANCH_TABLE_PLACEHOLD
-            + "(" + ALL_BRANCH_COLUMNS + ")"
-            + " values (?, ?, ?, ?, ?, ?, ?, ?, ?, now(), now())";
+        + "(" + ALL_BRANCH_COLUMNS + ")"
+        + " values (?, ?, ?, ?, ?, ?, ?, ?, ?, now(), now())";
 
     /**
      * The constant UPDATE_BRANCH_TRANSACTION_STATUS_POSTGRESQL.
      */
     public static final String UPDATE_BRANCH_TRANSACTION_STATUS_POSTGRESQL = "update " + BRANCH_TABLE_PLACEHOLD
-            + "   set " + ServerTableColumnsName.BRANCH_TABLE_STATUS + " = ?,"
-            + "       " + ServerTableColumnsName.BRANCH_TABLE_GMT_MODIFIED + " = now()"
-            + " where " + ServerTableColumnsName.BRANCH_TABLE_XID + " = ?"
-            + "   and " + ServerTableColumnsName.BRANCH_TABLE_BRANCH_ID + " = ?";
+        + "   set " + ServerTableColumnsName.BRANCH_TABLE_STATUS + " = ?,"
+        + "       " + ServerTableColumnsName.BRANCH_TABLE_GMT_MODIFIED + " = now()"
+        + " where " + ServerTableColumnsName.BRANCH_TABLE_XID + " = ?"
+        + "   and " + ServerTableColumnsName.BRANCH_TABLE_BRANCH_ID + " = ?";
 
     /**
      * The constant UPDATE_BRANCH_STATUS_APPLICATION_DATA_POSTGRESQL.
      */
     public static final String UPDATE_BRANCH_STATUS_APPLICATION_DATA_POSTGRESQL = "update " + BRANCH_TABLE_PLACEHOLD
-            + "   set " + ServerTableColumnsName.BRANCH_TABLE_STATUS + " = ?,"
-            + "       " + ServerTableColumnsName.BRANCH_TABLE_APPLICATION_DATA + " = ?,"
-            + "       " + ServerTableColumnsName.BRANCH_TABLE_GMT_MODIFIED + " = now()"
-            + " where " + ServerTableColumnsName.BRANCH_TABLE_XID + " = ?"
-            + "   and " + ServerTableColumnsName.BRANCH_TABLE_BRANCH_ID + " = ?";
+        + "   set " + ServerTableColumnsName.BRANCH_TABLE_STATUS + " = ?,"
+        + "       " + ServerTableColumnsName.BRANCH_TABLE_APPLICATION_DATA + " = ?,"
+        + "       " + ServerTableColumnsName.BRANCH_TABLE_GMT_MODIFIED + " = now()"
+        + " where " + ServerTableColumnsName.BRANCH_TABLE_XID + " = ?"
+        + "   and " + ServerTableColumnsName.BRANCH_TABLE_BRANCH_ID + " = ?";
 
     @Override
     public String getInsertGlobalTransactionSQL(String globalTable) {

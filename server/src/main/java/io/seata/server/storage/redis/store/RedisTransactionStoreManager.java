@@ -382,7 +382,7 @@ public class RedisTransactionStoreManager extends AbstractTransactionStoreManage
             return globalSessions;
         } else if (sessionCondition.getTransactionId() != null) {
             GlobalSession globalSession = this
-                    .readSessionByTransactionId(sessionCondition.getTransactionId().toString(), true);
+                .readSessionByTransactionId(sessionCondition.getTransactionId().toString(), true);
             if (globalSession != null) {
                 globalSessions.add(globalSession);
             }
@@ -402,7 +402,7 @@ public class RedisTransactionStoreManager extends AbstractTransactionStoreManage
      * @return the global session with branch session
      */
     private GlobalSession getGlobalSession(GlobalTransactionDO globalTransactionDO,
-            List<BranchTransactionDO> branchTransactionDOs) {
+        List<BranchTransactionDO> branchTransactionDOs) {
         GlobalSession globalSession = SessionConverter.convertGlobalSession(globalTransactionDO);
         if (CollectionUtils.isNotEmpty(branchTransactionDOs)) {
             for (BranchTransactionDO branchTransactionDO : branchTransactionDOs) {
@@ -456,7 +456,7 @@ public class RedisTransactionStoreManager extends AbstractTransactionStoreManage
                 if (branchInfo != null) {
                     Map<String, String> branchInfoMap = (Map<String, String>) branchInfo;
                     Optional<BranchTransactionDO> branchTransactionDO =
-                            Optional.ofNullable((BranchTransactionDO) BeanUtils.mapToObject(branchInfoMap, BranchTransactionDO.class));
+                        Optional.ofNullable((BranchTransactionDO) BeanUtils.mapToObject(branchInfoMap, BranchTransactionDO.class));
                     branchTransactionDO.ifPresent(branchTransactionDOs::add);
                 }
             }

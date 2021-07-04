@@ -215,7 +215,7 @@ public class DataBaseTransactionStoreManager extends AbstractTransactionStoreMan
     }
 
     private GlobalSession getGlobalSession(GlobalTransactionDO globalTransactionDO,
-                                           List<BranchTransactionDO> branchTransactionDOs) {
+        List<BranchTransactionDO> branchTransactionDOs) {
         GlobalSession globalSession = SessionConverter.convertGlobalSession(globalTransactionDO);
         //branch transactions
         if (CollectionUtils.isNotEmpty(branchTransactionDOs)) {

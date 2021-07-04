@@ -24,6 +24,7 @@ import io.seata.config.ConfigurationChangeListener;
 import io.seata.config.ConfigurationFactory;
 import io.seata.core.constants.ConfigurationKeys;
 import io.seata.core.context.GlobalLockConfigHolder;
+import io.seata.core.exception.TransactionExceptionCode;
 import io.seata.core.model.GlobalLockConfig;
 
 /**
@@ -59,7 +60,9 @@ public class LockRetryController {
      * @throws LockWaitTimeoutException the lock wait timeout exception
      */
     public void sleep(Exception e) throws LockWaitTimeoutException {
-        if (--lockRetryTimes < 0) {
+        // prioritize the rollback of other transactions
+        if (--lockRetryTimes < 0 || (e instanceof LockConflictException
+            && ((LockConflictException)e).getCode() == TransactionExceptionCode.LockKeyConflictFailFast)) {
             throw new LockWaitTimeoutException("Global lock wait timeout", e);
         }
 

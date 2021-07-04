@@ -18,8 +18,10 @@ package io.seata.rm.datasource;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.Savepoint;
+import java.util.Map;
 import java.util.concurrent.Callable;
-
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.seata.common.util.StringUtils;
 import io.seata.config.ConfigurationFactory;
 import io.seata.core.constants.ConfigurationKeys;
@@ -35,6 +37,7 @@ import io.seata.rm.datasource.undo.UndoLogManagerFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static io.seata.common.Constants.AUTO_COMMIT;
 import static io.seata.common.DefaultValues.DEFAULT_CLIENT_LOCK_RETRY_POLICY_BRANCH_ROLLBACK_ON_CONFLICT;
 import static io.seata.common.DefaultValues.DEFAULT_CLIENT_REPORT_RETRY_COUNT;
 import static io.seata.common.DefaultValues.DEFAULT_CLIENT_REPORT_SUCCESS_ENABLE;
@@ -51,6 +54,8 @@ public class ConnectionProxy extends AbstractConnectionProxy {
     private final ConnectionContext context = new ConnectionContext();
 
     private final LockRetryPolicy lockRetryPolicy = new LockRetryPolicy(this);
+
+    private static final ObjectMapper MAPPER = new ObjectMapper();
 
     private static final int REPORT_RETRY_COUNT = ConfigurationFactory.getInstance().getInt(
         ConfigurationKeys.CLIENT_REPORT_RETRY_COUNT, DEFAULT_CLIENT_REPORT_RETRY_COUNT);
@@ -150,13 +155,14 @@ public class ConnectionProxy extends AbstractConnectionProxy {
     }
 
     private void recognizeLockKeyConflictException(TransactionException te, String lockKeys) throws SQLException {
-        if (te.getCode() == TransactionExceptionCode.LockKeyConflict) {
+        if (te.getCode() == TransactionExceptionCode.LockKeyConflict
+            || te.getCode() == TransactionExceptionCode.LockKeyConflictFailFast) {
             StringBuilder reasonBuilder = new StringBuilder("get global lock fail, xid:");
             reasonBuilder.append(context.getXid());
             if (StringUtils.isNotBlank(lockKeys)) {
                 reasonBuilder.append(", lockKeys:").append(lockKeys);
             }
-            throw new LockConflictException(reasonBuilder.toString());
+            throw new LockConflictException(reasonBuilder.toString(), te.getCode());
         } else {
             throw new SQLException(te);
         }
@@ -248,6 +254,8 @@ public class ConnectionProxy extends AbstractConnectionProxy {
     private void processGlobalTransactionCommit() throws SQLException {
         try {
             register();
+        } catch (JsonProcessingException e) {
+            throw new SQLException(e);
         } catch (TransactionException e) {
             recognizeLockKeyConflictException(e, context.buildLockKeys());
         }
@@ -265,12 +273,18 @@ public class ConnectionProxy extends AbstractConnectionProxy {
         context.reset();
     }
 
-    private void register() throws TransactionException {
+    private void register() throws TransactionException, JsonProcessingException {
         if (!context.hasUndoLog() || !context.hasLockKey()) {
             return;
         }
+        String applicationData = null;
+        if (!context.isAutoCommitChanged()) {
+            Map<String, Object> map = context.getApplicationData();
+            map.computeIfAbsent(AUTO_COMMIT, k -> context.isAutoCommitChanged());
+            applicationData = MAPPER.writeValueAsString(map);
+        }
         Long branchId = DefaultResourceManager.get().branchRegister(BranchType.AT, getDataSourceProxy().getResourceId(),
-            null, context.getXid(), null, context.buildLockKeys());
+            null, context.getXid(), applicationData, context.buildLockKeys());
         context.setBranchId(branchId);
     }
 
@@ -354,6 +368,11 @@ public class ConnectionProxy extends AbstractConnectionProxy {
                     return callable.call();
                 } catch (LockConflictException lockConflict) {
                     onException(lockConflict);
+                    // AbstractDMLBaseExecutor#executeAutoCommitTrue the local lock is released
+                    if (connection.getContext().isAutoCommitChanged()
+                        && lockConflict.getCode() == TransactionExceptionCode.LockKeyConflictFailFast) {
+                        lockConflict.setCode(TransactionExceptionCode.LockKeyConflict);
+                    }
                     lockRetryController.sleep(lockConflict);
                 } catch (Exception e) {
                     onException(e);

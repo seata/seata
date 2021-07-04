@@ -483,7 +483,7 @@ public class GlobalSession implements SessionLifecycle, SessionStorable {
      * @return the global session
      */
     public static GlobalSession createGlobalSession(String applicationId, String txServiceGroup, String txName,
-                                                    int timeout) {
+        int timeout) {
         GlobalSession session = new GlobalSession(applicationId, txServiceGroup, txName, timeout);
         return session;
     }
@@ -562,7 +562,7 @@ public class GlobalSession implements SessionLifecycle, SessionStorable {
     }
 
     private int calGlobalSessionSize(byte[] byApplicationIdBytes, byte[] byServiceGroupBytes, byte[] byTxNameBytes,
-                                     byte[] xidBytes, byte[] applicationDataBytes) {
+        byte[] xidBytes, byte[] applicationDataBytes) {
         final int size = 8 // transactionId
             + 4 // timeout
             + 2 // byApplicationIdBytes.length

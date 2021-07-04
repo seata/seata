@@ -82,4 +82,12 @@ public interface LockStoreSql {
      */
     String getCheckLockableSql(String lockTable, String paramPlaceHold);
 
+    /**
+     * get batch update status lock by global sql
+     *
+     * @param lockTable      the lock table
+     * @return the string
+     */
+    String getBatchUpdateStatusLockByGlobalSql(String lockTable) ;
+
 }
