@@ -1,3 +1,4 @@
 io.seata.rm.datasource.undo.mysql.MySQLUndoLogManager
 io.seata.rm.datasource.undo.oracle.OracleUndoLogManager
 io.seata.rm.datasource.undo.postgresql.PostgresqlUndoLogManager
+io.seata.rm.datasource.undo.dm.DmUndoLogManager

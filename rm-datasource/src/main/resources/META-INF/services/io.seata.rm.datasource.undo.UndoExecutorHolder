@@ -1,3 +1,4 @@
 io.seata.rm.datasource.undo.mysql.MySQLUndoExecutorHolder
 io.seata.rm.datasource.undo.oracle.OracleUndoExecutorHolder
 io.seata.rm.datasource.undo.postgresql.PostgresqlUndoExecutorHolder
+io.seata.rm.datasource.undo.dm.DmUndoExecutorHolder

@@ -30,4 +30,6 @@ public interface JdbcConstants {
     String MARIADB = "mariadb";
 
     String POSTGRESQL = "postgresql";
+
+    String DM = "dm";
 }

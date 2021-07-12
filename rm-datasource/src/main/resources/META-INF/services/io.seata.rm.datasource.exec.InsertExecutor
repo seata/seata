@@ -17,3 +17,4 @@
 io.seata.rm.datasource.exec.mysql.MySQLInsertExecutor
 io.seata.rm.datasource.exec.oracle.OracleInsertExecutor
 io.seata.rm.datasource.exec.postgresql.PostgresqlInsertExecutor
+io.seata.rm.datasource.exec.dm.DmInsertExecutor

@@ -1,3 +1,4 @@
 io.seata.rm.datasource.sql.struct.cache.MysqlTableMetaCache
 io.seata.rm.datasource.sql.struct.cache.OracleTableMetaCache
 io.seata.rm.datasource.sql.struct.cache.PostgresqlTableMetaCache
+io.seata.rm.datasource.sql.struct.cache.DmTableMetaCache
