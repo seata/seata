@@ -15,10 +15,12 @@
  */
 package io.seata.serializer.seata.protocol.transaction;
 
+import java.nio.BufferUnderflowException;
 import java.nio.ByteBuffer;
 
 import io.netty.buffer.ByteBuf;
 import io.seata.core.model.BranchType;
+import io.seata.core.model.CommitType;
 import io.seata.core.protocol.transaction.BranchRegisterRequest;
 
 /**
@@ -39,6 +41,7 @@ public class BranchRegisterRequestCodec extends AbstractTransactionRequestToTCCo
 
         String xid = branchRegisterRequest.getXid();
         BranchType branchType = branchRegisterRequest.getBranchType();
+        CommitType commitType = branchRegisterRequest.getCommitType();
         String resourceId = branchRegisterRequest.getResourceId();
         String lockKey = branchRegisterRequest.getLockKey();
         String applicationData = branchRegisterRequest.getApplicationData();
@@ -88,6 +91,9 @@ public class BranchRegisterRequestCodec extends AbstractTransactionRequestToTCCo
         } else {
             out.writeInt(0);
         }
+
+        // 6. Commit Type
+        out.writeByte((byte)commitType.value());
     }
 
     @Override
@@ -120,6 +126,14 @@ public class BranchRegisterRequestCodec extends AbstractTransactionRequestToTCCo
             byte[] bs = new byte[applicationDataLen];
             in.get(bs);
             branchRegisterRequest.setApplicationData(new String(bs, UTF8));
+        }
+
+        try {
+            branchRegisterRequest.setCommitType(CommitType.get(in.get()));
+        } catch (BufferUnderflowException e) {
+            // If current request is from an older version of the client, set the default commitType.
+            CommitType commitType = CommitType.getDefault(branchRegisterRequest.getBranchType());
+            branchRegisterRequest.setCommitType(commitType);
         }
     }
 

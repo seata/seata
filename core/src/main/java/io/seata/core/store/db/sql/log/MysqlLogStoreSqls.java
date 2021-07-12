@@ -63,7 +63,7 @@ public class MysqlLogStoreSqls extends AbstractLogStoreSqls {
      */
     public static final String INSERT_BRANCH_TRANSACTION_MYSQL = "insert into " + BRANCH_TABLE_PLACEHOLD
             + "(" + ALL_BRANCH_COLUMNS + ")"
-            + " values (?, ?, ?, ?, ?, ?, ?, ?, ?, now(6), now(6))";
+            + " values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, now(6), now(6))";
 
     /**
      * The constant UPDATE_BRANCH_TRANSACTION_STATUS_MYSQL.

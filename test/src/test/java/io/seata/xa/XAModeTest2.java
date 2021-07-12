@@ -34,6 +34,7 @@ import io.seata.core.context.RootContext;
 import io.seata.core.exception.TransactionException;
 import io.seata.core.model.BranchStatus;
 import io.seata.core.model.BranchType;
+import io.seata.core.model.CommitType;
 import io.seata.core.model.Resource;
 import io.seata.rm.DefaultResourceManager;
 import io.seata.rm.datasource.xa.AbstractDataSourceProxyXA;
@@ -201,7 +202,7 @@ public class XAModeTest2 {
             }
 
             @Override
-            public Long branchRegister(BranchType branchType, String resourceId, String clientId, String xid,
+            public Long branchRegister(BranchType branchType, CommitType commitType, String resourceId, String clientId, String xid,
                                        String applicationData, String lockKeys) throws TransactionException {
                 return mockBranchId;
             }

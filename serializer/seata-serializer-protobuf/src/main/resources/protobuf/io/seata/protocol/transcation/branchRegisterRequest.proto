@@ -17,5 +17,6 @@ message BranchRegisterRequestProto {
     string resourceId = 4;
     string lockKey = 5;
     string applicationData = 6;
+    int32 commitType = 7;
 
 }

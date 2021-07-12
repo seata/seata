@@ -16,6 +16,7 @@
 package io.seata.core.protocol.transaction;
 
 import io.seata.core.model.BranchType;
+import io.seata.core.model.CommitType;
 import io.seata.core.protocol.MessageType;
 import io.seata.core.rpc.RpcContext;
 
@@ -29,6 +30,8 @@ public class BranchRegisterRequest extends AbstractTransactionRequestToTC  {
     private String xid;
 
     private BranchType branchType = BranchType.AT;
+
+    private CommitType commitType = CommitType.SyncCommit;
 
     private String resourceId;
 
@@ -70,6 +73,25 @@ public class BranchRegisterRequest extends AbstractTransactionRequestToTC  {
      */
     public void setBranchType(BranchType branchType) {
         this.branchType = branchType;
+    }
+
+    /**
+     * Gets commit type.
+     *
+     * @return the commit type
+     */
+    public CommitType getCommitType() {
+        return commitType;
+    }
+
+    /**
+     * Sets commit type.
+     *
+     * @param commitType the commit type
+     */
+    public BranchRegisterRequest setCommitType(CommitType commitType) {
+        this.commitType = commitType;
+        return this;
     }
 
     /**

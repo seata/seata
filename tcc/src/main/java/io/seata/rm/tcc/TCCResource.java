@@ -18,6 +18,7 @@ package io.seata.rm.tcc;
 import java.lang.reflect.Method;
 
 import io.seata.core.model.BranchType;
+import io.seata.core.model.CommitType;
 import io.seata.core.model.Resource;
 
 /**
@@ -40,6 +41,8 @@ public class TCCResource implements Resource {
     private String commitMethodName;
 
     private Method commitMethod;
+
+    private CommitType commitType;
 
     private String rollbackMethodName;
 
@@ -157,6 +160,24 @@ public class TCCResource implements Resource {
      */
     public void setCommitMethod(Method commitMethod) {
         this.commitMethod = commitMethod;
+    }
+
+    /**
+     * Gets commit type.
+     *
+     * @return the commit type
+     */
+    public CommitType getCommitType() {
+        return commitType;
+    }
+
+    /**
+     * Sets commit type.
+     *
+     * @param commitType the commit type
+     */
+    public void setCommitType(CommitType commitType) {
+        this.commitType = commitType;
     }
 
     /**

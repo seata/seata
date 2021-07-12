@@ -15,6 +15,7 @@
  */
 package io.seata.serializer.protobuf.convertor;
 
+import io.seata.core.model.CommitType;
 import io.seata.serializer.protobuf.generated.GlobalLockQueryRequestProto;
 import io.seata.core.model.BranchType;
 import io.seata.core.protocol.transaction.GlobalLockQueryRequest;
@@ -33,6 +34,7 @@ public class GlobalLockQueryRequestConvertorTest {
         GlobalLockQueryRequest globalLockQueryRequest = new GlobalLockQueryRequest();
         globalLockQueryRequest.setApplicationData("data");
         globalLockQueryRequest.setBranchType(BranchType.AT);
+        globalLockQueryRequest.setCommitType(CommitType.AsyncCommit);
         globalLockQueryRequest.setLockKey("localKey");
         globalLockQueryRequest.setResourceId("resourceId");
         globalLockQueryRequest.setXid("xid");
@@ -46,6 +48,7 @@ public class GlobalLockQueryRequestConvertorTest {
         assertThat(real.getApplicationData()).isEqualTo(globalLockQueryRequest.getApplicationData());
         assertThat(real.getXid()).isEqualTo(globalLockQueryRequest.getXid());
         assertThat(real.getBranchType()).isEqualTo(globalLockQueryRequest.getBranchType());
+        assertThat(real.getCommitType()).isEqualTo(globalLockQueryRequest.getCommitType());
         assertThat(real.getLockKey()).isEqualTo(globalLockQueryRequest.getLockKey());
         assertThat(real.getResourceId()).isEqualTo(globalLockQueryRequest.getResourceId());
     }

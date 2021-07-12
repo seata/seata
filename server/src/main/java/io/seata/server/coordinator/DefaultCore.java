@@ -29,6 +29,7 @@ import io.seata.core.exception.TransactionException;
 import io.seata.core.logger.StackTraceLogger;
 import io.seata.core.model.BranchStatus;
 import io.seata.core.model.BranchType;
+import io.seata.core.model.CommitType;
 import io.seata.core.model.GlobalStatus;
 import io.seata.core.rpc.RemotingServer;
 import io.seata.server.event.EventBusManager;
@@ -95,9 +96,9 @@ public class DefaultCore implements Core {
     }
 
     @Override
-    public Long branchRegister(BranchType branchType, String resourceId, String clientId, String xid,
+    public Long branchRegister(BranchType branchType, CommitType commitType, String resourceId, String clientId, String xid,
                                String applicationData, String lockKeys) throws TransactionException {
-        return getCore(branchType).branchRegister(branchType, resourceId, clientId, xid,
+        return getCore(branchType).branchRegister(branchType, commitType, resourceId, clientId, xid,
             applicationData, lockKeys);
     }
 
@@ -195,11 +196,13 @@ public class DefaultCore implements Core {
                     return CONTINUE;
                 }
 
-                BranchStatus currentStatus = branchSession.getStatus();
-                if (currentStatus == BranchStatus.PhaseOne_Failed) {
+                // if PhaseOne_Failed or NoCommit, remove the branch directly.
+                if (branchSession.getStatus() == BranchStatus.PhaseOne_Failed
+                        || branchSession.getCommitType() == CommitType.NoCommit) {
                     globalSession.removeBranch(branchSession);
                     return CONTINUE;
                 }
+
                 try {
                     BranchStatus branchStatus = getCore(branchSession.getBranchType()).branchCommit(globalSession, branchSession);
 

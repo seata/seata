@@ -113,6 +113,13 @@ public interface ServerTableColumnsName {
     String BRANCH_TABLE_BRANCH_TYPE = "branch_type";
 
     /**
+     * The constant branch_table column name commit_type
+     *
+     * @since above 1.4.2
+     */
+    String BRANCH_TABLE_COMMIT_TYPE = "commit_type";
+
+    /**
      * The constant branch_table column name status
      */
     String BRANCH_TABLE_STATUS = "status";

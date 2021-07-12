@@ -19,6 +19,7 @@ import java.util.Date;
 
 import io.seata.common.util.StringUtils;
 import io.seata.core.model.BranchStatus;
+import io.seata.core.model.CommitType;
 
 /**
  * branch transaction data object
@@ -38,6 +39,8 @@ public class BranchTransactionDO implements Comparable<BranchTransactionDO> {
     private String resourceId;
 
     private String branchType;
+
+    private Integer commitType = CommitType.SyncCommit.value();
 
     private Integer status = BranchStatus.Unknown.getCode();
 
@@ -155,6 +158,25 @@ public class BranchTransactionDO implements Comparable<BranchTransactionDO> {
      */
     public void setBranchType(String branchType) {
         this.branchType = branchType;
+    }
+
+    /**
+     * Gets commit type.
+     *
+     * @return the commit type
+     */
+    public int getCommitType() {
+        return commitType;
+    }
+
+    /**
+     * Sets commit type.
+     *
+     * @param commitType the commit type
+     */
+    public BranchTransactionDO setCommitType(int commitType) {
+        this.commitType = commitType;
+        return this;
     }
 
     /**

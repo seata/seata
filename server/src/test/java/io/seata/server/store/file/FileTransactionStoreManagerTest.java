@@ -139,7 +139,8 @@ public class FileTransactionStoreManagerTest {
                 + 4 // applicationDataBytes.length
                 + 4 // xidBytes.size
                 + 1 // statusCode
-                + 1; //branchType
+                + 1 // branchType
+                + 1;// commitType
         String xid = global.getXid();
         byte[] xidBytes = null;
         if (xid != null) {
@@ -161,6 +162,7 @@ public class FileTransactionStoreManagerTest {
         } else {
             byteBuffer.putInt(0);
         }
+        byteBuffer.put((byte) 0);
         byteBuffer.put((byte) 0);
         byteBuffer.put((byte) 0);
         byteBuffer.flip();

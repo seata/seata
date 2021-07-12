@@ -20,6 +20,7 @@ import java.util.Collection;
 import io.seata.core.context.RootContext;
 import io.seata.core.exception.TransactionException;
 import io.seata.core.model.BranchType;
+import io.seata.core.model.CommitType;
 import io.seata.core.model.GlobalStatus;
 import io.seata.server.UUIDGenerator;
 import org.slf4j.Logger;
@@ -36,8 +37,15 @@ public class SessionHelper {
 
     private SessionHelper() {}
 
-    public static BranchSession newBranchByGlobal(GlobalSession globalSession, BranchType branchType, String resourceId, String lockKeys, String clientId) {
+    public static BranchSession newBranchByGlobal(GlobalSession globalSession, BranchType branchType,
+            String resourceId, String lockKeys, String clientId) {
         return newBranchByGlobal(globalSession, branchType, resourceId, null, lockKeys, clientId);
+    }
+
+    public static BranchSession newBranchByGlobal(GlobalSession globalSession, BranchType branchType,
+            String resourceId, String applicationData, String lockKeys, String clientId) {
+        CommitType commitType = CommitType.getDefault(branchType);
+        return newBranchByGlobal(globalSession, branchType, commitType, resourceId, applicationData, lockKeys, clientId);
     }
 
     /**
@@ -50,14 +58,15 @@ public class SessionHelper {
      * @param clientId      the client id
      * @return the branch session
      */
-    public static BranchSession newBranchByGlobal(GlobalSession globalSession, BranchType branchType, String resourceId,
-            String applicationData, String lockKeys, String clientId) {
+    public static BranchSession newBranchByGlobal(GlobalSession globalSession, BranchType branchType,
+            CommitType commitType, String resourceId, String applicationData, String lockKeys, String clientId) {
         BranchSession branchSession = new BranchSession();
 
         branchSession.setXid(globalSession.getXid());
         branchSession.setTransactionId(globalSession.getTransactionId());
         branchSession.setBranchId(UUIDGenerator.generateUUID());
         branchSession.setBranchType(branchType);
+        branchSession.setCommitType(commitType);
         branchSession.setResourceId(resourceId);
         branchSession.setLockKey(lockKeys);
         branchSession.setClientId(clientId);

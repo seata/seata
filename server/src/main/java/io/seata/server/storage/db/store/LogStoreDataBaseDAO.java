@@ -325,6 +325,7 @@ public class LogStoreDataBaseDAO implements LogStore {
             ps.setString(index++, branchTransactionDO.getResourceGroupId());
             ps.setString(index++, branchTransactionDO.getResourceId());
             ps.setString(index++, branchTransactionDO.getBranchType());
+            ps.setInt(index++, branchTransactionDO.getCommitType());
             ps.setInt(index++, branchTransactionDO.getStatus());
             ps.setString(index++, branchTransactionDO.getClientId());
             ps.setString(index++, branchTransactionDO.getApplicationData());
@@ -444,6 +445,7 @@ public class LogStoreDataBaseDAO implements LogStore {
         branchTransactionDO.setResourceId(rs.getString(ServerTableColumnsName.BRANCH_TABLE_RESOURCE_ID));
         branchTransactionDO.setBranchId(rs.getLong(ServerTableColumnsName.BRANCH_TABLE_BRANCH_ID));
         branchTransactionDO.setBranchType(rs.getString(ServerTableColumnsName.BRANCH_TABLE_BRANCH_TYPE));
+        branchTransactionDO.setCommitType(rs.getInt(ServerTableColumnsName.BRANCH_TABLE_COMMIT_TYPE));
         branchTransactionDO.setTransactionId(rs.getLong(ServerTableColumnsName.BRANCH_TABLE_TRANSACTION_ID));
         branchTransactionDO.setGmtCreate(rs.getTimestamp(ServerTableColumnsName.BRANCH_TABLE_GMT_CREATE));
         branchTransactionDO.setGmtModified(rs.getTimestamp(ServerTableColumnsName.BRANCH_TABLE_GMT_MODIFIED));

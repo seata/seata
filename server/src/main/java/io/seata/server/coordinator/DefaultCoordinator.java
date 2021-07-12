@@ -202,7 +202,7 @@ public class DefaultCoordinator extends AbstractTCInboundHandler implements Tran
                                     RpcContext rpcContext) throws TransactionException {
         MDC.put(RootContext.MDC_KEY_XID, request.getXid());
         response.setBranchId(
-            core.branchRegister(request.getBranchType(), request.getResourceId(), rpcContext.getClientId(),
+            core.branchRegister(request.getBranchType(), request.getCommitType(), request.getResourceId(), rpcContext.getClientId(),
                 request.getXid(), request.getApplicationData(), request.getLockKey()));
     }
 

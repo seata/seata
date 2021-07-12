@@ -67,7 +67,7 @@ public class OracleLogStoreSqls extends AbstractLogStoreSqls {
      */
     public static final String INSERT_BRANCH_TRANSACTION_ORACLE = "insert into " + BRANCH_TABLE_PLACEHOLD
             + "(" + ALL_BRANCH_COLUMNS + ")"
-            + " values (?, ?, ?, ?, ?, ?, ?, ?, ?, systimestamp, systimestamp)";
+            + " values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, systimestamp, systimestamp)";
 
     /**
      * The constant UPDATE_BRANCH_TRANSACTION_STATUS_ORACLE.

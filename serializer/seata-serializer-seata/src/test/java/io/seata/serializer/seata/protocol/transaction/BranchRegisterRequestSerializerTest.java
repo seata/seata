@@ -15,6 +15,7 @@
  */
 package io.seata.serializer.seata.protocol.transaction;
 
+import io.seata.core.model.CommitType;
 import io.seata.serializer.seata.SeataSerializer;
 import io.seata.core.model.BranchType;
 import io.seata.core.protocol.transaction.BranchRegisterRequest;
@@ -41,6 +42,7 @@ public class BranchRegisterRequestSerializerTest {
     public void test_codec(){
         BranchRegisterRequest branchRegisterRequest = new BranchRegisterRequest();
         branchRegisterRequest.setBranchType(BranchType.AT);
+        branchRegisterRequest.setCommitType(CommitType.AsyncCommit);
         branchRegisterRequest.setApplicationData("abc");
         branchRegisterRequest.setLockKey("a:1,b:2");
         branchRegisterRequest.setResourceId("124");
@@ -51,6 +53,7 @@ public class BranchRegisterRequestSerializerTest {
         BranchRegisterRequest branchRegisterRequest2 = seataSerializer.deserialize(bytes);
 
         assertThat(branchRegisterRequest2.getBranchType()).isEqualTo(branchRegisterRequest.getBranchType());
+        assertThat(branchRegisterRequest2.getCommitType()).isEqualTo(branchRegisterRequest.getCommitType());
         assertThat(branchRegisterRequest2.getApplicationData()).isEqualTo(branchRegisterRequest.getApplicationData());
         assertThat(branchRegisterRequest2.getLockKey()).isEqualTo(branchRegisterRequest.getLockKey());
         assertThat(branchRegisterRequest2.getResourceId()).isEqualTo(branchRegisterRequest.getResourceId());

@@ -26,6 +26,7 @@ import io.seata.common.util.CollectionUtils;
 import io.seata.core.exception.TransactionException;
 import io.seata.core.model.BranchStatus;
 import io.seata.core.model.BranchType;
+import io.seata.core.model.CommitType;
 import io.seata.core.model.Resource;
 import io.seata.core.model.ResourceManager;
 
@@ -90,10 +91,10 @@ public class DefaultResourceManager implements ResourceManager {
     }
 
     @Override
-    public Long branchRegister(BranchType branchType, String resourceId,
+    public Long branchRegister(BranchType branchType, CommitType commitType, String resourceId,
                                String clientId, String xid, String applicationData, String lockKeys)
         throws TransactionException {
-        return getResourceManager(branchType).branchRegister(branchType, resourceId, clientId, xid, applicationData,
+        return getResourceManager(branchType).branchRegister(branchType, commitType, resourceId, clientId, xid, applicationData,
             lockKeys);
     }
 

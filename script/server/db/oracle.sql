@@ -28,6 +28,7 @@ CREATE TABLE branch_table
     resource_group_id VARCHAR2(32),
     resource_id       VARCHAR2(256),
     branch_type       VARCHAR2(8),
+    commit_type       NUMBER(1),
     status            NUMBER(3),
     client_id         VARCHAR2(64),
     application_data  VARCHAR2(2000),

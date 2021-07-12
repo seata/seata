@@ -72,7 +72,17 @@ public class DataBaseLockManagerImplTest {
                 s.execute("drop table lock_table");
             } catch (Exception e) {
             }
-            s.execute("CREATE TABLE lock_table ( xid varchar(96),  transaction_id long , branch_id long, resource_id varchar(32) ,table_name varchar(32) ,pk varchar(32)  ,  row_key  varchar(128) primary key not null, gmt_create TIMESTAMP(6) ,gmt_modified TIMESTAMP(6)) ");
+            s.execute("CREATE TABLE lock_table (" +
+                    "  xid            varchar(96)," +
+                    "  transaction_id long," +
+                    "  branch_id      long," +
+                    "  resource_id    varchar(32)," +
+                    "  table_name     varchar(32)," +
+                    "  pk             varchar(32)," +
+                    "  row_key        varchar(128) primary key not null," +
+                    "  gmt_create     timestamp(6)," +
+                    "  gmt_modified   timestamp(6)" +
+                    ")");
             System.out.println("create table lock_table success.");
 
         } catch (Exception e) {
