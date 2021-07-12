@@ -78,7 +78,7 @@ class NettyClientChannelManagerTest {
     @Test
     void assertAcquireChannelFromPool() {
         setupPoolFactory(nettyPoolKey, channel);
-        Channel actual = channelManager.acquireChannel("localhost");
+        Channel actual = channelManager.acquireChannel("127.0.0.1");
         verify(poolableFactory).makeObject(nettyPoolKey);
         Assertions.assertEquals(actual, channel);
     }
@@ -91,19 +91,19 @@ class NettyClientChannelManagerTest {
     
     @Test
     void assertAcquireChannelFromCache() {
-        channelManager.getChannels().putIfAbsent("localhost", channel);
+        channelManager.getChannels().putIfAbsent("127.0.0.1", channel);
         when(channel.isActive()).thenReturn(true);
-        Channel actual = channelManager.acquireChannel("localhost");
+        Channel actual = channelManager.acquireChannel("127.0.0.1");
         verify(poolableFactory, times(0)).makeObject(nettyPoolKey);
         Assertions.assertEquals(actual, channel);
     }
     
     @Test
     void assertAcquireChannelFromPoolContainsInactiveCache() {
-        channelManager.getChannels().putIfAbsent("localhost", channel);
+        channelManager.getChannels().putIfAbsent("127.0.0.1", channel);
         when(channel.isActive()).thenReturn(false);
         setupPoolFactory(nettyPoolKey, newChannel);
-        Channel actual = channelManager.acquireChannel("localhost");
+        Channel actual = channelManager.acquireChannel("127.0.0.1");
         verify(poolableFactory).makeObject(nettyPoolKey);
         Assertions.assertEquals(actual, newChannel);
     }

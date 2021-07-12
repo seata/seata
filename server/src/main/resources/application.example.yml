@@ -32,8 +32,8 @@ seata:
       acl-token:
     apollo:
       appId: seata-server
-      apollo-meta: http://192.168.1.204:8801
-      apollo-config-service: http://192.168.1.204:8080
+      apollo-meta: http://127.0.0.1:8801
+      apollo-config-service: http://127.0.0.1:8080
       namespace: application
       apollo-access-key-secret:
       cluster: seata
@@ -45,7 +45,7 @@ seata:
       password:
       node-path: /seata/seata.properties
     etcd3:
-      server-addr: http://localhost:2379
+      server-addr: http://127.0.0.1:2379
   registry:
     # support: nacos 、 eureka 、 redis 、 zk  、 consul 、 etcd3 、 sofa
     type: file
@@ -58,11 +58,11 @@ seata:
       username:
       password:
     eureka:
-      service-url: http://localhost:8761/eureka
+      service-url: http://127.0.0.1:8761/eureka
       application: default
       weight: 1
     redis:
-      server-addr: localhost:6379
+      server-addr: 127.0.0.1:6379
       db: 0
       password:
       cluster: default
@@ -80,7 +80,7 @@ seata:
       acl-token:
     etcd3:
       cluster: default
-      server-addr: http://localhost:2379
+      server-addr: http://127.0.0.1:2379
     sofa:
       server-addr: 127.0.0.1:9603
       application: default

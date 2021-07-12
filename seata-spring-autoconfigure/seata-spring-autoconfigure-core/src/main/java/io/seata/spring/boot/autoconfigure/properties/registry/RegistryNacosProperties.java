@@ -26,7 +26,7 @@ import static io.seata.spring.boot.autoconfigure.StarterConstants.REGISTRY_NACOS
 @Component
 @ConfigurationProperties(prefix = REGISTRY_NACOS_PREFIX)
 public class RegistryNacosProperties {
-    private String serverAddr = "localhost:8848";
+    private String serverAddr = "127.0.0.1:8848";
     private String namespace = "";
     private String group = "SEATA_GROUP";
     private String cluster = "default";

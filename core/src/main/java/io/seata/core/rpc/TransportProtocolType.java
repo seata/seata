@@ -15,6 +15,8 @@
  */
 package io.seata.core.rpc;
 
+import io.seata.common.util.StringUtils;
+
 /**
  * The enum Transport protocol type.
  *
@@ -47,10 +49,12 @@ public enum TransportProtocolType {
      * @return the type
      */
     public static TransportProtocolType getType(String name) {
-        name = name.trim().replace('-', '_');
-        for (TransportProtocolType b : TransportProtocolType.values()) {
-            if (b.name().equalsIgnoreCase(name)) {
-                return b;
+        if (StringUtils.isNotBlank(name)) {
+            name = name.trim().replace('-', '_');
+            for (TransportProtocolType b : TransportProtocolType.values()) {
+                if (b.name().equalsIgnoreCase(name)) {
+                    return b;
+                }
             }
         }
         throw new IllegalArgumentException("unknown type:" + name);

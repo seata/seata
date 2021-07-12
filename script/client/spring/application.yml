@@ -74,12 +74,12 @@ seata:
     consul:
       server-addr: 127.0.0.1:8500
     apollo:
-      apollo-meta: http://192.168.1.204:8801
+      apollo-meta: http://127.0.0.1:8801
       app-id: seata-server
       namespace: application
       apollo-accesskey-secret: ""
     etcd3:
-      server-addr: http://localhost:2379
+      server-addr: http://127.0.0.1:2379
     nacos:
       namespace: ""
       server-addr: 127.0.0.1:8848
@@ -98,25 +98,23 @@ seata:
       name: ""
   registry:
     type: file
-    file:
-      name: file.conf
     consul:
       server-addr: 127.0.0.1:8500
       acl-token: ""
     etcd3:
-      server-addr: http://localhost:2379
+      server-addr: http://127.0.0.1:2379
     eureka:
       weight: 1
-      service-url: http://localhost:8761/eureka
+      service-url: http://127.0.0.1:8761/eureka
     nacos:
       application: seata-server
       server-addr: 127.0.0.1:8848
-      group : "SEATA_GROUP"
+      group: SEATA_GROUP
       namespace: ""
       username: ""
       password: ""
     redis:
-      server-addr: localhost:6379
+      server-addr: 127.0.0.1:6379
       db: 0
       password: ""
       timeout: 0
@@ -126,7 +124,7 @@ seata:
       datacenter: DefaultDataCenter
       group: SEATA_GROUP
       address-wait-time: 3000
-      application: default
+      application: seata-server
     zk:
       server-addr: 127.0.0.1:2181
       session-timeout: 6000

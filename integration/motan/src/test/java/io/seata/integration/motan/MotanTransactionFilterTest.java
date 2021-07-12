@@ -74,7 +74,7 @@ class MotanTransactionFilterTest {
         protocol.setId(PROTOCOL_ID);
         protocol.setName(PROTOCOL_NAME);
         refererConfig.setProtocol(protocol);
-        refererConfig.setDirectUrl("localhost:" + SERVICE_PORT);
+        refererConfig.setDirectUrl("127.0.0.1:" + SERVICE_PORT);
         XIDService service = refererConfig.getRef();
         Assertions.assertEquals(service.getXid(), XID);
     }

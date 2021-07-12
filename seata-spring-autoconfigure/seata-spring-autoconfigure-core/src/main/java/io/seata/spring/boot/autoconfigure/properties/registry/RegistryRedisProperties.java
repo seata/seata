@@ -26,7 +26,7 @@ import static io.seata.spring.boot.autoconfigure.StarterConstants.REGISTRY_REDIS
 @Component
 @ConfigurationProperties(prefix = REGISTRY_REDIS_PREFIX)
 public class RegistryRedisProperties {
-    private String serverAddr = "localhost:6379";
+    private String serverAddr = "127.0.0.1:6379";
     private int db = 0;
     private String password = "";
     private String cluster = "default";

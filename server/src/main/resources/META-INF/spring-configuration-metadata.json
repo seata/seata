@@ -4,7 +4,7 @@
     {
       "name": "logging.extend.kafka-appender.bootstrap-servers",
       "type": "java.lang.String",
-      "defaultValue": "localhost:9092"
+      "defaultValue": "127.0.0.1:9092"
     },
     {
       "name": "logging.extend.kafka-appender.topic",
@@ -14,7 +14,7 @@
     {
       "name": "logging.extend.logstash-appender.destination",
       "type": "java.lang.String",
-      "defaultValue": "localhost:4560"
+      "defaultValue": "127.0.0.1:4560"
     }
   ],
   "hints": [

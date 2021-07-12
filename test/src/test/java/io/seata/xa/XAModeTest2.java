@@ -74,7 +74,7 @@ public class XAModeTest2 {
     private static final String mysql8_password = "demo";
     private static final String mysql8_driverClassName = JdbcUtils.MYSQL_DRIVER_6;
 
-    private static final String oracle_jdbcUrl = "jdbc:oracle:thin:@localhost:1521:xe";
+    private static final String oracle_jdbcUrl = "jdbc:oracle:thin:@127.0.0.1:1521:xe";
     private static final String oracle_username = "demo";
     private static final String oracle_password = "demo";
     private static final String oracle_driverClassName = JdbcUtils.ORACLE_DRIVER;

@@ -63,7 +63,7 @@ public class SofaRegistryServiceImpl implements RegistryService<SubscriberDataOb
     private static final String DEFAULT_LOCAL_DATACENTER = "DefaultDataCenter";
     private static final String DEFAULT_LOCAL_REGION = "DEFAULT_ZONE";
     private static final String DEFAULT_GROUP = "SEATA_GROUP";
-    private static final String DEFAULT_APPLICATION = "default";
+    private static final String DEFAULT_APPLICATION = "seata-server";
     private static final String DEFAULT_CLUSTER = "default";
     private static final String DEFAULT_ADDRESS_WAIT_TIME = "3000";
 

@@ -52,7 +52,7 @@ import java.util.stream.Collectors;
 public class EurekaRegistryServiceImpl implements RegistryService<EurekaEventListener> {
     private static final Logger LOGGER = LoggerFactory.getLogger(EurekaRegistryServiceImpl.class);
 
-    private static final String DEFAULT_APPLICATION = "default";
+    private static final String DEFAULT_APPLICATION = "seata-server";
     private static final String PRO_SERVICE_URL_KEY = "serviceUrl";
     private static final String FILE_ROOT_REGISTRY = "registry";
     private static final String FILE_CONFIG_SPLIT_CHAR = ".";

@@ -27,7 +27,7 @@ import static io.seata.spring.boot.autoconfigure.StarterConstants.REGISTRY_SOFA_
 @ConfigurationProperties(prefix = REGISTRY_SOFA_PREFIX)
 public class RegistrySofaProperties {
     private String serverAddr = "127.0.0.1:9603";
-    private String application = "default";
+    private String application = "seata-server";
     private String region = "DEFAULT_ZONE";
     private String datacenter = "DefaultDataCenter";
     private String cluster = "default";

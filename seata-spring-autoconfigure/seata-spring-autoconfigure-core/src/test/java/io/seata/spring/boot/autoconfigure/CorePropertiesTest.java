@@ -93,7 +93,7 @@ public class CorePropertiesTest {
     @Test
     public void testConfigApolloProperties() {
         assertEquals("seata-server", context.getBean(ConfigApolloProperties.class).getAppId());
-        assertEquals("http://192.168.1.204:8801", context.getBean(ConfigApolloProperties.class).getApolloMeta());
+        assertEquals("http://127.0.0.1:8801", context.getBean(ConfigApolloProperties.class).getApolloMeta());
     }
 
     @Test
@@ -103,7 +103,7 @@ public class CorePropertiesTest {
 
     @Test
     public void testConfigEtcd3Properties() {
-        assertEquals("http://localhost:2379", context.getBean(ConfigEtcd3Properties.class).getServerAddr());
+        assertEquals("http://127.0.0.1:2379", context.getBean(ConfigEtcd3Properties.class).getServerAddr());
     }
 
     @Test
@@ -113,7 +113,7 @@ public class CorePropertiesTest {
 
     @Test
     public void testConfigNacosProperties() {
-        assertEquals("localhost:8848", context.getBean(ConfigNacosProperties.class).getServerAddr());
+        assertEquals("127.0.0.1:8848", context.getBean(ConfigNacosProperties.class).getServerAddr());
         assertEquals("", context.getBean(ConfigNacosProperties.class).getNamespace());
     }
 
@@ -143,19 +143,19 @@ public class CorePropertiesTest {
     @Test
     public void testRegistryEtcd3Properties() {
         assertEquals("default", context.getBean(RegistryEtcd3Properties.class).getCluster());
-        assertEquals("http://localhost:2379", context.getBean(RegistryEtcd3Properties.class).getServerAddr());
+        assertEquals("http://127.0.0.1:2379", context.getBean(RegistryEtcd3Properties.class).getServerAddr());
     }
 
     @Test
     public void testRegistryEurekaProperties() {
-        assertEquals("default", context.getBean(RegistryEurekaProperties.class).getApplication());
-        assertEquals("http://localhost:8761/eureka", context.getBean(RegistryEurekaProperties.class).getServiceUrl());
+        assertEquals("seata-server", context.getBean(RegistryEurekaProperties.class).getApplication());
+        assertEquals("http://127.0.0.1:8761/eureka", context.getBean(RegistryEurekaProperties.class).getServiceUrl());
         assertEquals("1", context.getBean(RegistryEurekaProperties.class).getWeight());
     }
 
     @Test
     public void testRegistryNacosProperties() {
-        assertEquals("localhost:8848", context.getBean(RegistryNacosProperties.class).getServerAddr());
+        assertEquals("127.0.0.1:8848", context.getBean(RegistryNacosProperties.class).getServerAddr());
         assertEquals("", context.getBean(RegistryNacosProperties.class).getNamespace());
         assertEquals("SEATA_GROUP", context.getBean(RegistryNacosProperties.class).getGroup());
         assertEquals("default", context.getBean(RegistryNacosProperties.class).getCluster());
@@ -172,7 +172,7 @@ public class CorePropertiesTest {
 
     @Test
     public void testRegistryRedisProperties() {
-        assertEquals("localhost:6379", context.getBean(RegistryRedisProperties.class).getServerAddr());
+        assertEquals("127.0.0.1:6379", context.getBean(RegistryRedisProperties.class).getServerAddr());
         assertEquals(0, context.getBean(RegistryRedisProperties.class).getDb());
         assertEquals("", context.getBean(RegistryRedisProperties.class).getPassword());
         assertEquals("default", context.getBean(RegistryRedisProperties.class).getCluster());
@@ -182,7 +182,7 @@ public class CorePropertiesTest {
     @Test
     public void testRegistrySofaProperties() {
         assertEquals("127.0.0.1:9603", context.getBean(RegistrySofaProperties.class).getServerAddr());
-        assertEquals("default", context.getBean(RegistrySofaProperties.class).getApplication());
+        assertEquals("seata-server", context.getBean(RegistrySofaProperties.class).getApplication());
         assertEquals("DEFAULT_ZONE", context.getBean(RegistrySofaProperties.class).getRegion());
         assertEquals("DefaultDataCenter", context.getBean(RegistrySofaProperties.class).getDatacenter());
         assertEquals("default", context.getBean(RegistrySofaProperties.class).getCluster());
