@@ -13,27 +13,19 @@
  *  See the License for the specific language governing permissions and
  *  limitations under the License.
  */
-package io.seata.spring.annotation;
+package io.seata.spring.schema;
 
-import io.seata.common.util.StringUtils;
+
+import org.springframework.beans.factory.xml.NamespaceHandlerSupport;
 
 /**
- * The interface Business.
+ * The type seata namespace handler
+ *
+ * @author xingfudeshi@gmail.com
  */
-public interface Business {
-    /**
-     * Do biz string.
-     *
-     * @param msg the msg
-     * @return the string
-     */
-    String doBiz(String msg);
-    /**
-     * do global lock
-     * @return java.lang.String
-     * @author xingfudeshi@gmail.com
-     */
-    default String doGlobalLock(){
-        return StringUtils.EMPTY;
+public class SeataNamespaceHandler extends NamespaceHandlerSupport {
+    @Override
+    public void init() {
+        super.registerBeanDefinitionParser("application", new SeataBeanDefinitionParser());
     }
 }

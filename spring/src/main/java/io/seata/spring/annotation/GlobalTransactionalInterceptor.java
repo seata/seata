@@ -15,6 +15,7 @@
  */
 package io.seata.spring.annotation;
 
+import java.beans.PropertyDescriptor;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
 import java.util.LinkedHashSet;
@@ -35,12 +36,14 @@ import io.seata.core.constants.ConfigurationKeys;
 import io.seata.core.event.EventBus;
 import io.seata.core.event.GuavaEventBus;
 import io.seata.core.model.GlobalLockConfig;
+import io.seata.rm.GlobalLockExecutor;
+import io.seata.rm.GlobalLockTemplate;
 import io.seata.spring.event.DegradeCheckEvent;
+import io.seata.spring.schema.SeataTarget;
+import io.seata.spring.schema.SeataTargetHolder;
 import io.seata.tm.TransactionManagerHolder;
 import io.seata.tm.api.DefaultFailureHandlerImpl;
 import io.seata.tm.api.FailureHandler;
-import io.seata.rm.GlobalLockExecutor;
-import io.seata.rm.GlobalLockTemplate;
 import io.seata.tm.api.TransactionalExecutor;
 import io.seata.tm.api.TransactionalTemplate;
 import io.seata.tm.api.transaction.NoRollbackRule;
@@ -51,6 +54,8 @@ import org.aopalliance.intercept.MethodInvocation;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.aop.support.AopUtils;
+import org.springframework.beans.BeanUtils;
+import org.springframework.cglib.proxy.Enhancer;
 import org.springframework.core.BridgeMethodResolver;
 import org.springframework.util.ClassUtils;
 
@@ -95,14 +100,14 @@ public class GlobalTransactionalInterceptor implements ConfigurationChangeListen
             int defaultGlobalTransactionTimeout;
             try {
                 defaultGlobalTransactionTimeout = ConfigurationFactory.getInstance().getInt(
-                        ConfigurationKeys.DEFAULT_GLOBAL_TRANSACTION_TIMEOUT, DEFAULT_GLOBAL_TRANSACTION_TIMEOUT);
+                    ConfigurationKeys.DEFAULT_GLOBAL_TRANSACTION_TIMEOUT, DEFAULT_GLOBAL_TRANSACTION_TIMEOUT);
             } catch (Exception e) {
                 LOGGER.error("Illegal global transaction timeout value: " + e.getMessage());
                 defaultGlobalTransactionTimeout = DEFAULT_GLOBAL_TRANSACTION_TIMEOUT;
             }
             if (defaultGlobalTransactionTimeout <= 0) {
                 LOGGER.warn("Global transaction timeout value '{}' is illegal, and has been reset to the default value '{}'",
-                        defaultGlobalTransactionTimeout, DEFAULT_GLOBAL_TRANSACTION_TIMEOUT);
+                    defaultGlobalTransactionTimeout, DEFAULT_GLOBAL_TRANSACTION_TIMEOUT);
                 defaultGlobalTransactionTimeout = DEFAULT_GLOBAL_TRANSACTION_TIMEOUT;
             }
             GlobalTransactionalInterceptor.defaultGlobalTransactionTimeout = defaultGlobalTransactionTimeout;
@@ -114,8 +119,7 @@ public class GlobalTransactionalInterceptor implements ConfigurationChangeListen
     /**
      * Instantiates a new Global transactional interceptor.
      *
-     * @param failureHandler
-     *            the failure handler
+     * @param failureHandler the failure handler
      */
     public GlobalTransactionalInterceptor(FailureHandler failureHandler) {
         this.failureHandler = failureHandler == null ? DEFAULT_FAIL_HANDLER : failureHandler;
@@ -145,12 +149,15 @@ public class GlobalTransactionalInterceptor implements ConfigurationChangeListen
         Method specificMethod = ClassUtils.getMostSpecificMethod(methodInvocation.getMethod(), targetClass);
         if (specificMethod != null && !specificMethod.getDeclaringClass().equals(Object.class)) {
             final Method method = BridgeMethodResolver.findBridgedMethod(specificMethod);
+            final SeataTarget seataTarget = SeataTargetHolder.INSTANCE.tryFind(targetClass, method);
             final GlobalTransactional globalTransactionalAnnotation =
                 getAnnotation(method, targetClass, GlobalTransactional.class);
             final GlobalLock globalLockAnnotation = getAnnotation(method, targetClass, GlobalLock.class);
             boolean localDisable = disable || (degradeCheck && degradeNum >= degradeCheckAllowTimes);
             if (!localDisable) {
-                if (globalTransactionalAnnotation != null) {
+                if (seataTarget != null) {
+                    return handleSeataTarget(methodInvocation, seataTarget);
+                } else if (globalTransactionalAnnotation != null) {
                     return handleGlobalTransaction(methodInvocation, globalTransactionalAnnotation);
                 } else if (globalLockAnnotation != null) {
                     return handleGlobalLock(methodInvocation, globalLockAnnotation);
@@ -161,7 +168,7 @@ public class GlobalTransactionalInterceptor implements ConfigurationChangeListen
     }
 
     Object handleGlobalLock(final MethodInvocation methodInvocation,
-        final GlobalLock globalLockAnno) throws Throwable {
+                            final GlobalLock globalLockAnno) throws Throwable {
         return globalLockTemplate.execute(new GlobalLockExecutor() {
             @Override
             public Object execute() throws Throwable {
@@ -179,7 +186,7 @@ public class GlobalTransactionalInterceptor implements ConfigurationChangeListen
     }
 
     Object handleGlobalTransaction(final MethodInvocation methodInvocation,
-        final GlobalTransactional globalTrxAnno) throws Throwable {
+                                   final GlobalTransactional globalTrxAnno) throws Throwable {
         boolean succeed = true;
         try {
             return transactionalTemplate.execute(new TransactionalExecutor() {
@@ -254,6 +261,39 @@ public class GlobalTransactionalInterceptor implements ConfigurationChangeListen
                 EVENT_BUS.post(new DegradeCheckEvent(succeed));
             }
         }
+    }
+
+    /**
+     * handle seata target
+     * @param methodInvocation
+     * @param seataTarget
+     * @return java.lang.Object
+     * @author xingfudeshi@gmail.com
+     */
+    Object handleSeataTarget(final MethodInvocation methodInvocation, final SeataTarget seataTarget) throws Throwable {
+        if (seataTarget.getAnnotationClass().equals(GlobalTransactional.class)) {
+            return handleGlobalTransaction(methodInvocation, proxyAnnotationClass(GlobalTransactional.class, seataTarget.getAnnotationConfigObject()));
+        } else if (seataTarget.getAnnotationClass().equals(GlobalLock.class)) {
+            return handleGlobalLock(methodInvocation, proxyAnnotationClass(GlobalLock.class, seataTarget.getAnnotationConfigObject()));
+        } else {
+            throw new ShouldNeverHappenException("unsupported operation");
+        }
+    }
+
+    /**
+     * proxy annotation class
+     *
+     * @param annotationClass
+     * @param annotationConfigObject
+     * @return T
+     * @author xingfudeshi@gmail.com
+     */
+    private <T> T proxyAnnotationClass(Class<T> annotationClass, Object annotationConfigObject) {
+        return annotationClass.cast(Enhancer.create(annotationClass, (org.springframework.cglib.proxy.MethodInterceptor) (o, method, objects, methodProxy) -> {
+            PropertyDescriptor propertyDescriptor = BeanUtils.getPropertyDescriptor(annotationConfigObject.getClass(), method.getName());
+            Method getter = propertyDescriptor.getReadMethod();
+            return getter.invoke(annotationConfigObject);
+        }));
     }
 
     public <T extends Annotation> T getAnnotation(Method method, Class<?> targetClass, Class<T> annotationClass) {

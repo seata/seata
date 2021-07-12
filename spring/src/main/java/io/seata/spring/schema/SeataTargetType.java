@@ -13,27 +13,19 @@
  *  See the License for the specific language governing permissions and
  *  limitations under the License.
  */
-package io.seata.spring.annotation;
-
-import io.seata.common.util.StringUtils;
+package io.seata.spring.schema;
 
 /**
- * The interface Business.
+ * The type seata target type
+ * @author xingfudeshi@gmail.com
  */
-public interface Business {
+public enum SeataTargetType {
     /**
-     * Do biz string.
-     *
-     * @param msg the msg
-     * @return the string
+     * class
      */
-    String doBiz(String msg);
+    CLASS,
     /**
-     * do global lock
-     * @return java.lang.String
-     * @author xingfudeshi@gmail.com
+     * method
      */
-    default String doGlobalLock(){
-        return StringUtils.EMPTY;
-    }
+    METHOD
 }

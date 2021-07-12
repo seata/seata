@@ -13,27 +13,28 @@
  *  See the License for the specific language governing permissions and
  *  limitations under the License.
  */
-package io.seata.spring.annotation;
+package io.seata.spring.schema;
 
-import io.seata.common.util.StringUtils;
+import io.seata.spring.annotation.Business;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
- * The interface Business.
+ * The type simple business impl
+ *
+ * @author xingfudeshi@gmail.com
  */
-public interface Business {
-    /**
-     * Do biz string.
-     *
-     * @param msg the msg
-     * @return the string
-     */
-    String doBiz(String msg);
-    /**
-     * do global lock
-     * @return java.lang.String
-     * @author xingfudeshi@gmail.com
-     */
-    default String doGlobalLock(){
-        return StringUtils.EMPTY;
+public class SimpleBusinessImpl implements Business {
+    private static final Logger LOGGER = LoggerFactory.getLogger(SimpleBusinessImpl.class);
+
+    @Override
+    public String doBiz(String msg) {
+        LOGGER.info("Business doBiz");
+        return "hello " + msg;
+    }
+
+    @Override
+    public String doGlobalLock() {
+        return Business.super.doGlobalLock();
     }
 }

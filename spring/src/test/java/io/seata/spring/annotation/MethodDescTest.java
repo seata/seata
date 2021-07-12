@@ -29,8 +29,10 @@ import org.springframework.aop.framework.ProxyFactory;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * @author Wu
+ * The type method desc test
+ * @author xingfudeshi@gmail.com
  */
+
 public class MethodDescTest {
 
     private static final GlobalTransactionScanner GLOBAL_TRANSACTION_SCANNER = new GlobalTransactionScanner(

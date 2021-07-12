@@ -15,6 +15,9 @@
  */
 package io.seata.spring.annotation;
 
+import java.util.stream.Stream;
+
+import io.seata.spring.schema.SimpleBusinessImpl;
 import io.seata.spring.tcc.LocalTccAction;
 import io.seata.spring.tcc.LocalTccActionImpl;
 import io.seata.spring.tcc.TccAction;
@@ -24,8 +27,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
-
-import java.util.stream.Stream;
+import org.springframework.context.support.ClassPathXmlApplicationContext;
 
 /**
  * GlobalTransactionScanner Unit Test
@@ -35,6 +37,16 @@ public class GlobalTransactionScannerTest {
      * The Global transaction scanner.
      */
     protected GlobalTransactionScanner globalTransactionScanner = new GlobalTransactionScanner("global-trans-scanner-test");
+
+
+    @ParameterizedTest
+    @MethodSource("schemaBeanProvider")
+    public void testWrapSchemaBean(Object bean, String beanName, Object cacheKey) {
+        ClassPathXmlApplicationContext applicationContext = new ClassPathXmlApplicationContext("classpath:seata.xml");
+        GlobalTransactionScanner globalTransactionScanner = applicationContext.getBean(GlobalTransactionScanner.class);
+        Object result = globalTransactionScanner.wrapIfNecessary(bean, beanName, cacheKey);
+        Assertions.assertNotSame(result, bean);
+    }
 
     /**
      * Test wrap normal bean.
@@ -96,7 +108,21 @@ public class GlobalTransactionScannerTest {
         String beanName = "business";
         String cacheKey = "business-key";
         return Stream.of(
-                Arguments.of(business, beanName, cacheKey)
+            Arguments.of(business, beanName, cacheKey)
+        );
+    }
+
+    /**
+     * schema bean provider object [ ] [ ].
+     *
+     * @return the object [ ] [ ]
+     */
+    static Stream<Arguments> schemaBeanProvider() {
+        Business business = new SimpleBusinessImpl();
+        String beanName = "schemaBean";
+        String cacheKey = "schemaBean-key";
+        return Stream.of(
+            Arguments.of(business, beanName, cacheKey)
         );
     }
 
@@ -110,7 +136,7 @@ public class GlobalTransactionScannerTest {
         String beanName = "tccBean";
         String cacheKey = "tccBean-key";
         return Stream.of(
-                Arguments.of(tccAction, beanName, cacheKey)
+            Arguments.of(tccAction, beanName, cacheKey)
         );
     }
 
@@ -124,7 +150,7 @@ public class GlobalTransactionScannerTest {
         String beanName = "lcoalTccBean";
         String cacheKey = "lcoalTccBean-key";
         return Stream.of(
-                Arguments.of(localTccAction, beanName, cacheKey)
+            Arguments.of(localTccAction, beanName, cacheKey)
         );
     }
 }

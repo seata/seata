@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  ~  Copyright 1999-2019 Seata.io Group.
+  ~
+  ~  Licensed under the Apache License, Version 2.0 (the "License");
+  ~  you may not use this file except in compliance with the License.
+  ~  You may obtain a copy of the License at
+  ~
+  ~       http://www.apache.org/licenses/LICENSE-2.0
+  ~
+  ~  Unless required by applicable law or agreed to in writing, software
+  ~  distributed under the License is distributed on an "AS IS" BASIS,
+  ~  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  ~  See the License for the specific language governing permissions and
+  ~  limitations under the License.
+  -->
+<xsd:schema xmlns="http://seata.io/schema/seata"
+            xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+            xmlns:beans="http://www.springframework.org/schema/beans"
+            targetNamespace="http://seata.io/schema/seata">
+
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace"/>
+    <xsd:import namespace="http://www.springframework.org/schema/tool"/>
+    <xsd:import namespace="http://www.springframework.org/schema/beans"/>
+
+    <xsd:element name="application">
+        <xsd:complexType>
+            <xsd:complexContent>
+                <xsd:extension base="beans:identifiedType">
+                    <xsd:sequence>
+                        <xsd:element ref="globalTransactional" minOccurs="0" maxOccurs="unbounded"/>
+                        <xsd:element ref="globalLock" minOccurs="0" maxOccurs="unbounded"/>
+                    </xsd:sequence>
+                    <xsd:attribute name="applicationId" type="xsd:string" use="required"/>
+                    <xsd:attribute name="txServiceGroup" type="xsd:string" use="required"/>
+                    <xsd:attribute name="failureHandler" type="xsd:string" use="optional"/>
+                    <xsd:attribute name="mode" type="xsd:int" use="optional"/>
+                </xsd:extension>
+            </xsd:complexContent>
+        </xsd:complexType>
+    </xsd:element>
+
+    <xsd:element name="globalTransactional">
+        <xsd:complexType>
+            <xsd:attribute name="timeoutMills" type="xsd:int" use="optional"/>
+            <xsd:attribute name="name" type="xsd:string" use="optional"/>
+            <xsd:attribute name="rollbackFor" type="xsd:string" use="optional"/>
+            <xsd:attribute name="rollbackForClassName" type="xsd:string" use="optional"/>
+            <xsd:attribute name="noRollbackFor" type="xsd:string" use="optional"/>
+            <xsd:attribute name="noRollbackForClassName" type="xsd:string" use="optional"/>
+            <xsd:attribute name="propagation" type="xsd:string" use="optional"/>
+            <xsd:attribute name="lockRetryInternal" type="xsd:int" use="optional"/>
+            <xsd:attribute name="lockRetryTimes" type="xsd:int" use="optional"/>
+            <xsd:attribute name="scanPackage" type="xsd:string" use="required"/>
+            <xsd:attribute name="pattern" type="xsd:string" use="required"/>
+        </xsd:complexType>
+    </xsd:element>
+
+    <xsd:element name="globalLock">
+        <xsd:complexType>
+            <xsd:attribute name="lockRetryInterval" type="xsd:int" use="optional"/>
+            <xsd:attribute name="lockRetryTimes" type="xsd:int" use="optional"/>
+            <xsd:attribute name="scanPackage" type="xsd:string" use="required"/>
+            <xsd:attribute name="pattern" type="xsd:string" use="required"/>
+        </xsd:complexType>
+    </xsd:element>
+
+</xsd:schema>
