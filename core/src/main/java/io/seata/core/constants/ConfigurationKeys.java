@@ -536,6 +536,12 @@ public interface ConfigurationKeys {
     String ENABLE_CLIENT_BATCH_SEND_REQUEST = TRANSPORT_PREFIX + "enableClientBatchSendRequest";
 
     /**
+     * The constant ENABLE_ENABLE_XID_SERVER_AFFINITY
+     */
+    String ENABLE_MSG_SERVER_AFFINITY_BY_XID = TRANSPORT_PREFIX + "enableMsgServerAffinityByXid";
+
+
+    /**
      * The constant DISABLE_GLOBAL_TRANSACTION.
      */
     String DISABLE_GLOBAL_TRANSACTION = SERVICE_PREFIX + "disableGlobalTransaction";

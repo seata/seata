@@ -16,6 +16,7 @@
 package io.seata.core.rpc.netty;
 
 import io.netty.channel.Channel;
+import io.seata.common.DefaultValues;
 import io.seata.core.constants.ConfigurationKeys;
 import io.seata.core.rpc.TransportServerType;
 
@@ -56,7 +57,8 @@ public class NettyClientConfig extends NettyBaseConfig {
     private static final boolean DEFAULT_POOL_TEST_RETURN = true;
     private static final boolean DEFAULT_POOL_LIFO = true;
     private static final boolean ENABLE_CLIENT_BATCH_SEND_REQUEST = CONFIG.getBoolean(ConfigurationKeys.ENABLE_CLIENT_BATCH_SEND_REQUEST, DEFAULT_ENABLE_CLIENT_BATCH_SEND_REQUEST);
-
+    private static final boolean ENABLE_MSG_SERVER_AFFINITY_BY_XID
+            = CONFIG.getBoolean(ConfigurationKeys.ENABLE_MSG_SERVER_AFFINITY_BY_XID, DefaultValues.ENABLE_MSG_SERVER_AFFINITY_BY_XID);
     /**
      * Gets connect timeout millis.
      *
@@ -442,4 +444,9 @@ public class NettyClientConfig extends NettyBaseConfig {
     public static boolean isEnableClientBatchSendRequest() {
         return ENABLE_CLIENT_BATCH_SEND_REQUEST;
     }
+
+    public static boolean isEnableMsgServerAffinityByXid() {
+        return ENABLE_MSG_SERVER_AFFINITY_BY_XID;
+    }
+
 }

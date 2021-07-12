@@ -138,7 +138,21 @@ public abstract class AbstractNettyRemotingClient extends AbstractNettyRemoting 
 
     @Override
     public Object sendSyncRequest(Object msg) throws TimeoutException {
-        String serverAddress = loadBalance(getTransactionServiceGroup(), msg);
+        String xid = getXid(msg);
+        String serverAddress = null;
+        if (!NettyClientConfig.isEnableMsgServerAffinityByXid() || xid == null || xid.length() == 0) {
+            serverAddress = loadBalance(getTransactionServiceGroup(), msg);
+        } else
+        {
+            // enabled msg server affinity by xid, send all the same xid message to the same TC server
+            // TODO: When one TC server died, the recover message may come from different TC server,
+            //      such as use a new format xid such as "SEATA_RECOVER:{RECOVER_TC_URL}:OLD_XID_URL"
+            serverAddress = xid.substring(0, xid.lastIndexOf(":"));
+
+        }
+        LOGGER.debug("sendSyncRequest xid={},serverAddress={}",xid,serverAddress);
+
+        //String serverAddress =  String serverAddress = loadBalance(getTransactionServiceGroup(), msg);
         int timeoutMillis = NettyClientConfig.getRpcRequestTimeout();
         RpcMessage rpcMessage = buildRequestMessage(msg, ProtocolConstants.MSGTYPE_RESQUEST_SYNC);
 
