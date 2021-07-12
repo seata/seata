@@ -32,9 +32,11 @@ import io.seata.saga.statelang.domain.ExecutionStatus;
 import io.seata.saga.statelang.domain.StateMachineInstance;
 import io.seata.tm.api.GlobalTransaction;
 import io.seata.tm.api.GlobalTransactionContext;
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.support.ClassPathXmlApplicationContext;
@@ -65,6 +67,11 @@ public class StateMachineDBTests extends AbstractServerTest {
 
         ApplicationContext applicationContext = new ClassPathXmlApplicationContext("classpath:saga/spring/statemachine_engine_db_test.xml");
         stateMachineEngine = applicationContext.getBean("stateMachineEngine", StateMachineEngine.class);
+    }
+
+    @AfterAll
+    public static void destory() throws InterruptedException {
+        stopSeataServer();
     }
 
     private GlobalTransaction getGlobalTransaction(StateMachineInstance instance) {
