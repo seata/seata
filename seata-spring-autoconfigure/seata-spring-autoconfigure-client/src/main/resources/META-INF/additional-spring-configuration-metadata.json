@@ -36,7 +36,6 @@
         "reason": "It may be removed in a future release, please configure to 'seata.tx-service-group'."
       }
     },
-
     {
       "name": "seata.client.rm.async-commit-buffer-limit",
       "type": "java.lang.Integer",
@@ -266,6 +265,66 @@
       "description": "TCC fence log clean period.",
       "sourceType": "io.seata.rm.tcc.config.TCCFenceConfig",
       "defaultValue": 1
+    },
+    {
+      "name": "seata.saga.enabled",
+      "type": "java.lang.Boolean",
+      "description": "Whether enable saga auto configuration.",
+      "sourceType": "io.seata.spring.boot.autoconfigure.SeataSagaAutoConfiguration",
+      "defaultValue": false
+    },
+    {
+      "name": "seata.saga.state-machine.table-prefix",
+      "type": "java.lang.String",
+      "sourceType": "io.seata.saga.engine.config.DbStateMachineConfig",
+      "defaultValue": "seata_"
+    },
+    {
+      "name": "seata.saga.state-machine.enable-async",
+      "type": "java.lang.Boolean",
+      "description": "Whether enable state machine async function.",
+      "sourceType": "io.seata.saga.engine.impl.DefaultStateMachineConfig",
+      "defaultValue": false
+    },
+    {
+      "name": "seata.saga.state-machine.charset",
+      "type": "java.lang.String",
+      "description": "State machine repository charset.",
+      "sourceType": "io.seata.saga.engine.impl.DefaultStateMachineConfig",
+      "defaultValue": "UTF-8"
+    },
+    {
+      "name": "seata.saga.state-machine.default-tenant-id",
+      "type": "java.lang.String",
+      "description": "Default tenant id.",
+      "sourceType": "io.seata.saga.engine.impl.DefaultStateMachineConfig",
+      "defaultValue": "000001"
+    },
+    {
+      "name": "seata.saga.state-machine.auto-register-resources",
+      "type": "java.lang.Boolean",
+      "description": "Whether enable auto register state lang resources.",
+      "sourceType": "io.seata.saga.engine.impl.DefaultStateMachineConfig",
+      "defaultValue": true
+    },
+    {
+      "name": "seata.saga.state-machine.resources",
+      "type": "java.util.List<java.lang.String>",
+      "description": "State lang resources.",
+      "sourceType": "io.seata.saga.engine.impl.DefaultStateMachineConfig",
+      "defaultValue": "classpath*:seata/saga/statelang/**/*.json"
+    },
+    {
+      "name": "seata.saga.state-machine.service-invoke-timeout",
+      "type": "java.lang.Integer",
+      "sourceType": "io.seata.saga.engine.impl.DefaultStateMachineConfig",
+      "defaultValue": 300000
+    },
+    {
+      "name": "seata.saga.state-machine.trans-operation-timeout",
+      "type": "java.lang.Integer",
+      "sourceType": "io.seata.saga.engine.impl.DefaultStateMachineConfig",
+      "defaultValue": 1800000
     }
   ],
   "hints": [
@@ -292,7 +351,6 @@
         }
       ]
     },
-
     {
       "name": "seata.client.load-balance.type",
       "values": [
@@ -362,6 +420,28 @@
           "name": "handle-as",
           "parameters": {
             "target": "io.seata.rm.tcc.constant.TCCFenceCleanMode"
+          }
+        }
+      ]
+    },
+    {
+      "name": "seata.saga.state-machine.resources",
+      "providers": [
+        {
+          "name": "handle-as",
+          "parameters": {
+            "target": "org.springframework.core.io.Resource"
+          }
+        }
+      ]
+    },
+    {
+      "name": "seata.saga.state-machine.charset",
+      "providers": [
+        {
+          "name": "handle-as",
+          "parameters": {
+            "target": "java.nio.charset.Charset"
           }
         }
       ]

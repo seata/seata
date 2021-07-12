@@ -143,3 +143,19 @@ seata:
       log-table-name: tcc_fence_log
       clean-mode: hour
       clean-period: 1
+  saga:
+    enabled: false
+    state-machine:
+      table-prefix: seata_
+      enable-async: false
+      async-thread-pool:
+        core-pool-size: 1
+        max-pool-size: 20
+        keep-alive-time: 60
+      trans-operation-timeout: 1800000
+      service-invoke-timeout: 300000
+      auto-register-resources: true
+      resources:
+        - classpath*:seata/saga/statelang/**/*.json
+      default-tenant-id: 000001
+      charset: UTF-8

@@ -26,6 +26,7 @@ client.rm.tableMetaCheckerInterval=60000
 client.rm.sqlParserType=druid
 client.rm.reportSuccessEnable=false
 client.rm.sagaBranchRegisterEnable=false
+client.rm.sagaJsonParser=fastjson
 client.rm.tccActionInterceptorOrder=-2147482648
 client.tm.commitRetryCount=5
 client.tm.rollbackRetryCount=5

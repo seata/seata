@@ -20,6 +20,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ThreadPoolExecutor;
+import javax.script.ScriptEngineManager;
 
 import io.seata.common.loader.EnhancedServiceLoader;
 import io.seata.saga.engine.StateMachineConfig;
@@ -61,14 +62,14 @@ import io.seata.saga.proctrl.handler.RouterHandler;
 import io.seata.saga.proctrl.impl.ProcessControllerImpl;
 import io.seata.saga.proctrl.process.impl.CustomizeBusinessProcessor;
 import io.seata.saga.statelang.domain.DomainConstants;
+import io.seata.saga.statelang.parser.utils.ResourceUtil;
+import org.apache.commons.lang.ArrayUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
 import org.springframework.core.io.Resource;
-
-import javax.script.ScriptEngineManager;
 
 import static io.seata.common.DefaultValues.DEFAULT_CLIENT_SAGA_COMPENSATE_PERSIST_MODE_UPDATE;
 import static io.seata.common.DefaultValues.DEFAULT_CLIENT_SAGA_RETRY_PERSIST_MODE_UPDATE;
@@ -102,10 +103,11 @@ public class DefaultStateMachineConfig implements StateMachineConfig, Applicatio
     private ProcessCtrlEventPublisher asyncProcessCtrlEventPublisher;
     private ApplicationContext applicationContext;
     private ThreadPoolExecutor threadPoolExecutor;
-    private boolean enableAsync;
+    private boolean enableAsync = false;
     private ServiceInvokerManager serviceInvokerManager;
 
-    private Resource[] resources = new Resource[0];
+    private boolean autoRegisterResources = true;
+    private String[] resources = new String[]{"classpath*:seata/saga/statelang/**/*.json"};
     private String charset = "UTF-8";
     private String defaultTenantId = "000001";
     private ScriptEngineManager scriptEngineManager;
@@ -149,14 +151,16 @@ public class DefaultStateMachineConfig implements StateMachineConfig, Applicatio
             stateMachineRepository.setStateLangStore(stateLangStore);
             stateMachineRepository.setDefaultTenantId(defaultTenantId);
             stateMachineRepository.setJsonParserName(sagaJsonParser);
-            if (resources != null) {
-                try {
-                    stateMachineRepository.registryByResources(resources, defaultTenantId);
-                } catch (IOException e) {
-                    LOGGER.error("Load State Language Resources failed.", e);
-                }
-            }
             this.stateMachineRepository = stateMachineRepository;
+        }
+        //stateMachineRepository may be overridden, so move `stateMachineRepository.registryByResources()` here.
+        if (autoRegisterResources && ArrayUtils.isNotEmpty(resources)) {
+            try {
+                Resource[] resources = ResourceUtil.getResources(this.resources);
+                stateMachineRepository.registryByResources(resources, defaultTenantId);
+            } catch (IOException e) {
+                LOGGER.error("Load State Language Resources failed.", e);
+            }
         }
 
         if (stateLogRepository == null) {
@@ -426,7 +430,11 @@ public class DefaultStateMachineConfig implements StateMachineConfig, Applicatio
         this.syncProcessCtrlEventPublisher = syncProcessCtrlEventPublisher;
     }
 
-    public void setResources(Resource[] resources) {
+    public void setAutoRegisterResources(boolean autoRegisterResources) {
+        this.autoRegisterResources = autoRegisterResources;
+    }
+
+    public void setResources(String[] resources) {
         this.resources = resources;
     }
 
