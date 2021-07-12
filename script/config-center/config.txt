@@ -54,6 +54,7 @@ store.db.minConn=5
 store.db.maxConn=30
 store.db.globalTable=global_table
 store.db.branchTable=branch_table
+store.db.distributeLockTable=distribute_lock
 store.db.queryLimit=100
 store.db.lockTable=lock_table
 store.db.maxWait=5000

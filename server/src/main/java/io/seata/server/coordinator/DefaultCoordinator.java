@@ -21,6 +21,8 @@ import java.util.Map;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import io.netty.channel.Channel;
+import io.seata.common.XID;
+import io.seata.server.session.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
@@ -63,9 +65,6 @@ import io.seata.core.rpc.netty.ChannelManager;
 import io.seata.core.rpc.netty.NettyRemotingServer;
 import io.seata.server.AbstractTCInboundHandler;
 import io.seata.server.event.EventBusManager;
-import io.seata.server.session.GlobalSession;
-import io.seata.server.session.SessionHelper;
-import io.seata.server.session.SessionHolder;
 
 import static io.seata.common.Constants.RETRY_COMMITTING;
 import static io.seata.common.Constants.RETRY_ROLLBACKING;
@@ -355,6 +354,7 @@ public class DefaultCoordinator extends AbstractTCInboundHandler implements Tran
         if (CollectionUtils.isEmpty(asyncCommittingSessions)) {
             return;
         }
+        LOGGER.info("size = {}", asyncCommittingSessions.size());
         SessionHelper.forEach(asyncCommittingSessions, asyncCommittingSession -> {
             try {
                 // Instruction reordering in DefaultCore#asyncCommit may cause this situation
@@ -401,67 +401,77 @@ public class DefaultCoordinator extends AbstractTCInboundHandler implements Tran
      */
     public void init() {
         retryRollbacking.scheduleAtFixedRate(() -> {
-            boolean lock = SessionHolder.acquireDistributedLock(RETRY_ROLLBACKING);
-            if (lock) {
-                try {
+            try {
+                boolean lock = SessionHolder.acquireDistributedLock(RETRY_ROLLBACKING);
+                if (lock) {
                     handleRetryRollbacking();
-                } catch (Exception e) {
-                    LOGGER.info("Exception retry rollbacking ... ", e);
-                } finally {
-                    SessionHolder.releaseDistributedLock(RETRY_ROLLBACKING);
                 }
+            } catch (Exception e) {
+                LOGGER.info("Exception retry rollbacking ... ", e);
+            } finally {
+                try {
+                    SessionHolder.releaseDistributedLock(RETRY_ROLLBACKING);
+                } catch (Exception ignored) {}
             }
         }, 0, ROLLBACKING_RETRY_PERIOD, TimeUnit.MILLISECONDS);
 
         retryCommitting.scheduleAtFixedRate(() -> {
-            boolean lock = SessionHolder.acquireDistributedLock(RETRY_COMMITTING);
-            if (lock) {
-                try {
+            try {
+                boolean lock = SessionHolder.acquireDistributedLock(RETRY_COMMITTING);
+                if (lock) {
                     handleRetryCommitting();
-                } catch (Exception e) {
-                    LOGGER.info("Exception retry committing ... ", e);
-                } finally {
-                    SessionHolder.releaseDistributedLock(RETRY_COMMITTING);
                 }
+            } catch (Exception e) {
+                LOGGER.info("Exception retry committing ... ", e);
+            } finally {
+                try {
+                    SessionHolder.releaseDistributedLock(RETRY_COMMITTING);
+                } catch (Exception ignored) {}
             }
         }, 0, COMMITTING_RETRY_PERIOD, TimeUnit.MILLISECONDS);
 
         asyncCommitting.scheduleAtFixedRate(() -> {
-            boolean lock = SessionHolder.acquireDistributedLock(ASYNC_COMMITTING);
-            if (lock) {
-                try {
+            try {
+                boolean lock = SessionHolder.acquireDistributedLock(ASYNC_COMMITTING);
+                if (lock) {
                     handleAsyncCommitting();
-                } catch (Exception e) {
-                    LOGGER.info("Exception async committing ... ", e);
-                } finally {
-                    SessionHolder.releaseDistributedLock(ASYNC_COMMITTING);
                 }
+            } catch (Exception e) {
+                LOGGER.info("Exception async committing ... ", e);
+            } finally {
+                try {
+                    SessionHolder.releaseDistributedLock(ASYNC_COMMITTING);
+                } catch (Exception ignored) {}
             }
         }, 0, ASYNC_COMMITTING_RETRY_PERIOD, TimeUnit.MILLISECONDS);
 
         timeoutCheck.scheduleAtFixedRate(() -> {
-            boolean lock = SessionHolder.acquireDistributedLock(TX_TIMEOUT_CHECK);
-            if (lock) {
-                try {
+            try {
+                boolean lock = SessionHolder.acquireDistributedLock(TX_TIMEOUT_CHECK);
+                if (lock) {
                     timeoutCheck();
-                } catch (Exception e) {
-                    LOGGER.info("Exception timeout checking ... ", e);
-                } finally {
-                    SessionHolder.releaseDistributedLock(TX_TIMEOUT_CHECK);
                 }
+            } catch (Exception e) {
+                LOGGER.info("Exception timeout checking ... ", e);
+            } finally {
+                try {
+                    SessionHolder.releaseDistributedLock(TX_TIMEOUT_CHECK);
+                } catch (Exception ignored) {}
             }
         }, 0, TIMEOUT_RETRY_PERIOD, TimeUnit.MILLISECONDS);
 
         undoLogDelete.scheduleAtFixedRate(() -> {
-            boolean lock = SessionHolder.acquireDistributedLock(UNDOLOG_DELETE);
-            if (lock) {
-                try {
+            try {
+                boolean lock = SessionHolder.acquireDistributedLock(UNDOLOG_DELETE);
+                if (lock) {
                     undoLogDelete();
-                } catch (Exception e) {
-                    LOGGER.info("Exception undoLog deleting ... ", e);
-                } finally {
-                    SessionHolder.releaseDistributedLock(UNDOLOG_DELETE);
                 }
+            } catch (Exception e) {
+                LOGGER.info("Exception undoLog deleting ... ", e);
+            } finally {
+                try {
+                    SessionHolder.releaseDistributedLock(UNDOLOG_DELETE);
+                } catch (Exception ignored) {}
             }
         }, UNDO_LOG_DELAY_DELETE_PERIOD, UNDO_LOG_DELETE_PERIOD, TimeUnit.MILLISECONDS);
     }

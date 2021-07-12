@@ -195,7 +195,7 @@ public abstract class AbstractUndoLogManager implements UndoLogManager {
     }
 
     protected String buildContext(String serializer, CompressorType compressorType) {
-        Map<String, String> map = new HashMap<>();
+        Map<String, String> map = new HashMap<>(2, 1.01f);
         map.put(UndoLogConstants.SERIALIZER_KEY, serializer);
         map.put(UndoLogConstants.COMPRESSOR_TYPE_KEY, compressorType.name());
         return CollectionUtils.encodeMap(map);

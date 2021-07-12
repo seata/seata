@@ -54,3 +54,15 @@ CREATE TABLE IF NOT EXISTS public.lock_table
 );
 
 CREATE INDEX idx_branch_id ON public.lock_table (branch_id);
+
+CREATE TABLE distribute_lock (
+    lock_key     VARCHAR(20)  NOT NULL,
+    lock_value        VARCHAR(20)  NOT NULL,
+    expire       BIGINT       NOT NULL,
+    CONSTRAINT pk_distribute_lock_table PRIMARY KEY (lock_key)
+);
+
+INSERT INTO distribute_lock (lock_key, lock_value, expire) VALUES ('AsyncCommitting', ' ', 0);
+INSERT INTO distribute_lock (lock_key, lock_value, expire) VALUES ('RetryCommitting', ' ', 0);
+INSERT INTO distribute_lock (lock_key, lock_value, expire) VALUES ('RetryRollbacking', ' ', 0);
+INSERT INTO distribute_lock (lock_key, lock_value, expire) VALUES ('TxTimeoutCheck', ' ', 0);
