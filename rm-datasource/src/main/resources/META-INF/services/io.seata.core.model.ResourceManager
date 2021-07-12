@@ -1,2 +1,3 @@
 io.seata.rm.datasource.DataSourceManager
 io.seata.rm.datasource.xa.ResourceManagerXA
+io.seata.rm.datasource.lcn.ResourceManagerLcn

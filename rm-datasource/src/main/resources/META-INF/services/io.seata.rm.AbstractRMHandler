@@ -1,2 +1,3 @@
 io.seata.rm.RMHandlerAT
 io.seata.rm.RMHandlerXA
+io.seata.rm.RMHandlerLcn

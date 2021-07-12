@@ -2,3 +2,4 @@ io.seata.server.transaction.at.ATCore
 io.seata.server.transaction.tcc.TccCore
 io.seata.server.transaction.saga.SagaCore
 io.seata.server.transaction.xa.XACore
+io.seata.server.transaction.lcn.LcnCore
