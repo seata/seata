@@ -15,11 +15,14 @@
  */
 package io.seata.sqlparser.druid;
 
+import java.io.IOException;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.security.CodeSource;
 import java.util.ArrayList;
+import java.util.Enumeration;
 import java.util.List;
+import java.util.NoSuchElementException;
 
 /**
  * Used for druid isolation.
@@ -28,6 +31,8 @@ import java.util.List;
  */
 class DruidIsolationClassLoader extends URLClassLoader {
     private final static String[] DRUID_CLASS_PREFIX = new String[]{"com.alibaba.druid.", "io.seata.sqlparser.druid."};
+
+    private final static String[] DRUID_RESOURCE_PREFIX = new String[]{"META-INF/seata/io.seata.sqlparser.druid", "META-INF/services/io.seata.sqlparser.druid"};
 
     private final static DruidIsolationClassLoader INSTANCE = new DruidIsolationClassLoader(DefaultDruidLoader.get());
 
@@ -43,6 +48,28 @@ class DruidIsolationClassLoader extends URLClassLoader {
             }
         }
         return super.loadClass(name, resolve);
+    }
+
+    /**
+     * While loading resource files, the resources under the current layer classLoader's path and the parent
+     * classLoader's path will be loaded at the same time.{@link ClassLoader#getResources(String)}
+     * So we rewrite this method to avoid repeated loading of druid resources which in the
+     * {@link #DRUID_RESOURCE_PREFIX}
+     */
+    @Override
+    public Enumeration<URL> getResources(String name) throws IOException {
+        for (String prefix : DRUID_RESOURCE_PREFIX) {
+            if (name.startsWith(prefix)) {
+                return loadInternalResource(name);
+            }
+        }
+        return super.getResources(name);
+    }
+
+    private Enumeration<URL> loadInternalResource(String name) throws IOException {
+        Enumeration<URL>[] tmp = (Enumeration<URL>[])new Enumeration<?>[1];
+        tmp[0] = findResources(name);
+        return new CompoundEnumeration<>(tmp);
     }
 
     private Class<?> loadInternalClass(String name, boolean resolve) throws ClassNotFoundException {
@@ -79,5 +106,44 @@ class DruidIsolationClassLoader extends URLClassLoader {
 
     static DruidIsolationClassLoader get() {
         return INSTANCE;
+    }
+
+    /**
+     * The purpose of this class is to eliminate the difference on {@link #CompoundEnumeration} between jdk 8 and 11
+     *
+     * @param <E>
+     */
+    private static class CompoundEnumeration<E> implements Enumeration<E> {
+        private Enumeration<E>[] enums;
+        private int index = 0;
+
+        public CompoundEnumeration(Enumeration<E>[] enums) {
+            this.enums = enums;
+        }
+
+        private boolean next() {
+            while (this.index < this.enums.length) {
+                if (this.enums[this.index] != null && this.enums[this.index].hasMoreElements()) {
+                    return true;
+                }
+                index++;
+            }
+
+            return false;
+        }
+
+        @Override
+        public boolean hasMoreElements() {
+            return this.next();
+        }
+
+        @Override
+        public E nextElement() {
+            if (!this.next()) {
+                throw new NoSuchElementException();
+            } else {
+                return this.enums[this.index].nextElement();
+            }
+        }
     }
 }
