@@ -446,6 +446,16 @@ public interface ConfigurationKeys {
     String MAX_SERVER_POOL_SIZE = TRANSPORT_PREFIX + "maxServerPoolSize";
 
     /**
+     * The constant MIN_BRANCH_RESULT_POOL_SIZE.
+     */
+    String MIN_BRANCH_RESULT_POOL_SIZE = TRANSPORT_PREFIX + "minBranchResultPoolSize";
+
+    /**
+     * The constant MAX_BRANCH_RESULT_POOL_SIZE.
+     */
+    String MAX_BRANCH_RESULT_POOL_SIZE = TRANSPORT_PREFIX + "maxBranchResultPoolSize";
+
+    /**
      * The constant MAX_TASK_QUEUE_SIZE.
      */
     String MAX_TASK_QUEUE_SIZE = TRANSPORT_PREFIX + "maxTaskQueueSize";

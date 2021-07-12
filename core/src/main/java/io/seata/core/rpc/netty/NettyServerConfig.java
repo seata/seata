@@ -60,7 +60,10 @@ public class NettyServerConfig extends NettyBaseConfig {
             ConfigurationKeys.MAX_TASK_QUEUE_SIZE, "20000"));
     private static int keepAliveTime = Integer.parseInt(System.getProperty(
             ConfigurationKeys.KEEP_ALIVE_TIME, "500"));
-
+    private static int minBranchResultPoolSize = Integer.parseInt(System.getProperty(
+            ConfigurationKeys.MIN_BRANCH_RESULT_POOL_SIZE, "50"));
+    private static int maxBranchResultPoolSize = Integer.parseInt(System.getProperty(
+            ConfigurationKeys.MAX_BRANCH_RESULT_POOL_SIZE, "500"));
     /**
      * The Server channel clazz.
      */
@@ -301,5 +304,22 @@ public class NettyServerConfig extends NettyBaseConfig {
 
     public static int getKeepAliveTime() {
         return keepAliveTime;
+    }
+
+    /**
+     * Get the min size for branch result thread pool
+     *
+     * @return the int
+     */
+    public static int getMinBranchResultPoolSize() {
+        return minBranchResultPoolSize;
+    }
+    /**
+     * Get the max size for branch result thread pool
+     *
+     * @return the int
+     */
+    public static int getMaxBranchResultPoolSize() {
+        return maxBranchResultPoolSize;
     }
 }
