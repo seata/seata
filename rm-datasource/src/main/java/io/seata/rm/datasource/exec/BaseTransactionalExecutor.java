@@ -23,6 +23,10 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
+import java.util.stream.Collectors;
+
+import com.google.common.collect.Sets;
 
 import io.seata.common.exception.ShouldNeverHappenException;
 import io.seata.common.util.CollectionUtils;
@@ -34,6 +38,7 @@ import io.seata.rm.datasource.ConnectionProxy;
 import io.seata.rm.datasource.SqlGenerateUtils;
 import io.seata.rm.datasource.StatementProxy;
 import io.seata.rm.datasource.sql.struct.Field;
+import io.seata.rm.datasource.sql.struct.Row;
 import io.seata.rm.datasource.sql.struct.TableMeta;
 import io.seata.rm.datasource.sql.struct.TableMetaCacheFactory;
 import io.seata.rm.datasource.sql.struct.TableRecords;
@@ -259,6 +264,37 @@ public abstract class BaseTransactionalExecutor<T, S extends Statement> implemen
     }
 
     /**
+     * Assert we can undo this operation precisely and safely by given beforeImage and afterImage.
+     * Otherwise, throws an exception.
+     *
+     * @param beforeImage the beforeImage.
+     * @param afterImage the afterImage.
+     */
+    protected final void checkBeforeAfterImages(TableRecords beforeImage, TableRecords afterImage) throws SQLException {
+        if (SQLType.UPDATE == sqlRecognizer.getSQLType()) {
+            if (beforeImage.getRows().size() != afterImage.getRows().size()) {
+                // Forbid update primary keys, otherwise we can not rollback by seata undoLog.
+                // Why dont check update primary keys before execution? see:
+                // https://github.com/seata/seata/pull/3287
+                // https://github.com/seata/seata/issues/3465
+                throw new ShouldNeverHappenException(
+                        "Before image size is not equaled to after image size, probably because you updated the "
+                                + "primary keys.");
+            }
+            Set<List<Field>> beforeImagePks = beforeImage.getRows().stream().map(Row::primaryKeys)
+                    .collect(Collectors.toSet());
+            Set<List<Field>> afterImagePks = afterImage.getRows().stream().map(Row::primaryKeys)
+                    .collect(Collectors.toSet());
+            if (!Sets.difference(beforeImagePks, afterImagePks).isEmpty()) {
+                throw new SQLException(
+                        "Before image and after image has different primary keys, we can't safely rollback this "
+                                + "operation by undoLog. Possible reason: https://github.com/seata/seata/issues/3611");
+            }
+        }
+        // More SqlTypes to be check. eg. INSERT_IGNORE, INSERT_ON_DUPLICATE_UPDATE
+    }
+
+    /**
      * prepare undo log.
      *
      * @param beforeImage the before image
@@ -269,11 +305,7 @@ public abstract class BaseTransactionalExecutor<T, S extends Statement> implemen
         if (beforeImage.getRows().isEmpty() && afterImage.getRows().isEmpty()) {
             return;
         }
-        if (SQLType.UPDATE == sqlRecognizer.getSQLType()) {
-            if (beforeImage.getRows().size() != afterImage.getRows().size()) {
-                throw new ShouldNeverHappenException("Before image size is not equaled to after image size, probably because you updated the primary keys.");
-            }
-        }
+        checkBeforeAfterImages(beforeImage, afterImage);
         ConnectionProxy connectionProxy = statementProxy.getConnectionProxy();
 
         TableRecords lockKeyRecords = sqlRecognizer.getSQLType() == SQLType.DELETE ? beforeImage : afterImage;

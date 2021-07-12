@@ -15,22 +15,18 @@
  */
 package io.seata.rm.datasource.exec;
 
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.StringJoiner;
 
-import io.seata.common.util.IOUtil;
 import io.seata.common.util.StringUtils;
 import io.seata.config.Configuration;
 import io.seata.config.ConfigurationFactory;
 import io.seata.core.constants.ConfigurationKeys;
 import io.seata.common.DefaultValues;
 import io.seata.rm.datasource.ColumnUtils;
-import io.seata.rm.datasource.SqlGenerateUtils;
 import io.seata.rm.datasource.StatementProxy;
 import io.seata.rm.datasource.sql.struct.TableMeta;
 import io.seata.rm.datasource.sql.struct.TableRecords;
@@ -66,13 +62,17 @@ public class UpdateExecutor<T, S extends Statement> extends AbstractDMLBaseExecu
 
     @Override
     protected TableRecords beforeImage() throws SQLException {
+        return buildImageByWhereCondition();
+    }
+
+    private TableRecords buildImageByWhereCondition() throws SQLException {
         ArrayList<List<Object>> paramAppenderList = new ArrayList<>();
         TableMeta tmeta = getTableMeta();
-        String selectSQL = buildBeforeImageSQL(tmeta, paramAppenderList);
+        String selectSQL = buildImageSQL(tmeta, paramAppenderList);
         return buildTableRecords(tmeta, selectSQL, paramAppenderList);
     }
 
-    private String buildBeforeImageSQL(TableMeta tableMeta, ArrayList<List<Object>> paramAppenderList) {
+    private String buildImageSQL(TableMeta tableMeta, ArrayList<List<Object>> paramAppenderList) {
         SQLUpdateRecognizer recognizer = (SQLUpdateRecognizer) sqlRecognizer;
         List<String> updateColumns = recognizer.getUpdateColumns();
         StringBuilder prefix = new StringBuilder("SELECT ");
@@ -109,41 +109,8 @@ public class UpdateExecutor<T, S extends Statement> extends AbstractDMLBaseExecu
 
     @Override
     protected TableRecords afterImage(TableRecords beforeImage) throws SQLException {
-        TableMeta tmeta = getTableMeta();
-        if (beforeImage == null || beforeImage.size() == 0) {
-            return TableRecords.empty(getTableMeta());
-        }
-        String selectSQL = buildAfterImageSQL(tmeta, beforeImage);
-        ResultSet rs = null;
-        try (PreparedStatement pst = statementProxy.getConnection().prepareStatement(selectSQL)) {
-            SqlGenerateUtils.setParamForPk(beforeImage.pkRows(), getTableMeta().getPrimaryKeyOnlyName(), pst);
-            rs = pst.executeQuery();
-            return TableRecords.buildRecords(tmeta, rs);
-        } finally {
-            IOUtil.close(rs);
-        }
+        // Rebuild after image by where condition, otherwise beforeImage primary keys.
+        // https://github.com/seata/seata/issues/3611
+        return buildImageByWhereCondition();
     }
-
-    private String buildAfterImageSQL(TableMeta tableMeta, TableRecords beforeImage) throws SQLException {
-        StringBuilder prefix = new StringBuilder("SELECT ");
-        String whereSql = SqlGenerateUtils.buildWhereConditionByPKs(tableMeta.getPrimaryKeyOnlyName(), beforeImage.pkRows().size(), getDbType());
-        String suffix = " FROM " + getFromTableInSQL() + " WHERE " + whereSql;
-        StringJoiner selectSQLJoiner = new StringJoiner(", ", prefix.toString(), suffix);
-        if (ONLY_CARE_UPDATE_COLUMNS) {
-            SQLUpdateRecognizer recognizer = (SQLUpdateRecognizer) sqlRecognizer;
-            List<String> updateColumns = recognizer.getUpdateColumns();
-            if (!containsPK(updateColumns)) {
-                selectSQLJoiner.add(getColumnNamesInSQL(tableMeta.getEscapePkNameList(getDbType())));
-            }
-            for (String columnName : updateColumns) {
-                selectSQLJoiner.add(columnName);
-            }
-        } else {
-            for (String columnName : tableMeta.getAllColumns().keySet()) {
-                selectSQLJoiner.add(ColumnUtils.addEscape(columnName, getDbType()));
-            }
-        }
-        return selectSQLJoiner.toString();
-    }
-
 }

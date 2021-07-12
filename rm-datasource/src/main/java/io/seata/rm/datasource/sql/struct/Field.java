@@ -15,6 +15,8 @@
  */
 package io.seata.rm.datasource.sql.struct;
 
+import com.google.common.base.Objects;
+
 /**
  * Field
  *
@@ -145,5 +147,23 @@ public class Field implements java.io.Serializable {
     @Override
     public String toString() {
         return String.format("[%s,%s]", name, value);
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
+        Field field = (Field) o;
+        return type == field.type && Objects.equal(name, field.name) && keyType == field.keyType
+                && Objects.equal(value, field.value);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hashCode(name, keyType, type, value);
     }
 }
