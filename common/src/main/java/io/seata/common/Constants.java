@@ -39,7 +39,7 @@ public interface Constants {
     /**
      * The constant DBKEYS_SPLIT_CHAR.
      */
-    String DBKEYS_SPLIT_CHAR = ",";
+    String DBKEYS_SPLIT_CHAR = ",,";
 
     /**
      * The constant ROW_LOCK_KEY_SPLIT_CHAR.
