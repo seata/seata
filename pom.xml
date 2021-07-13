@@ -36,6 +36,7 @@
         <module>integration/motan</module>
         <module>integration/grpc</module>
         <module>integration/http</module>
+        <module>integration/hsf</module>
         <module>rm</module>
         <module>rm-datasource</module>
         <module>spring</module>

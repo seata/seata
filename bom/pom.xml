@@ -63,7 +63,8 @@
     <properties>
         <spring.version>4.3.23.RELEASE</spring.version>
         <netty4.version>4.1.30.Final</netty4.version>
-        <dubbo.version>2.7.0</dubbo.version>
+        <dubbo.version>2.7.4</dubbo.version>
+        <hsf.version>1.8.3</hsf.version>
         <dubbo.alibaba.version>2.6.5</dubbo.alibaba.version>
         <sofa.rpc.version>5.5.3</sofa.rpc.version>
         <fastjson.version>1.2.73</fastjson.version>
@@ -225,6 +226,11 @@
                 <groupId>com.alibaba</groupId>
                 <artifactId>dubbo</artifactId>
                 <version>${dubbo.alibaba.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.alibaba.edas</groupId>
+                <artifactId>edas-sdk</artifactId>
+                <version>${hsf.version}</version>
             </dependency>
             <dependency>
                 <groupId>cglib</groupId>
