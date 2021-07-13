@@ -250,7 +250,7 @@ public class MySQLInsertOrUpdateExecutor extends MySQLInsertExecutor implements 
      */
     public TableRecords buildTableRecords2(TableMeta tableMeta, String selectSQL, ArrayList<List<Object>> paramAppenderList) throws SQLException {
         ResultSet rs = null;
-        try (PreparedStatement ps = statementProxy.getConnection().prepareStatement(selectSQL + " FOR UPDATE")) {
+        try (PreparedStatement ps = statementProxy.getConnection().prepareStatement(selectSQL)) {
             if (CollectionUtils.isNotEmpty(paramAppenderList)) {
                 for (int i = 0, ts = paramAppenderList.size(); i < ts; i++) {
                     List<Object> paramAppender = paramAppenderList.get(i);
