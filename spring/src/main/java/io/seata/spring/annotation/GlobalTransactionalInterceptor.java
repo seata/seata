@@ -88,12 +88,21 @@ public class GlobalTransactionalInterceptor implements ConfigurationChangeListen
 
     //region DEFAULT_GLOBAL_TRANSACTION_TIMEOUT
 
+    /**
+     * 0 does not mean never time out, it means seata will read the default value in the configuration
+     */
     private static int defaultGlobalTransactionTimeout = 0;
 
+    /**
+     * Reset the global transaction timeout
+     */
     private void initDefaultGlobalTransactionTimeout() {
         if (GlobalTransactionalInterceptor.defaultGlobalTransactionTimeout <= 0) {
             int defaultGlobalTransactionTimeout;
             try {
+                // When the global transaction timeout time is less than or equal to 0,
+                // and the global transaction timeout time is not configured in the configuration file,
+                // the current timeout time will be reset to 60000
                 defaultGlobalTransactionTimeout = ConfigurationFactory.getInstance().getInt(
                         ConfigurationKeys.DEFAULT_GLOBAL_TRANSACTION_TIMEOUT, DEFAULT_GLOBAL_TRANSACTION_TIMEOUT);
             } catch (Exception e) {
@@ -200,7 +209,8 @@ public class GlobalTransactionalInterceptor implements ConfigurationChangeListen
                 public TransactionInfo getTransactionInfo() {
                     // reset the value of timeout
                     int timeout = globalTrxAnno.timeoutMills();
-                    if (timeout <= 0 || timeout == DEFAULT_GLOBAL_TRANSACTION_TIMEOUT) {
+                    // When the timeout time is less than or equal to 0, the default global transaction timeout time is used
+                    if (timeout <= 0) {
                         timeout = defaultGlobalTransactionTimeout;
                     }
 
